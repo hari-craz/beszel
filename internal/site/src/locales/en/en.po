@@ -997,6 +997,10 @@ msgstr "Inactive"
 msgid "Interval"
 msgstr "Interval"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Interventions"
+msgstr "Interventions"
+
 #: src/components/login/auth-form.tsx
 msgid "Invalid email address."
 msgstr "Invalid email address."
@@ -1707,6 +1711,14 @@ msgstr "Sub State"
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr "Success"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Success Rate"
+msgstr "Success Rate"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Successes"
+msgstr "Successes"
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"

@@ -1002,6 +1002,10 @@ msgstr "Tidak aktif"
 msgid "Interval"
 msgstr ""
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Interventions"
+msgstr ""
+
 #: src/components/login/auth-form.tsx
 msgid "Invalid email address."
 msgstr "Alamat email tidak valid."
@@ -1711,6 +1715,14 @@ msgstr "Sub Status"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Success Rate"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Successes"
 msgstr ""
 
 #: src/components/routes/system/charts/memory-charts.tsx

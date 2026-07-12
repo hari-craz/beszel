@@ -121,6 +121,16 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 		Icon = ShieldAlert
 	}
 
+	const interventions = events.filter(
+		(e) =>
+			e.event === "WOL_SENT" ||
+			e.event === "ESP_RELAY_SENT" ||
+			e.event === "WOL_MANUAL_SENT" ||
+			e.event === "RELAY_MANUAL_SENT"
+	).length
+	const successes = events.filter((e) => e.event === "WOL_SUCCESS" || e.event === "RELAY_SUCCESS" || e.event === "FAST_VERIFY_RECOVERED").length
+	const successRate = interventions > 0 ? ((successes / interventions) * 100).toFixed(0) : "100"
+
 	return (
 		<div className="grid xl:grid-cols-2 gap-4 mt-4">
 			<Card>
@@ -226,53 +236,72 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 						<Trans>Recent Recovery Events</Trans>
 					</CardTitle>
 				</CardHeader>
-				<CardContent className="h-[220px] overflow-y-auto">
+				<CardContent>
 					{loading ? (
-						<div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+						<div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
 							<Trans>Loading events...</Trans>
 						</div>
-					) : events.length === 0 ? (
-						<div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-							<Trans>No recent recovery events</Trans>
-						</div>
 					) : (
-						<div className="relative pl-6 border-l space-y-4 max-h-[300px] overflow-y-auto mt-2">
-							{events.map((ev, idx) => {
-								let dotColor = "bg-muted-foreground"
-								let textColor = "text-foreground"
-								if (ev.event.includes("SUCCESS") || ev.event.includes("RECOVERED")) {
-									dotColor = "bg-green-500"
-									textColor = "text-green-600 dark:text-green-400"
-								} else if (ev.event.includes("FAILED") || ev.event.includes("FAILURE") || ev.event.includes("ERROR")) {
-									dotColor = "bg-red-500"
-									textColor = "text-red-600 dark:text-red-400"
-								} else if (ev.event.includes("SENT") || ev.event.includes("STARTED")) {
-									dotColor = "bg-blue-500"
-									textColor = "text-blue-600 dark:text-blue-400"
-								} else if (ev.event.includes("CONFIRMED")) {
-									dotColor = "bg-yellow-500"
-									textColor = "text-yellow-600 dark:text-yellow-400"
-								}
-								return (
-									<div key={ev.id || idx} className="relative group">
-										<span className={`absolute -left-[30px] top-1.5 flex h-2 w-2 rounded-full ring-4 ring-background ${dotColor}`} />
-										<div className="flex flex-col">
-											<span className={`text-xs font-semibold ${textColor}`}>{ev.event}</span>
-											<span className="text-[10px] text-muted-foreground">
-												{new Date(ev.timestamp).toLocaleString()}
-											</span>
-											{ev.metadata && (
-												<pre className="text-[10px] bg-muted/40 p-1.5 rounded mt-1 overflow-x-auto max-w-full font-mono text-muted-foreground leading-normal">
-													{typeof ev.metadata === "string"
-														? ev.metadata
-														: JSON.stringify(ev.metadata, null, 2)}
-												</pre>
-											)}
-										</div>
-									</div>
-								)
-							})}
-						</div>
+						<>
+							<div className="grid grid-cols-3 gap-2 text-center text-xs pb-3 border-b mb-3">
+								<div>
+									<div className="text-muted-foreground"><Trans>Interventions</Trans></div>
+									<div className="font-semibold text-sm mt-0.5">{interventions}</div>
+								</div>
+								<div>
+									<div className="text-muted-foreground"><Trans>Successes</Trans></div>
+									<div className="font-semibold text-sm text-green-500 mt-0.5">{successes}</div>
+								</div>
+								<div>
+									<div className="text-muted-foreground"><Trans>Success Rate</Trans></div>
+									<div className="font-semibold text-sm mt-0.5">{successRate}%</div>
+								</div>
+							</div>
+
+							{events.length === 0 ? (
+								<div className="flex items-center justify-center h-32 text-muted-foreground text-xs italic">
+									<Trans>No recent recovery events</Trans>
+								</div>
+							) : (
+								<div className="relative pl-6 border-l space-y-4 max-h-[160px] overflow-y-auto mt-2">
+									{events.map((ev, idx) => {
+										let dotColor = "bg-muted-foreground"
+										let textColor = "text-foreground"
+										if (ev.event.includes("SUCCESS") || ev.event.includes("RECOVERED")) {
+											dotColor = "bg-green-500"
+											textColor = "text-green-600 dark:text-green-400"
+										} else if (ev.event.includes("FAILED") || ev.event.includes("FAILURE") || ev.event.includes("ERROR")) {
+											dotColor = "bg-red-500"
+											textColor = "text-red-600 dark:text-red-400"
+										} else if (ev.event.includes("SENT") || ev.event.includes("STARTED")) {
+											dotColor = "bg-blue-500"
+											textColor = "text-blue-600 dark:text-blue-400"
+										} else if (ev.event.includes("CONFIRMED")) {
+											dotColor = "bg-yellow-500"
+											textColor = "text-yellow-600 dark:text-yellow-400"
+										}
+										return (
+											<div key={ev.id || idx} className="relative group">
+												<span className={`absolute -left-[30px] top-1.5 flex h-2 w-2 rounded-full ring-4 ring-background ${dotColor}`} />
+												<div className="flex flex-col">
+													<span className={`text-xs font-semibold ${textColor}`}>{ev.event}</span>
+													<span className="text-[10px] text-muted-foreground">
+														{new Date(ev.timestamp).toLocaleString()}
+													</span>
+													{ev.metadata && (
+														<pre className="text-[10px] bg-muted/40 p-1.5 rounded mt-1 overflow-x-auto max-w-full font-mono text-muted-foreground leading-normal">
+															{typeof ev.metadata === "string"
+																? ev.metadata
+																: JSON.stringify(ev.metadata, null, 2)}
+														</pre>
+													)}
+												</div>
+											</div>
+										)
+									})}
+								</div>
+							)}
+						</>
 					)}
 				</CardContent>
 			</Card>
