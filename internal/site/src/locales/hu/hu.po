@@ -554,6 +554,10 @@ msgstr "Fiók létrehozása"
 msgid "Created"
 msgstr "Létrehozva"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "Kritikus (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "Feladatok"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "Hőmérséklet"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "Hőmérséklet"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "Szeretne segíteni nekünk abban, hogy fordításaink még jobbak legyen
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "Igényel"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

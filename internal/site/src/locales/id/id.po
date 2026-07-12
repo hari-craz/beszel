@@ -554,6 +554,10 @@ msgstr "Buat akun"
 msgid "Created"
 msgstr "Dibuat"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "Kritis (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "Tugas"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "Temperatur"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "Temperatur"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "Ingin membantu meningkatkan terjemahan kami? Periksa <0>Crowdin</0> untu
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "Menginginkan"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

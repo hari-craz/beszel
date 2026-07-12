@@ -136,6 +136,15 @@ export default function RecoveryModulesSettings() {
 						const moduleChannels = channels.filter((ch) => ch.module === mod.id)
 						const isUnapproved = mod.status === "unapproved"
 						const isOnline = mod.status === "online" || mod.status === "ONLINE"
+						const temp = mod.temperature
+						const tempWarn = mod.temp_threshold_warning || 50
+						const tempCrit = mod.temp_threshold_critical || 60
+						let tempColor = "text-green-500 font-semibold"
+						if (temp > tempCrit) {
+							tempColor = "text-red-500 font-bold animate-pulse"
+						} else if (temp > tempWarn) {
+							tempColor = "text-yellow-500 font-bold"
+						}
 						return (
 							<Card key={mod.id}>
 								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -148,6 +157,13 @@ export default function RecoveryModulesSettings() {
 										</CardTitle>
 										<CardDescription className="font-mono text-xs mt-1">
 											MAC: {mod.mac_address} | Firmware: {mod.firmware_version}
+											{mod.temperature !== undefined && mod.temperature > 0 && (
+												<>
+													{" | "}
+													<Trans>Temp</Trans>:{" "}
+													<span className={tempColor}>{mod.temperature.toFixed(1)}°C</span>
+												</>
+											)}
 										</CardDescription>
 									</div>
 									{isUnapproved ? (
@@ -176,7 +192,7 @@ export default function RecoveryModulesSettings() {
 									)}
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
+									<div className="grid grid-cols-3 gap-4 text-sm border-t pt-4">
 										<div>
 											<span className="text-muted-foreground">
 												<Trans>Config Synchronization</Trans>
@@ -199,6 +215,14 @@ export default function RecoveryModulesSettings() {
 												<Trans>Config Revision</Trans>
 											</span>
 											<div className="font-semibold mt-0.5">{mod.config_revision}</div>
+										</div>
+										<div>
+											<span className="text-muted-foreground">
+												<Trans>Temperature Thresholds</Trans>
+											</span>
+											<div className="font-semibold text-xs mt-0.5">
+												<Trans>Warn</Trans>: {mod.temp_threshold_warning || 50}°C / <Trans>Crit</Trans>: {mod.temp_threshold_critical || 60}°C
+											</div>
 										</div>
 									</div>
 

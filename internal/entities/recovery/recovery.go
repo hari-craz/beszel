@@ -15,10 +15,13 @@ type RecoveryModule struct {
 	MaxChannels     int       `json:"max_channels" db:"max_channels"`
 	FirmwareVersion string    `json:"firmware_version" db:"firmware_version"`
 	Status          string    `json:"status" db:"status"`
-	ConfigRevision  int       `json:"config_revision" db:"config_revision"`
-	ConfigHash      string    `json:"config_hash" db:"config_hash"`
-	Created         time.Time `json:"created" db:"created"`
-	Updated         time.Time `json:"updated" db:"updated"`
+	ConfigRevision        int       `json:"config_revision" db:"config_revision"`
+	ConfigHash            string    `json:"config_hash" db:"config_hash"`
+	Temperature           float64   `json:"temperature" db:"temperature"`
+	TempThresholdWarning  float64   `json:"temp_threshold_warning" db:"temp_threshold_warning"`
+	TempThresholdCritical float64   `json:"temp_threshold_critical" db:"temp_threshold_critical"`
+	Created               time.Time `json:"created" db:"created"`
+	Updated               time.Time `json:"updated" db:"updated"`
 }
 
 // RecoveryChannel represents the configuration for a single physical channel on a module.

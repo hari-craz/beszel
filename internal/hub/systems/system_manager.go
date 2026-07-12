@@ -15,6 +15,7 @@ import (
 	"github.com/henrygd/beszel"
 
 	"github.com/blang/semver"
+	"github.com/henrygd/beszel/internal/alerts"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/store"
 	"golang.org/x/crypto/ssh"
@@ -56,6 +57,7 @@ type hubLike interface {
 	HandleSystemAlerts(systemRecord *core.Record, data *system.CombinedData) error
 	HandleStatusAlerts(status string, systemRecord *core.Record) error
 	CancelPendingStatusAlerts(systemID string)
+	SendAlert(data alerts.AlertMessageData) error
 }
 
 // NewSystemManager creates a new SystemManager instance with the provided hub.

@@ -554,6 +554,10 @@ msgstr "アカウントを作成"
 msgid "Created"
 msgstr "作成日"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "致命的 (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "タスク"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "温度"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "温度"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "翻訳をさらに良くするためにご協力をお願いします。
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "要求"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

@@ -554,6 +554,10 @@ msgstr "계정 생성"
 msgid "Created"
 msgstr "생성됨"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "위험 (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "작업"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "온도"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "온도"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "번역을 개선하는데 도움을 주시겠습니까? 자세한 내용
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "요구 항목"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

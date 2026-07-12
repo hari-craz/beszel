@@ -417,6 +417,9 @@ func (h *Hub) getRecoveryModules(e *core.RequestEvent) error {
 			"status":           rec.GetString("status"),
 			"config_revision":  rec.GetInt("config_revision"),
 			"config_hash":      rec.GetString("config_hash"),
+			"temperature":      rec.GetFloat("temperature"),
+			"temp_threshold_warning": rec.GetFloat("temp_threshold_warning"),
+			"temp_threshold_critical": rec.GetFloat("temp_threshold_critical"),
 			"created":          rec.GetDateTime("created").Time(),
 			"updated":          rec.GetDateTime("updated").Time(),
 		})
@@ -446,6 +449,9 @@ func (h *Hub) getRecoveryModule(e *core.RequestEvent) error {
 		"status":           rec.GetString("status"),
 		"config_revision":  rec.GetInt("config_revision"),
 		"config_hash":      rec.GetString("config_hash"),
+		"temperature":      rec.GetFloat("temperature"),
+		"temp_threshold_warning": rec.GetFloat("temp_threshold_warning"),
+		"temp_threshold_critical": rec.GetFloat("temp_threshold_critical"),
 		"created":          rec.GetDateTime("created").Time(),
 		"updated":          rec.GetDateTime("updated").Time(),
 	}
@@ -526,12 +532,13 @@ func (h *Hub) triggerManualWOL(e *core.RequestEvent) error {
 }
 
 type recoveryPingPayload struct {
-	MACAddress      string `json:"mac_address"`
-	IPAddress       string `json:"ip_address"`
-	FirmwareVersion string `json:"firmware_version"`
-	MaxChannels     int    `json:"max_channels"`
-	ConfigRevision  int    `json:"config_revision"`
-	ConfigHash      string `json:"config_hash"`
+	MACAddress      string   `json:"mac_address"`
+	IPAddress       string   `json:"ip_address"`
+	FirmwareVersion string   `json:"firmware_version"`
+	MaxChannels     int      `json:"max_channels"`
+	ConfigRevision  int      `json:"config_revision"`
+	ConfigHash      string   `json:"config_hash"`
+	Temperature     *float64 `json:"temperature,omitempty"`
 }
 
 // handleRecoveryPing handles POST /api/beszel/recovery/ping requests from ESP32 modules.
@@ -560,6 +567,49 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 	rec.Set("ip_address", payload.IPAddress)
 	if payload.FirmwareVersion != "" {
 		rec.Set("firmware_version", payload.FirmwareVersion)
+	}
+	if payload.Temperature != nil {
+		temp := *payload.Temperature
+		rec.Set("temperature", temp)
+		warnThreshold := rec.GetFloat("temp_threshold_warning")
+		critThreshold := rec.GetFloat("temp_threshold_critical")
+		if warnThreshold == 0 {
+			warnThreshold = 50
+			rec.Set("temp_threshold_warning", 50)
+		}
+		if critThreshold == 0 {
+			critThreshold = 60
+			rec.Set("temp_threshold_critical", 60)
+		}
+		if temp > critThreshold {
+			admins, errAd := e.App.FindRecordsByFilter("users", "role = 'admin'", "", -1, 0)
+			if errAd == nil {
+				for _, admin := range admins {
+					_ = h.AlertManager.SendAlert(alerts.AlertMessageData{
+						UserID:   admin.Id,
+						SystemID: "",
+						Title:    fmt.Sprintf("[CRITICAL RACK TEMPERATURE] %s", rec.GetString("name")),
+						Message:  fmt.Sprintf("Recovery Module %s ambient temperature is CRITICAL: %.1f°C (Threshold: %.1f°C)", rec.GetString("name"), temp, critThreshold),
+						Link:     h.MakeLink("/settings/recovery"),
+						LinkText: "Open Recovery Settings",
+					})
+				}
+			}
+		} else if temp > warnThreshold {
+			admins, errAd := e.App.FindRecordsByFilter("users", "role = 'admin'", "", -1, 0)
+			if errAd == nil {
+				for _, admin := range admins {
+					_ = h.AlertManager.SendAlert(alerts.AlertMessageData{
+						UserID:   admin.Id,
+						SystemID: "",
+						Title:    fmt.Sprintf("[WARNING RACK TEMPERATURE] %s", rec.GetString("name")),
+						Message:  fmt.Sprintf("Recovery Module %s ambient temperature is warning: %.1f°C (Threshold: %.1f°C)", rec.GetString("name"), temp, warnThreshold),
+						Link:     h.MakeLink("/settings/recovery"),
+						LinkText: "Open Recovery Settings",
+					})
+				}
+			}
+		}
 	}
 	if errSave := e.App.Save(rec); errSave != nil {
 		return e.InternalServerError("Failed to save module record", errSave)

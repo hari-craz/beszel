@@ -554,6 +554,10 @@ msgstr "צור חשבון"
 msgid "Created"
 msgstr "נוצר"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "קריטי (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "משימות"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "טמפ'"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "טמפרטורה"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "רוצה לעזור לשפר את התרגומים שלנו? בדוק <0
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "רוצה"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

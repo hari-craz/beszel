@@ -90,6 +90,24 @@ func init() {
 				"required": false
 			},
 			{
+				"id": "moduletemp0001",
+				"name": "temperature",
+				"type": "number",
+				"required": false
+			},
+			{
+				"id": "moduletempwarn",
+				"name": "temp_threshold_warning",
+				"type": "number",
+				"required": false
+			},
+			{
+				"id": "moduletempcrit",
+				"name": "temp_threshold_critical",
+				"type": "number",
+				"required": false
+			},
+			{
 				"id": "autodate2990389176",
 				"name": "created",
 				"type": "autodate",

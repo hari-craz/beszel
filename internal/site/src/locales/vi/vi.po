@@ -554,6 +554,10 @@ msgstr "Tạo tài khoản"
 msgid "Created"
 msgstr "Đã tạo"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "Độ nghiêm trọng (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "Tác vụ"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "Nhiệt độ"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "Nhiệt độ"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "Muốn giúp chúng tôi cải thiện bản dịch của mình? Xem <0>
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "Muốn"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"

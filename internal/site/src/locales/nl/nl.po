@@ -554,6 +554,10 @@ msgstr "Account aanmaken"
 msgid "Created"
 msgstr "Aangemaakt"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Crit"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
 msgstr "Kritiek (%)"
@@ -1771,6 +1775,7 @@ msgid "Tasks"
 msgstr "Taken"
 
 #. Temperature label in systems table
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Temp"
@@ -1780,6 +1785,10 @@ msgstr "Temperatuur"
 #: src/lib/alerts.ts
 msgid "Temperature"
 msgstr "Temperatuur"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Temperature Thresholds"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2095,6 +2104,10 @@ msgstr "Wil je ons helpen onze vertalingen nog beter te maken? Bekijk <0>Crowdin
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Wants"
 msgstr "Wil"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Warn"
+msgstr ""
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"
