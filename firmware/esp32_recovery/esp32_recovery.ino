@@ -60,6 +60,7 @@ char hubURL[128] = "";
 int localConfigRevision = 0;
 char localConfigHash[65] = "";
 
+unsigned long heartbeatIntervalMs = 30000;
 unsigned long lastPingTime = 0;
 unsigned long lastDisplayPageRotation = 0;
 int currentDisplayPage = 0;
@@ -111,6 +112,7 @@ button:hover { background:#2563eb; }
 <div class='field'><label>WiFi Password</label><input type='password' name='password' placeholder='Enter Password' required></div>
 <div class='field'><label>Module Name</label><input type='text' name='name' value='Rack A Recovery' required></div>
 <div class='field'><label>Beszel Hub URL</label><input type='text' name='hub_url' placeholder='http://192.168.1.10:8090/api/beszel/recovery/ping' required></div>
+<div class='field'><label>Heartbeat Interval (sec)</label><input type='number' name='heartbeat' value='30' min='5' max='300' required></div>
 <button type='submit'>SAVE & CONNECT</button>
 </form>
 </div>
@@ -161,8 +163,11 @@ void handleSaveSetup() {
   String pass = server.arg("password");
   String name = server.arg("name");
   String hub = server.arg("hub_url");
+  int heartbeat = server.arg("heartbeat").toInt();
+  if (heartbeat < 5) heartbeat = 5;
 
   preferences.begin("watchdog", false);
+  preferences.putInt("heartbeat", heartbeat * 1000);
   preferences.putBool("provisioned", true);
   preferences.putString("ssid", ssid);
   preferences.putString("password", pass);
@@ -232,6 +237,7 @@ void handleNormalStatus() {
   html += "<h2>Recovery Module Active</h2>";
   html += "<p><b>IP Address:</b> " + WiFi.localIP().toString() + "</p>";
   html += "<p><b>Hub URL:</b> " + String(hubURL) + "</p>";
+  html += "<p><b>Heartbeat Interval:</b> " + String(heartbeatIntervalMs / 1000) + "s</p>";
   html += "<p><b>Monitored Channels:</b> " + String(activeChannelCount) + "</p>";
   html += "<p><b>Config Revision:</b> " + String(localConfigRevision) + "</p>";
   html += "</body></html>";
@@ -271,6 +277,7 @@ void setup() {
     strncpy(wifiPassword, preferences.getString("password", "").c_str(), sizeof(wifiPassword) - 1);
     strncpy(moduleName, preferences.getString("name", "Rack A Recovery").c_str(), sizeof(moduleName) - 1);
     strncpy(hubURL, preferences.getString("hub_url", "").c_str(), sizeof(hubURL) - 1);
+    heartbeatIntervalMs = preferences.getInt("heartbeat", 30000);
     localConfigRevision = preferences.getInt("revision", 0);
     strncpy(localConfigHash, preferences.getString("hash", "").c_str(), sizeof(localConfigHash) - 1);
   }
@@ -494,7 +501,7 @@ void processProberStateMachines() {
 
 void syncWithHub() {
   unsigned long now = millis();
-  if (now - lastPingTime < 30000 && lastPingTime != 0) {
+  if (now - lastPingTime < heartbeatIntervalMs && lastPingTime != 0) {
     return;
   }
   lastPingTime = now;
