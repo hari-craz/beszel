@@ -96,6 +96,12 @@ func init() {
 				"required": false
 			},
 			{
+				"id": "modulehb000001",
+				"name": "heartbeat_interval",
+				"type": "number",
+				"required": false
+			},
+			{
 				"id": "moduletempwarn",
 				"name": "temp_threshold_warning",
 				"type": "number",

@@ -17,6 +17,7 @@ type RecoveryModule struct {
 	Status          string    `json:"status" db:"status"`
 	ConfigRevision        int       `json:"config_revision" db:"config_revision"`
 	ConfigHash            string    `json:"config_hash" db:"config_hash"`
+	HeartbeatInterval     int       `json:"heartbeat_interval" db:"heartbeat_interval"`
 	Temperature           float64   `json:"temperature" db:"temperature"`
 	TempThresholdWarning  float64   `json:"temp_threshold_warning" db:"temp_threshold_warning"`
 	TempThresholdCritical float64   `json:"temp_threshold_critical" db:"temp_threshold_critical"`

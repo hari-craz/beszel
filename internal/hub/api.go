@@ -140,9 +140,11 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	// recovery routes
 	apiAuth.GET("/recovery/modules", h.getRecoveryModules)
 	apiAuth.GET("/recovery/module", h.getRecoveryModule)
-	apiAuth.GET("/recovery/events", h.getRecoveryEvents)
+	apiAuth.POST("/recovery/events", h.getRecoveryEvents)
 	apiAuth.POST("/recovery/wake", h.triggerManualWOL)
 	apiAuth.POST("/recovery/relay", h.triggerManualRelay)
+	apiAuth.POST("/recovery/shutdown", h.triggerManualShutdown)
+	apiAuth.POST("/recovery/force-restart", h.triggerManualForceRestart)
 	return nil
 }
 
@@ -658,8 +660,7 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 	})
 }
 
-// triggerManualRelay handles POST /api/beszel/recovery/relay requests.
-func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
+func (h *Hub) triggerRelayAction(e *core.RequestEvent, duration int, eventName string) error {
 	systemID := e.Request.URL.Query().Get("system")
 	if systemID == "" {
 		return e.BadRequestError("Missing system ID", nil)
@@ -685,7 +686,7 @@ func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
 	if espIP == "" {
 		return e.BadRequestError("Recovery module IP address is not available", nil)
 	}
-	err = h.sm.TriggerESP32Relay(espIP, channelNum, 500)
+	err = h.sm.TriggerESP32Relay(espIP, channelNum, duration)
 	if err != nil {
 		return e.InternalServerError("Failed to contact ESP32 module relay controller", err)
 	}
@@ -695,11 +696,26 @@ func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
 		eventRec.Set("system", systemID)
 		eventRec.Set("module", moduleID)
 		eventRec.Set("channel", channelNum)
-		eventRec.Set("event", "RELAY_MANUAL_SENT")
+		eventRec.Set("event", eventName)
 		eventRec.Set("timestamp", time.Now().UTC())
 		eventRec.Set("metadata", fmt.Sprintf(`{"module":"%s","channel":%d,"ip":"%s","source":"MANUAL_UI"}`, moduleID, channelNum, espIP))
 		_ = e.App.Save(eventRec)
 	}
 	return e.JSON(http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// triggerManualRelay handles POST /api/beszel/recovery/relay requests.
+func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
+	return h.triggerRelayAction(e, 500, "RELAY_MANUAL_SENT")
+}
+
+// triggerManualShutdown handles POST /api/beszel/recovery/shutdown requests.
+func (h *Hub) triggerManualShutdown(e *core.RequestEvent) error {
+	return h.triggerRelayAction(e, 300, "RELAY_SHUTDOWN_SENT")
+}
+
+// triggerManualForceRestart handles POST /api/beszel/recovery/force-restart requests.
+func (h *Hub) triggerManualForceRestart(e *core.RequestEvent) error {
+	return h.triggerRelayAction(e, 8000, "RELAY_FORCE_RESTART_SENT")
 }
 

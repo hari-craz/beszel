@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
+import { Input } from "@/components/ui/input"
 import { isAdmin, pb } from "@/lib/api"
 
 interface RecoveryModule {
@@ -17,6 +18,7 @@ interface RecoveryModule {
 	mac_address: string
 	ip_address?: string
 	max_channels: number
+	heartbeat_interval?: number
 	firmware_version: string
 	status: string
 	config_revision: number
@@ -66,6 +68,16 @@ export default function RecoveryModulesSettings() {
 			})
 		} finally {
 			setIsApproving((prev) => ({ ...prev, [id]: false }))
+		}
+	}
+
+	async function updateHeartbeat(id: string, value: number) {
+		try {
+			await pb.collection("recovery_modules").update(id, { heartbeat_interval: value })
+			toast({ title: t`Success`, description: t`Heartbeat interval updated.` })
+			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, heartbeat_interval: value } : m)))
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
 		}
 	}
 
@@ -192,7 +204,7 @@ export default function RecoveryModulesSettings() {
 									)}
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="grid grid-cols-3 gap-4 text-sm border-t pt-4">
+									<div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t pt-4">
 										<div>
 											<span className="text-muted-foreground">
 												<Trans>Config Synchronization</Trans>
@@ -215,6 +227,22 @@ export default function RecoveryModulesSettings() {
 												<Trans>Config Revision</Trans>
 											</span>
 											<div className="font-semibold mt-0.5">{mod.config_revision}</div>
+										</div>
+										<div>
+											<span className="text-muted-foreground">
+												<Trans>Heartbeat (s)</Trans>
+											</span>
+											<div className="mt-0.5">
+												<Input
+													type="number"
+													className="h-7 w-20 px-2 py-1 text-xs"
+													defaultValue={mod.heartbeat_interval || 30}
+													onBlur={(e) => {
+														const val = parseInt(e.target.value)
+														if (!isNaN(val) && val >= 5) updateHeartbeat(mod.id, val)
+													}}
+												/>
+											</div>
 										</div>
 										<div>
 											<span className="text-muted-foreground">

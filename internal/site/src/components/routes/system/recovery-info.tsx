@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
-import { ShieldCheck, ShieldAlert, AlertTriangle, LoaderCircle } from "lucide-react"
+import { ShieldCheck, ShieldAlert, AlertTriangle, LoaderCircle, Power, RefreshCw } from "lucide-react"
 
 interface RecoveryInfoProps {
 	systemId: string
@@ -63,6 +63,59 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 		} catch (e) {
 			toast({
 				title: t`Relay trigger failed`,
+				description: (e as Error).message,
+				variant: "destructive",
+			})
+		} finally {
+			setIsTriggering(false)
+		}
+	}
+
+	async function triggerManualShutdown() {
+		setIsTriggering(true)
+		try {
+			await pb.send("/api/beszel/recovery/shutdown", {
+				method: "POST",
+				query: { system: systemId },
+			})
+			toast({
+				title: t`Graceful shutdown triggered`,
+				description: t`The motherboard power button was momentarily pressed.`,
+			})
+			const res = await pb.send("/api/beszel/recovery/events", {
+				query: { system: systemId },
+			})
+			setEvents(res || [])
+		} catch (e) {
+			toast({
+				title: t`Shutdown failed`,
+				description: (e as Error).message,
+				variant: "destructive",
+			})
+		} finally {
+			setIsTriggering(false)
+		}
+	}
+
+	async function triggerManualForceRestart() {
+		if (!confirm(t`Are you sure you want to force restart this server? This will cut power instantly.`)) return;
+		setIsTriggering(true)
+		try {
+			await pb.send("/api/beszel/recovery/force-restart", {
+				method: "POST",
+				query: { system: systemId },
+			})
+			toast({
+				title: t`Force restart triggered`,
+				description: t`The motherboard power button is being held for 8 seconds.`,
+			})
+			const res = await pb.send("/api/beszel/recovery/events", {
+				query: { system: systemId },
+			})
+			setEvents(res || [])
+		} catch (e) {
+			toast({
+				title: t`Restart failed`,
 				description: (e as Error).message,
 				variant: "destructive",
 			})
@@ -213,7 +266,7 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 									</span>
 									<span className="font-mono">{info.esp_channel || "N/A"}</span>
 								</div>
-								<div className="pt-2 pl-4">
+								<div className="pt-2 pl-4 flex gap-2 flex-wrap">
 									<Button
 										size="sm"
 										variant="outline"
@@ -221,7 +274,25 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 										disabled={isTriggering}
 									>
 										{isTriggering ? <LoaderCircle className="h-3 w-3 animate-spin mr-1.5" /> : null}
-										<Trans>Trigger Relay Press</Trans>
+										<Trans>Test Relay</Trans>
+									</Button>
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={triggerManualShutdown}
+										disabled={isTriggering}
+									>
+										{isTriggering ? <LoaderCircle className="h-3 w-3 animate-spin mr-1.5" /> : <Power className="h-3 w-3 mr-1.5" />}
+										<Trans>Graceful Shutdown</Trans>
+									</Button>
+									<Button
+										size="sm"
+										variant="destructive"
+										onClick={triggerManualForceRestart}
+										disabled={isTriggering}
+									>
+										{isTriggering ? <LoaderCircle className="h-3 w-3 animate-spin mr-1.5" /> : <RefreshCw className="h-3 w-3 mr-1.5" />}
+										<Trans>Force Restart</Trans>
 									</Button>
 								</div>
 							</>
