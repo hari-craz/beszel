@@ -110,6 +110,8 @@ func (rp *RecoveryProber) registerWatchdog(rec *core.Record) {
 	macAddress := rec.GetString("mac_address")
 	bcastIP := rec.GetString("broadcast_address")
 	wolPort := rec.GetInt("wol_port")
+	moduleID := rec.GetString("module")
+	channelNum := rec.GetInt("channel_number")
 
 	if threshold <= 0 {
 		threshold = 3

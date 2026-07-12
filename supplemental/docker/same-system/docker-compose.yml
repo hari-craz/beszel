@@ -3,6 +3,9 @@
 
 services:
   beszel:
+    build:
+      context: ../../../
+      dockerfile: internal/dockerfile_hub
     image: henrygd/beszel:latest
     container_name: beszel
     restart: unless-stopped

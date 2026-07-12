@@ -382,3 +382,8 @@ func deactivateAlerts(app core.App, systemID string) error {
 	}
 	return nil
 }
+
+// TriggerESP32Relay dispatches a relay pulse request to an ESP32 recovery module.
+func (sm *SystemManager) TriggerESP32Relay(espIP string, channelNum int, pulseDurationMs int) error {
+	return sm.rp.triggerESP32Relay(espIP, channelNum, pulseDurationMs)
+}

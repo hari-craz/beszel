@@ -2,6 +2,8 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -513,7 +515,7 @@ func (h *Hub) triggerManualWOL(e *core.RequestEvent) error {
 	if port <= 0 {
 		port = 9
 	}
-	err = SendMagicPacket(mac, bcast, port)
+	err = systems.SendMagicPacket(mac, bcast, port)
 	if err != nil {
 		return e.InternalServerError("Failed to broadcast Wake-on-LAN magic packet", err)
 	}
@@ -683,7 +685,7 @@ func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
 	if espIP == "" {
 		return e.BadRequestError("Recovery module IP address is not available", nil)
 	}
-	err = h.sm.rp.triggerESP32Relay(espIP, channelNum, 500)
+	err = h.sm.TriggerESP32Relay(espIP, channelNum, 500)
 	if err != nil {
 		return e.InternalServerError("Failed to contact ESP32 module relay controller", err)
 	}
