@@ -1,0 +1,160 @@
+import { useEffect, useState } from "react"
+import { Trans } from "@lingui/react/macro"
+import { pb } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { ShieldCheck, ShieldAlert, AlertTriangle } from "lucide-react"
+
+interface RecoveryInfoProps {
+	systemId: string
+	info: any
+}
+
+export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
+	const [events, setEvents] = useState<any[]>([])
+	const [loading, setLoading] = useState(true)
+
+	useEffect(() => {
+		let isMounted = true
+		async function fetchEvents() {
+			try {
+				const res = await pb.send("/api/beszel/recovery/events", {
+					query: { system: systemId },
+				})
+				if (isMounted) {
+					setEvents(res || [])
+				}
+			} catch (e) {
+				console.error(e)
+			} finally {
+				if (isMounted) {
+					setLoading(false)
+				}
+			}
+		}
+		fetchEvents()
+		return () => {
+			isMounted = false
+		}
+	}, [systemId])
+
+	const hasWol = info.wol_enabled
+	const hasEsp = info.esp_mapped
+	const hasMaint = info.maintenance
+	const isEspOffline = info.esp_offline
+
+	let healthScore = 100
+	let statusLabel = <Trans>HEALTHY</Trans>
+	let statusColor = "text-green-500"
+	let Icon = ShieldCheck
+
+	if (!hasEsp && !hasWol) {
+		return null
+	}
+
+	if (hasMaint) {
+		healthScore = 80
+		statusLabel = <Trans>MAINTENANCE</Trans>
+		statusColor = "text-yellow-500"
+		Icon = AlertTriangle
+	} else if (isEspOffline) {
+		healthScore = 45
+		statusLabel = <Trans>DEGRADED</Trans>
+		statusColor = "text-red-500"
+		Icon = ShieldAlert
+	}
+
+	return (
+		<div className="grid xl:grid-cols-2 gap-4 mt-4">
+			<Card>
+				<CardHeader className="pb-3">
+					<CardTitle className="text-md font-semibold flex items-center gap-2">
+						<Icon className={`size-5 ${statusColor}`} />
+						<Trans>Recovery Protection</Trans>
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="flex justify-between items-center text-sm">
+						<span className="text-muted-foreground"><Trans>Protection Status</Trans></span>
+						<span className={`font-semibold ${statusColor}`}>{statusLabel} ({healthScore}%)</span>
+					</div>
+					<Separator />
+					<div className="space-y-2 text-sm">
+						<div className="flex justify-between">
+							<span className="text-muted-foreground"><Trans>Wake-on-LAN</Trans></span>
+							<span className="font-medium">{hasWol ? <Trans>ENABLED</Trans> : <Trans>DISABLED</Trans>}</span>
+						</div>
+						{hasWol && (
+							<>
+								<div className="flex justify-between pl-4 text-xs text-muted-foreground">
+									<span><Trans>Automatic WOL</Trans></span>
+									<span>{info.auto_wol ? <Trans>YES</Trans> : <Trans>NO</Trans>}</span>
+								</div>
+								<div className="flex justify-between pl-4 text-xs text-muted-foreground">
+									<span><Trans>MAC Address</Trans></span>
+									<span className="font-mono">{info.mac_address || "N/A"}</span>
+								</div>
+							</>
+						)}
+					</div>
+					<Separator />
+					<div className="space-y-2 text-sm">
+						<div className="flex justify-between">
+							<span className="text-muted-foreground"><Trans>Hardware Recovery (ESP32)</Trans></span>
+							<span className="font-medium">{hasEsp ? <Trans>ONLINE</Trans> : <Trans>NOT INSTALLED</Trans>}</span>
+						</div>
+						{hasEsp && (
+							<>
+								<div className="flex justify-between pl-4 text-xs text-muted-foreground">
+									<span><Trans>Recovery Module</Trans></span>
+									<span>{info.esp_name || "ESP32 Module"}</span>
+								</div>
+								<div className="flex justify-between pl-4 text-xs text-muted-foreground">
+									<span><Trans>ESP IP Address</Trans></span>
+									<span>{info.esp_ip || "N/A"}</span>
+								</div>
+								<div className="flex justify-between pl-4 text-xs text-muted-foreground">
+									<span><Trans>Relay Channel</Trans></span>
+									<span className="font-mono">{info.esp_channel || "N/A"}</span>
+								</div>
+							</>
+						)}
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader className="pb-3">
+					<CardTitle className="text-md font-semibold"><Trans>Recent Recovery Events</Trans></CardTitle>
+				</CardHeader>
+				<CardContent className="h-[220px] overflow-y-auto">
+					{loading ? (
+						<div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+							<Trans>Loading events...</Trans>
+						</div>
+					) : events.length === 0 ? (
+						<div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+							<Trans>No recent recovery events</Trans>
+						</div>
+					) : (
+						<div className="space-y-3">
+							{events.map((e, idx) => (
+								<div key={e.id || idx} className="flex justify-between items-start text-xs border-b pb-2 last:border-b-0 last:pb-0">
+									<div className="space-y-1">
+										<div className="font-semibold text-primary">{e.event}</div>
+										{e.metadata && (
+											<div className="text-muted-foreground font-mono">{JSON.stringify(e.metadata)}</div>
+										)}
+									</div>
+									<div className="text-muted-foreground text-right">
+										{new Date(e.timestamp).toLocaleString()}
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+				</CardContent>
+			</Card>
+		</div>
+	)
+}

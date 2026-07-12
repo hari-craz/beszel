@@ -9,6 +9,7 @@ import {
 	FingerprintIcon,
 	HeartPulseIcon,
 	SettingsIcon,
+	ShieldAlert,
 } from "lucide-react"
 import { lazy, useEffect } from "react"
 import { $router } from "@/components/router.tsx"
@@ -26,6 +27,7 @@ const configYamlSettingsImport = () => import("./config-yaml.tsx")
 const fingerprintsSettingsImport = () => import("./tokens-fingerprints.tsx")
 const alertsHistoryDataTableSettingsImport = () => import("./alerts-history-data-table.tsx")
 const heartbeatSettingsImport = () => import("./heartbeat.tsx")
+const recoveryModulesSettingsImport = () => import("./recovery-modules.tsx")
 
 const GeneralSettings = lazy(generalSettingsImport)
 const NotificationsSettings = lazy(notificationsSettingsImport)
@@ -33,6 +35,7 @@ const ConfigYamlSettings = lazy(configYamlSettingsImport)
 const FingerprintsSettings = lazy(fingerprintsSettingsImport)
 const AlertsHistoryDataTableSettings = lazy(alertsHistoryDataTableSettingsImport)
 const HeartbeatSettings = lazy(heartbeatSettingsImport)
+const RecoveryModulesSettings = lazy(recoveryModulesSettingsImport)
 
 export async function saveSettings(newSettings: Partial<UserSettings>) {
 	try {
@@ -104,6 +107,13 @@ export default function SettingsLayout() {
 			admin: true,
 			preload: configYamlSettingsImport,
 		},
+		{
+			title: t`Recovery Modules`,
+			href: getPagePath($router, "settings", { name: "recovery-modules" }),
+			icon: ShieldAlert,
+			admin: true,
+			preload: recoveryModulesSettingsImport,
+		},
 	]
 
 	const page = useStore($router)
@@ -159,5 +169,7 @@ function SettingsContent({ name }: { name: string }) {
 			return <AlertsHistoryDataTableSettings />
 		case "heartbeat":
 			return <HeartbeatSettings />
+		case "recovery-modules":
+			return <RecoveryModulesSettings />
 	}
 }

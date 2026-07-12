@@ -13,10 +13,11 @@ import { TemperatureChart, BatteryChart } from "./system/charts/sensor-charts"
 import { GpuPowerChart, GpuDetailCharts } from "./system/charts/gpu-charts"
 import { LazyContainersTable, LazySmartTable, LazySystemdTable } from "./system/lazy-tables"
 import { LoadAverageChart } from "./system/charts/load-average-chart"
-import { ContainerIcon, CpuIcon, HardDriveIcon, TerminalSquareIcon } from "lucide-react"
+import { ContainerIcon, CpuIcon, HardDriveIcon, TerminalSquareIcon, ShieldAlert } from "lucide-react"
 import { GpuIcon } from "../ui/icons"
 import SystemdTable from "../systemd-table/systemd-table"
 import ContainersTable from "../containers-table/containers-table"
+import RecoveryInfo from "./system/recovery-info"
 
 const SEMVER_0_14_0 = parseSemVer("0.14.0")
 const SEMVER_0_15_0 = parseSemVer("0.15.0")
@@ -69,6 +70,7 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 	if (hasGpu) tabs.push("gpu")
 	if (hasContainers) tabs.push("containers")
 	if (hasSystemd) tabs.push("services")
+	if (system.info.wol_enabled || system.info.esp_mapped) tabs.push("recovery")
 	tabsRef.current = tabs
 
 	// shared chart props
@@ -145,6 +147,8 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 				{hasContainersTable && <LazyContainersTable systemId={system.id} />}
 
 				{hasSystemd && <LazySystemdTable systemId={system.id} />}
+
+				<RecoveryInfo systemId={system.id} info={system.info} />
 			</>
 		)
 	}
@@ -177,6 +181,12 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 						<TabsTrigger value="services" className="w-full flex items-center gap-2">
 							<TerminalSquareIcon className="size-3.5" />
 							<Trans>Services</Trans>
+						</TabsTrigger>
+					)}
+					{(system.info.wol_enabled || system.info.esp_mapped) && (
+						<TabsTrigger value="recovery" className="w-full flex items-center gap-2">
+							<ShieldAlert className="size-3.5" />
+							<Trans>Recovery</Trans>
 						</TabsTrigger>
 					)}
 				</TabsList>
@@ -259,6 +269,12 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 				{hasSystemd && (
 					<TabsContent value="services" forceMount className={activeTab === "services" ? "contents" : "hidden"}>
 						{mountedTabs.has("services") && <SystemdTable systemId={system.id} />}
+					</TabsContent>
+				)}
+
+				{(system.info.wol_enabled || system.info.esp_mapped) && (
+					<TabsContent value="recovery" forceMount className={activeTab === "recovery" ? "contents" : "hidden"}>
+						{mountedTabs.has("recovery") && <RecoveryInfo systemId={system.id} info={system.info} />}
 					</TabsContent>
 				)}
 			</Tabs>

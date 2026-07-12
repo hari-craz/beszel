@@ -134,6 +134,10 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 		// get container info
 		apiAuth.GET("/containers/info", h.getContainerInfo)
 	}
+	// recovery routes
+	apiAuth.GET("/recovery/modules", h.getRecoveryModules)
+	apiAuth.GET("/recovery/module", h.getRecoveryModule)
+	apiAuth.GET("/recovery/events", h.getRecoveryEvents)
 	return nil
 }
 
@@ -389,3 +393,84 @@ func (h *Hub) refreshSmartData(e *core.RequestEvent) error {
 
 	return e.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
+
+// getRecoveryModules handles GET /api/beszel/recovery/modules requests
+func (h *Hub) getRecoveryModules(e *core.RequestEvent) error {
+	var modules []map[string]any
+	records, err := e.App.FindRecordsByFilter("recovery_modules", "", "-created", -1, 0)
+	if err != nil {
+		return e.InternalServerError("Failed to query recovery modules", err)
+	}
+	for _, rec := range records {
+		modules = append(modules, map[string]any{
+			"id":               rec.Id,
+			"name":             rec.GetString("name"),
+			"mac_address":      rec.GetString("mac_address"),
+			"ip_address":       rec.GetString("ip_address"),
+			"max_channels":     rec.GetInt("max_channels"),
+			"firmware_version": rec.GetString("firmware_version"),
+			"status":           rec.GetString("status"),
+			"config_revision":  rec.GetInt("config_revision"),
+			"config_hash":      rec.GetString("config_hash"),
+			"created":          rec.GetDateTime("created").Time(),
+			"updated":          rec.GetDateTime("updated").Time(),
+		})
+	}
+	return e.JSON(http.StatusOK, modules)
+}
+
+// getRecoveryModule handles GET /api/beszel/recovery/module requests
+func (h *Hub) getRecoveryModule(e *core.RequestEvent) error {
+	id := e.Request.URL.Query().Get("id")
+	if id == "" {
+		return e.BadRequestError("Missing module ID", nil)
+	}
+	rec, err := e.App.FindRecordById("recovery_modules", id)
+	if err != nil {
+		return e.NotFoundError("Recovery module not found", err)
+	}
+	module := map[string]any{
+		"id":               rec.Id,
+		"name":             rec.GetString("name"),
+		"mac_address":      rec.GetString("mac_address"),
+		"ip_address":       rec.GetString("ip_address"),
+		"max_channels":     rec.GetInt("max_channels"),
+		"firmware_version": rec.GetString("firmware_version"),
+		"status":           rec.GetString("status"),
+		"config_revision":  rec.GetInt("config_revision"),
+		"config_hash":      rec.GetString("config_hash"),
+		"created":          rec.GetDateTime("created").Time(),
+		"updated":          rec.GetDateTime("updated").Time(),
+	}
+	return e.JSON(http.StatusOK, module)
+}
+
+// getRecoveryEvents handles GET /api/beszel/recovery/events requests
+func (h *Hub) getRecoveryEvents(e *core.RequestEvent) error {
+	systemID := e.Request.URL.Query().Get("system")
+	if systemID == "" {
+		return e.BadRequestError("Missing system ID", nil)
+	}
+	system, err := h.sm.GetSystem(systemID)
+	if err != nil || !system.HasUser(e.App, e.Auth) {
+		return e.NotFoundError("System not found or access denied", nil)
+	}
+	records, err := e.App.FindRecordsByFilter("recovery_events", "system = {:system}", "-timestamp", -1, 0, dbx.Params{"system": systemID})
+	if err != nil {
+		return e.InternalServerError("Failed to query recovery events", err)
+	}
+	var events []map[string]any
+	for _, rec := range records {
+		events = append(events, map[string]any{
+			"id":        rec.Id,
+			"system":    rec.GetString("system"),
+			"module":    rec.GetString("module"),
+			"channel":   rec.GetInt("channel"),
+			"event":     rec.GetString("event"),
+			"timestamp": rec.GetDateTime("timestamp").Time(),
+			"metadata":  rec.Get("metadata"),
+		})
+	}
+	return e.JSON(http.StatusOK, events)
+}
+

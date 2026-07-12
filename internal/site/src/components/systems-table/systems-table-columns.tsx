@@ -424,6 +424,53 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 					</Link>
 				)
 			},
+		{
+			id: "recovery",
+			name: () => t`Recovery`,
+			size: 70,
+			Icon: ServerIcon,
+			hideSort: true,
+			cell: ({ row }) => {
+				const system = row.original
+				const hasWol = system.info.wol_enabled
+				const hasEsp = system.info.esp_mapped
+				const hasMaint = system.info.maintenance
+				const isEspOffline = system.info.esp_offline
+
+				if (hasMaint) {
+					return (
+						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+							<Trans>MAINTENANCE</Trans>
+						</span>
+					)
+				}
+				if (isEspOffline) {
+					return (
+						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+							<Trans>DEGRADED</Trans>
+						</span>
+					)
+				}
+				if (hasEsp) {
+					return (
+						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+							<Trans>PROTECTED</Trans>
+						</span>
+					)
+				}
+				if (hasWol) {
+					return (
+						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+							<Trans>WOL READY</Trans>
+						</span>
+					)
+				}
+				return (
+					<span className="text-muted-foreground text-xs">
+						<Trans>NOT INSTALLED</Trans>
+					</span>
+				)
+			},
 		},
 		{
 			id: "actions",

@@ -12,6 +12,7 @@ import {
 	SearchIcon,
 	ServerIcon,
 	SettingsIcon,
+	ShieldAlert,
 	UserIcon,
 	UsersIcon,
 } from "lucide-react"
@@ -110,6 +111,13 @@ export default function Navbar() {
 								<span>S.M.A.R.T.</span>
 							</DropdownMenuItem>
 							<DropdownMenuItem
+								onClick={() => navigate(getPagePath($router, "settings", { name: "recovery-modules" }))}
+								className="flex items-center"
+							>
+								<ShieldAlert className="h-4 w-4 me-2.5" />
+								<Trans>Recovery Modules</Trans>
+							</DropdownMenuItem>
+							<DropdownMenuItem
 								onClick={() => navigate(getPagePath($router, "settings", { name: "general" }))}
 								className="flex items-center"
 							>
@@ -179,6 +187,20 @@ export default function Navbar() {
 						</Link>
 					</TooltipTrigger>
 					<TooltipContent>S.M.A.R.T.</TooltipContent>
+				</Tooltip>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Link
+							href={getPagePath($router, "settings", { name: "recovery-modules" })}
+							className={cn("hidden md:grid", buttonVariants({ variant: "ghost", size: "icon" }))}
+							aria-label="Recovery Modules"
+						>
+							<ShieldAlert className="h-[1.2rem] w-[1.2rem]" />
+						</Link>
+					</TooltipTrigger>
+					<TooltipContent>
+						<Trans>Recovery Modules</Trans>
+					</TooltipContent>
 				</Tooltip>
 				<LangToggle />
 				<ModeToggle />

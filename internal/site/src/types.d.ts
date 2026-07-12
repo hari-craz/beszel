@@ -78,6 +78,14 @@ export interface SystemInfo {
 	efs?: Record<string, number>
 	/** services [totalServices, numFailedServices] */
 	sv?: [number, number]
+	/** Wake-on-LAN enabled */
+	wol_enabled?: boolean
+	/** ESP module mapped */
+	esp_mapped?: boolean
+	/** Maintenance mode active */
+	maintenance?: boolean
+	/** ESP module offline */
+	esp_offline?: boolean
 }
 
 export interface SystemStats {
