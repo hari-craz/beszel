@@ -7,32 +7,23 @@
 #include <DallasTemperature.h>
 #include <Preferences.h>
 
-// --- Configuration Defaults ---
+// --- Configuration & Constants ---
 #define FIRMWARE_VERSION "1.0.0"
-#define DEFAULT_WIFI_SSID "Your_WiFi_SSID"
-#define DEFAULT_WIFI_PASS "Your_WiFi_Password"
-#define DEFAULT_HUB_URL "http://192.168.1.5:8090/api/beszel/recovery/ping"
+#define MAX_CHANNELS_LIMIT 6
+#define CONFIG_BUTTON_PIN 0 // standard boot button
 
-// Hardware Pin Layouts (Configured for standard ESP32 boards)
-#define ONE_WIRE_BUS 4       // DS18B20 temperature sensor data pin
-#define BUZZER_PIN 12        // Audible piezo buzzer output pin
-#define MAX_CHANNELS_LIMIT 6 // Maximum hardware relay outputs supported
-
-// Hardware output pins for relays CH1 - CH6
+// Pin settings
+#define ONE_WIRE_BUS 4
+#define BUZZER_PIN 12
 const int RELAY_PINS[MAX_CHANNELS_LIMIT] = {13, 14, 25, 26, 27, 32};
 
-// I2C LCD Configurations (PCF8574 backpacks)
 LiquidCrystal_I2C lcd(0x27, 20, 4);
-
-// Temperature sensors
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-
-// Persistent flash storage
 Preferences preferences;
 WebServer server(80);
 
-// --- State Machine Types & Structs ---
+// State tracking
 enum ChannelState {
   STATE_ONLINE,
   STATE_VERIFYING_FAILURE,
@@ -57,130 +48,258 @@ struct MonitoredChannel {
   int recoveryAttempts;
 };
 
-// Global telemetry and cache memory
+// Global memory cache
 MonitoredChannel activeChannels[MAX_CHANNELS_LIMIT];
 int activeChannelCount = 0;
+bool isProvisioned = false;
+char wifiSSID[64] = "";
+char wifiPassword[64] = "";
+char moduleName[64] = "Rack A Recovery";
+char hubURL[128] = "";
 int localConfigRevision = 0;
 char localConfigHash[65] = "";
-char hubURL[128] = DEFAULT_HUB_URL;
+
 unsigned long lastPingTime = 0;
 unsigned long lastDisplayPageRotation = 0;
 int currentDisplayPage = 0;
 
-// Non-blocking buzzer scheduling variables
+// Button timers
+unsigned long buttonPressStartTime = 0;
+bool buttonWasPressed = false;
+
+// Buzzer timing parameters
 unsigned long buzzerPatternStartTime = 0;
 int buzzerPatternBeeps = 0;
 int buzzerPatternGap = 0;
-bool buzzerIsBeeping = false;
 bool buzzerState = false;
 
-// --- Helper Declarations ---
 void triggerBuzzer(int beepCount, int durationMs);
 void updateLCDDisplay();
 void processProberStateMachines();
 void syncWithHub();
+void checkConfigButton();
 
-// --- REST Web Server Request Handlers ---
+// Setup HTML onboarding page
+const char SETUP_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Beszel Recovery Onboarding</title>
+<style>
+body { font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; background:#121214; color:#e4e4e7; margin:0; padding:20px; display:flex; justify-content:center; }
+.card { background:#18181b; border:1px solid #27272a; padding:24px; border-radius:8px; width:100%; max-width:400px; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
+h2 { margin-top:0; color:#3b82f6; }
+.field { margin-bottom:16px; }
+label { display:block; font-size:12px; font-weight:600; text-transform:uppercase; color:#a1a1aa; margin-bottom:6px; }
+input, select { width:100%; padding:10px; background:#27272a; border:1px solid #3f3f46; border-radius:6px; color:#fff; box-sizing:border-box; }
+input:focus, select:focus { border-color:#3b82f6; outline:none; }
+button { width:100%; background:#3b82f6; color:#fff; padding:12px; border:none; border-radius:6px; font-weight:600; cursor:pointer; }
+button:hover { background:#2563eb; }
+.scan-btn { background:#27272a; border:1px solid #3f3f46; color:#a1a1aa; padding:6px 12px; border-radius:4px; font-size:12px; margin-bottom:12px; cursor:pointer; }
+.scan-btn:hover { background:#3f3f46; }
+</style>
+</head>
+<body>
+<div class='card'>
+<h2>Beszel Recovery Setup</h2>
+<div class='field'><label>Module ID (MAC)</label><input type='text' id='mac_id' disabled></div>
+<button class='scan-btn' onclick='scanNetworks()'>Scan WiFi Networks</button>
+<form method='POST' action='/api/setup/save'>
+<div class='field'><label>WiFi Network (SSID)</label><select name='ssid' id='ssid_select'></select></div>
+<div class='field'><label>WiFi Password</label><input type='password' name='password' placeholder='Enter Password' required></div>
+<div class='field'><label>Module Name</label><input type='text' name='name' value='Rack A Recovery' required></div>
+<div class='field'><label>Beszel Hub URL</label><input type='text' name='hub_url' placeholder='http://192.168.1.10:8090/api/beszel/recovery/ping' required></div>
+<button type='submit'>SAVE & CONNECT</button>
+</form>
+</div>
+<script>
+function scanNetworks() {
+  var sel = document.getElementById('ssid_select');
+  sel.innerHTML = '<option>Scanning...</option>';
+  fetch('/api/wifi/scan').then(r => r.json()).then(data => {
+    sel.innerHTML = '';
+    data.forEach(n => {
+      var opt = document.createElement('option');
+      opt.value = n.ssid;
+      opt.text = n.ssid + ' (' + n.rssi + ' dBm)';
+      sel.appendChild(opt);
+    });
+  });
+}
+window.onload = function() {
+  document.getElementById('mac_id').value = window.location.hostname;
+  scanNetworks();
+};
+</script>
+</body>
+</html>
+)rawliteral";
+
+// --- Onboarding Setup Web Endpoints ---
+void handleGetSetup() {
+  server.send(200, "text/html", SETUP_HTML);
+}
+
+void handleWifiScan() {
+  int n = WiFi.scanNetworks();
+  StaticJsonDocument<1024> doc;
+  JsonArray arr = doc.to<JsonArray>();
+  for (int i = 0; i < n; i++) {
+    JsonObject item = arr.createNestedObject();
+    item["ssid"] = WiFi.SSID(i);
+    item["rssi"] = WiFi.RSSI(i);
+  }
+  String response;
+  serializeJson(doc, response);
+  server.send(200, "application/json", response);
+}
+
+void handleSaveSetup() {
+  String ssid = server.arg("ssid");
+  String pass = server.arg("password");
+  String name = server.arg("name");
+  String hub = server.arg("hub_url");
+
+  preferences.begin("watchdog", false);
+  preferences.putBoolean("provisioned", true);
+  preferences.putString("ssid", ssid);
+  preferences.putString("password", pass);
+  preferences.putString("name", name);
+  preferences.putString("hub_url", hub);
+  preferences.putInt("revision", 0);
+  preferences.putString("hash", "");
+  preferences.end();
+
+  server.send(200, "text/html", "<html><body><h3>Onboarding parameters saved! Restarting...</h3></body></html>");
+  delay(2000);
+  ESP.restart();
+}
+
 void handleRelayTrigger() {
   if (server.method() != HTTP_POST) {
     server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
     return;
   }
-
   StaticJsonDocument<256> doc;
-  DeserializationError error = deserializeJson(doc, server.arg("plain"));
-  if (error) {
-    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
-    return;
-  }
-
+  deserializeJson(doc, server.arg("plain"));
   int targetChannel = doc["channel"];
   int durationMs = doc["pulse_duration_ms"];
 
   if (targetChannel < 1 || targetChannel > MAX_CHANNELS_LIMIT) {
-    server.send(400, "application/json", "{\"error\":\"Invalid channel range\"}");
+    server.send(400, "application/json", "{\"error\":\"Invalid channel\"}");
     return;
   }
 
   int pin = RELAY_PINS[targetChannel - 1];
-  digitalWrite(pin, HIGH); // Activate relay pulse
-  delay(durationMs);       // Bounded block for short physical triggers
-  digitalWrite(pin, LOW);  // Return to fail-safe state
-
-  triggerBuzzer(1, 250);
+  digitalWrite(pin, HIGH);
+  delay(durationMs);
+  digitalWrite(pin, LOW);
+  triggerBuzzer(1, 200);
   server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
-// --- Arduino Core Initialization ---
+// --- Setup Access Point Mode ---
+void startProvisioningAP() {
+  WiFi.mode(WIFI_AP);
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  String suffix = mac.substring(mac.length() - 4);
+  String apSSID = "Beszel_Recovery_" + suffix;
+
+  WiFi.softAP(apSSID.c_str());
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("SETUP ACTIVE");
+  lcd.setCursor(0, 1);
+  lcd.print(apSSID);
+  lcd.setCursor(0, 2);
+  lcd.print("IP: 192.168.4.1");
+  triggerBuzzer(3, 100);
+
+  server.on("/", HTTP_GET, handleGetSetup);
+  server.on("/api/wifi/scan", HTTP_GET, handleWifiScan);
+  server.on("/api/setup/save", HTTP_POST, handleSaveSetup);
+  server.begin();
+}
+
 void setup() {
   Serial.begin(115200);
+  pinMode(CONFIG_BUTTON_PIN, INPUT_PULLUP);
 
-  // Initialize hardware relays to safe default output states
   for (int i = 0; i < MAX_CHANNELS_LIMIT; i++) {
     pinMode(RELAY_PINS[i], OUTPUT);
     digitalWrite(RELAY_PINS[i], LOW);
   }
-
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
-  // Initialize display
   lcd.init();
   lcd.backlight();
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("ESP Watchdog Booting");
 
   sensors.begin();
 
-  // Load persistent configurations from non-volatile storage
-  preferences.begin("watchdog", false);
-  localConfigRevision = preferences.getInt("revision", 0);
-  String savedHash = preferences.getString("hash", "");
-  strncpy(localConfigHash, savedHash.c_str(), sizeof(localConfigHash) - 1);
-  String savedHub = preferences.getString("hub_url", DEFAULT_HUB_URL);
-  strncpy(hubURL, savedHub.c_str(), sizeof(hubURL) - 1);
+  // Read saved credentials
+  preferences.begin("watchdog", true);
+  isProvisioned = preferences.getBoolean("provisioned", false);
+  if (isProvisioned) {
+    strncpy(wifiSSID, preferences.getString("ssid", "").c_str(), sizeof(wifiSSID) - 1);
+    strncpy(wifiPassword, preferences.getString("password", "").c_str(), sizeof(wifiPassword) - 1);
+    strncpy(moduleName, preferences.getString("name", "Rack A Recovery").c_str(), sizeof(moduleName) - 1);
+    strncpy(hubURL, preferences.getString("hub_url", "").c_str(), sizeof(hubURL) - 1);
+    localConfigRevision = preferences.getInt("revision", 0);
+    strncpy(localConfigHash, preferences.getString("hash", "").c_str(), sizeof(localConfigHash) - 1);
+  }
   preferences.end();
 
-  // Connect to Local Wi-Fi
-  WiFi.begin(DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASS);
-  lcd.setCursor(0, 1);
-  lcd.print("Connecting Wi-Fi...");
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
-    Serial.print(".");
-    attempts++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Wi-Fi Connected!");
-    lcd.setCursor(0, 1);
-    lcd.print(WiFi.localIP().toString());
-    triggerBuzzer(2, 100);
+  if (!isProvisioned) {
+    startProvisioningAP();
   } else {
-    lcd.clear();
+    // Normal operation boot
+    WiFi.begin(wifiSSID, wifiPassword);
     lcd.setCursor(0, 0);
-    lcd.print("WiFi Fail: Local Mode");
-  }
+    lcd.print("Connecting WiFi...");
+    lcd.setCursor(0, 1);
+    lcd.print(wifiSSID);
 
-  // Register endpoints
-  server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
-  server.begin();
-  delay(1500);
+    int count = 0;
+    while (WiFi.status() != WL_CONNECTED && count < 15) {
+      delay(500);
+      count++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      lcd.clear();
+      lcd.print("WiFi Online");
+      lcd.setCursor(0, 1);
+      lcd.print(WiFi.localIP().toString());
+      triggerBuzzer(2, 100);
+    } else {
+      lcd.clear();
+      lcd.print("WiFi Timeout");
+      lcd.setCursor(0, 1);
+      lcd.print("Retrying background");
+    }
+
+    server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
+    server.begin();
+    delay(1000);
+  }
 }
 
-// --- Main Operational Task Loop ---
 void loop() {
   server.handleClient();
-  processProberStateMachines();
-  syncWithHub();
-  updateLCDDisplay();
+  checkConfigButton();
 
-  // Keep buzzer scheduler running asynchronously
+  if (isProvisioned) {
+    processProberStateMachines();
+    syncWithHub();
+    updateLCDDisplay();
+  }
+
+  // Non-blocking buzzer scheduling
   if (buzzerPatternBeeps > 0) {
     unsigned long now = millis();
     if (now - buzzerPatternStartTime >= buzzerPatternGap) {
@@ -196,7 +315,29 @@ void loop() {
   }
 }
 
-// Non-blocking buzzer scheduling trigger
+void checkConfigButton() {
+  if (digitalRead(CONFIG_BUTTON_PIN) == LOW) {
+    if (!buttonWasPressed) {
+      buttonWasPressed = true;
+      buttonPressStartTime = millis();
+    } else {
+      // 3 seconds long-press triggers setup config AP reopening
+      if (millis() - buttonPressStartTime >= 3000) {
+        preferences.begin("watchdog", false);
+        preferences.putBoolean("provisioned", false);
+        preferences.end();
+        lcd.clear();
+        lcd.print("Reset Config...");
+        triggerBuzzer(4, 80);
+        delay(1500);
+        ESP.restart();
+      }
+    }
+  } else {
+    buttonWasPressed = false;
+  }
+}
+
 void triggerBuzzer(int beepCount, int durationMs) {
   buzzerPatternBeeps = beepCount;
   buzzerPatternGap = durationMs;
@@ -204,10 +345,9 @@ void triggerBuzzer(int beepCount, int durationMs) {
   buzzerState = false;
 }
 
-// Dial target TCP port to verify system health
 bool probeTCPPort(const char* ip, int port) {
   WiFiClient client;
-  client.setTimeout(1500); // 1.5 seconds maximum timeout
+  client.setTimeout(1200);
   if (client.connect(ip, port)) {
     client.stop();
     return true;
@@ -215,26 +355,19 @@ bool probeTCPPort(const char* ip, int port) {
   return false;
 }
 
-// --- Independent Watchdog State Machine Loop ---
 void processProberStateMachines() {
   unsigned long now = millis();
-
   for (int i = 0; i < activeChannelCount; i++) {
     MonitoredChannel& ch = activeChannels[i];
-
     if (ch.maintenance) {
       ch.state = STATE_ONLINE;
       continue;
     }
 
-    // Determine probing schedule based on current state (5s normal, 2s fast verify)
     unsigned long interval = (ch.state == STATE_VERIFYING_FAILURE) ? 2000 : 5000;
-
     if (now - ch.lastProbeTime >= interval) {
       ch.lastProbeTime = now;
       bool hostResponded = false;
-
-      // Scan all configured TCP ports
       for (int p = 0; p < ch.portCount; p++) {
         if (probeTCPPort(ch.hostIP, ch.ports[p])) {
           hostResponded = true;
@@ -242,7 +375,6 @@ void processProberStateMachines() {
         }
       }
 
-      // Execute State Transitions
       switch (ch.state) {
         case STATE_ONLINE:
           if (!hostResponded) {
@@ -259,14 +391,13 @@ void processProberStateMachines() {
             ch.consecutiveFailures = 0;
           } else {
             ch.consecutiveFailures++;
-            if (ch.consecutiveFailures >= 3) { // 3 consecutive failures
+            if (ch.consecutiveFailures >= 3) {
               ch.state = STATE_SHORT_PRESS;
               ch.stateStartTime = now;
               ch.recoveryAttempts++;
-              // Activate short relay pulse (simulate motherboard power button click)
               int pin = RELAY_PINS[ch.channelNumber - 1];
               digitalWrite(pin, HIGH);
-              delay(300); // Bounded short pulse duration
+              delay(300);
               digitalWrite(pin, LOW);
               triggerBuzzer(3, 150);
             }
@@ -285,19 +416,16 @@ void processProberStateMachines() {
             ch.recoveryAttempts = 0;
             triggerBuzzer(2, 200);
           } else {
-            // Wait for boot grace timeout (e.g. 60 seconds)
             if (now - ch.stateStartTime >= 60000) {
               if (ch.recoveryAttempts < 2) {
                 ch.state = STATE_HARD_HOLD;
                 ch.stateStartTime = now;
                 ch.recoveryAttempts++;
-                // Hold power button for 8 seconds to force power off
                 int pin = RELAY_PINS[ch.channelNumber - 1];
                 digitalWrite(pin, HIGH);
-                delay(8000); // Force power down
+                delay(8000);
                 digitalWrite(pin, LOW);
-                delay(1500); // Let voltages stabilize
-                // Tap power button to turn back on
+                delay(1500);
                 digitalWrite(pin, HIGH);
                 delay(300);
                 digitalWrite(pin, LOW);
@@ -321,7 +449,6 @@ void processProberStateMachines() {
             ch.consecutiveFailures = 0;
             ch.recoveryAttempts = 0;
           } else {
-            // Enter cooldown cycle for 5 minutes before retrying
             if (now - ch.stateStartTime >= 300000) {
               ch.state = STATE_ONLINE;
               ch.consecutiveFailures = 0;
@@ -334,7 +461,6 @@ void processProberStateMachines() {
   }
 }
 
-// --- Bidirectional PocketBase Hub Config Synchronization ---
 void syncWithHub() {
   unsigned long now = millis();
   if (now - lastPingTime < 30000 && lastPingTime != 0) {
@@ -343,21 +469,23 @@ void syncWithHub() {
   lastPingTime = now;
 
   if (WiFi.status() != WL_CONNECTED) {
+    // Retry connection in background silently
+    if (WiFi.status() == WL_CONNECT_FAILED || WiFi.status() == WL_CONNECTION_LOST || WiFi.status() == WL_DISCONNECTED) {
+      WiFi.begin(wifiSSID, wifiPassword);
+    }
     return;
   }
 
-  // Request temperature readings from DS18B20 sensor
   sensors.requestTemperatures();
   float currentTemp = sensors.getTempCByIndex(0);
   if (currentTemp == DEVICE_DISCONNECTED_C) {
-    currentTemp = 0.0f; // Invalid temperature default
+    currentTemp = 0.0f;
   }
 
   HTTPClient http;
   http.begin(hubURL);
   http.addHeader("Content-Type", "application/json");
 
-  // Format telemetry payload
   StaticJsonDocument<512> doc;
   doc["mac_address"] = WiFi.macAddress();
   doc["ip_address"] = WiFi.localIP().toString();
@@ -382,7 +510,6 @@ void syncWithHub() {
       int remoteRevision = respDoc["config_revision"];
       String remoteHash = respDoc["config_hash"];
 
-      // If configuration mismatch is detected, update local channel mappings
       if (remoteRevision > localConfigRevision && remoteHash != localConfigHash) {
         JsonArray channelsArray = respDoc["channels"];
         activeChannelCount = 0;
@@ -400,7 +527,6 @@ void syncWithHub() {
           newCh.lastProbeTime = 0;
           newCh.recoveryAttempts = 0;
 
-          // Parse ports
           JsonArray ports = item["ports"];
           newCh.portCount = 0;
           for (int p : ports) {
@@ -411,7 +537,6 @@ void syncWithHub() {
           activeChannelCount++;
         }
 
-        // Save new configs into persistent NVS flash memory
         preferences.begin("watchdog", false);
         preferences.putInt("revision", remoteRevision);
         preferences.putString("hash", remoteHash);
@@ -426,7 +551,6 @@ void syncWithHub() {
   http.end();
 }
 
-// --- Dynamic Rotating I2C LCD Screen Views ---
 void updateLCDDisplay() {
   unsigned long now = millis();
   if (now - lastDisplayPageRotation < 4000) {
@@ -435,8 +559,6 @@ void updateLCDDisplay() {
   lastDisplayPageRotation = now;
 
   lcd.clear();
-
-  // If no channels configured, show system status screen
   if (activeChannelCount == 0) {
     lcd.setCursor(0, 0);
     lcd.print("Recovery Watchdog");
@@ -451,7 +573,6 @@ void updateLCDDisplay() {
     return;
   }
 
-  // Display summary of monitored channels
   int itemsPerPage = 3;
   int startIdx = currentDisplayPage * itemsPerPage;
 
@@ -473,28 +594,14 @@ void updateLCDDisplay() {
     lcd.setCursor(15, i + 1);
 
     switch (ch.state) {
-      case STATE_ONLINE:
-        lcd.print("OK");
-        break;
-      case STATE_VERIFYING_FAILURE:
-        lcd.print("VERIFY");
-        break;
+      case STATE_ONLINE: lcd.print("OK"); break;
+      case STATE_VERIFYING_FAILURE: lcd.print("VERIFY"); break;
       case STATE_SHORT_PRESS:
-      case STATE_HARD_HOLD:
-        lcd.print("PRESS");
-        break;
-      case STATE_BOOT_GRACE:
-        lcd.print("BOOT");
-        break;
-      case STATE_CRITICAL:
-        lcd.print("CRIT");
-        break;
-      default:
-        lcd.print("WARN");
-        break;
+      case STATE_HARD_HOLD: lcd.print("PRESS"); break;
+      case STATE_BOOT_GRACE: lcd.print("BOOT"); break;
+      case STATE_CRITICAL: lcd.print("CRIT"); break;
+      default: lcd.print("WARN"); break;
     }
   }
-
-  // Rotate display page
   currentDisplayPage = (currentDisplayPage + 1) % ((activeChannelCount + itemsPerPage - 1) / itemsPerPage);
 }
