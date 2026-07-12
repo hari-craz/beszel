@@ -1361,6 +1361,10 @@ msgstr "Állandó"
 msgid "Persistence"
 msgstr "Tartósság"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Physical relay reboot triggered"
+msgstr ""
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
 msgstr ""
@@ -1500,6 +1504,10 @@ msgstr "Kapcsolatok"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay trigger failed"
 msgstr ""
 
 #: src/components/login/login.tsx
@@ -1797,6 +1805,10 @@ msgstr "Teszt értesítés elküldve"
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "Az összesített állapot <0>ok</0>, ha minden rendszer fut, <1>warn</1>, ha riasztások léptek fel, és <2>error</2>, ha bármelyik rendszer leállt."
@@ -1875,6 +1887,10 @@ msgstr ""
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Total: {0}"
 msgstr "Összesen: {0}"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Trigger Relay Press"
+msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"

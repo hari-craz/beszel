@@ -1356,6 +1356,10 @@ msgstr "Permanent"
 msgid "Persistence"
 msgstr "Persistence"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Physical relay reboot triggered"
+msgstr "Physical relay reboot triggered"
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
 msgstr "Physical watchdogs & channels"
@@ -1496,6 +1500,10 @@ msgstr "Relationships"
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
 msgstr "Relay Channel"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay trigger failed"
+msgstr "Relay trigger failed"
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1792,6 +1800,10 @@ msgstr "Test notification sent"
 msgid "The broadcast has been sent on UDP port 9."
 msgstr "The broadcast has been sent on UDP port 9."
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button relay has been pressed."
+msgstr "The motherboard power button relay has been pressed."
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
@@ -1870,6 +1882,10 @@ msgstr "Total time spent on read/write (can exceed 100%)"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Total: {0}"
 msgstr "Total: {0}"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Trigger Relay Press"
+msgstr "Trigger Relay Press"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"

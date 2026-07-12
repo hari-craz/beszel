@@ -1361,6 +1361,10 @@ msgstr "Permanen"
 msgid "Persistence"
 msgstr "Tetap berlaku"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Physical relay reboot triggered"
+msgstr ""
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
 msgstr ""
@@ -1500,6 +1504,10 @@ msgstr "Relasi"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay trigger failed"
 msgstr ""
 
 #: src/components/login/login.tsx
@@ -1797,6 +1805,10 @@ msgstr "Notifikasi tes dikirim"
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "Status keseluruhan adalah <0>ok</0> ketika semua sistem aktif, <1>warn</1> ketika peringatan dipicu, dan <2>error</2> ketika ada sistem yang mati."
@@ -1874,6 +1886,10 @@ msgstr ""
 #. placeholder {0}: data.length
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Total: {0}"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Trigger Relay Press"
 msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx

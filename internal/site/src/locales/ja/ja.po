@@ -1361,6 +1361,10 @@ msgstr "永久"
 msgid "Persistence"
 msgstr "永続性"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Physical relay reboot triggered"
+msgstr ""
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
 msgstr ""
@@ -1500,6 +1504,10 @@ msgstr "関係"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay trigger failed"
 msgstr ""
 
 #: src/components/login/login.tsx
@@ -1797,6 +1805,10 @@ msgstr "テスト通知が送信されました"
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "全体的なステータスは、すべてのシステムが稼働している場合は <0>ok</0>、アラートがトリガーされた場合は <1>警告</1>、いずれかのシステムがダウンしている場合は <2>エラー</2> になります。"
@@ -1875,6 +1887,10 @@ msgstr ""
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Total: {0}"
 msgstr "合計: {0}"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Trigger Relay Press"
+msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"

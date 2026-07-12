@@ -1361,6 +1361,10 @@ msgstr "영구적"
 msgid "Persistence"
 msgstr "지속성"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Physical relay reboot triggered"
+msgstr ""
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
 msgstr ""
@@ -1500,6 +1504,10 @@ msgstr "관계"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay trigger failed"
 msgstr ""
 
 #: src/components/login/login.tsx
@@ -1797,6 +1805,10 @@ msgstr "테스트 알림이 전송되었습니다."
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "모든 시스템이 정상이면 <0>ok</0>, 알림이 트리거되면 <1>경고</1>, 시스템이 다운되면 <2>오류</2> 상태가 됩니다."
@@ -1875,6 +1887,10 @@ msgstr ""
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Total: {0}"
 msgstr "총: {0}"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Trigger Relay Press"
+msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"

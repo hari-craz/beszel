@@ -1,10 +1,12 @@
 package systems
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -36,6 +38,8 @@ type systemWatchdog struct {
 	macAddress  string
 	bcastIP     string
 	wolPort     int
+	moduleID    string
+	channelNum  int
 	cancel      context.CancelFunc
 }
 
@@ -148,6 +152,8 @@ func (rp *RecoveryProber) registerWatchdog(rec *core.Record) {
 		macAddress:  macAddress,
 		bcastIP:     bcastIP,
 		wolPort:     wolPort,
+		moduleID:    moduleID,
+		channelNum:  channelNum,
 		cancel:      cancel,
 	}
 
@@ -230,6 +236,7 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 				})
 
 				// If WOL is enabled and automatic, trigger it
+				recoverySuccessful := false
 				if w.wolEnabled && w.autoWol && w.macAddress != "" {
 					rp.logEvent(w.systemID, w.channelID, "WOL_SENT", map[string]any{
 						"mac":       w.macAddress,
@@ -245,30 +252,29 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 					}
 
 					// Wait for boot grace period
-					bootSuccess := false
 					graceTicker := time.NewTicker(1 * time.Second)
 					graceTimeout := time.After(time.Duration(w.graceSecs) * time.Second)
 
-					for bootSuccess == false {
+					for recoverySuccessful == false {
 						select {
 						case <-ctx.Done():
 							graceTicker.Stop()
 							return
 						case <-graceTimeout:
 							graceTicker.Stop()
-							bootSuccess = false
-							goto graceEnd
+							recoverySuccessful = false
+							goto wolGraceEnd
 						case <-graceTicker.C:
 							if rp.probePorts(w.hostIP, w.probePorts) {
 								graceTicker.Stop()
-								bootSuccess = true
-								goto graceEnd
+								recoverySuccessful = true
+								goto wolGraceEnd
 							}
 						}
 					}
 
-				graceEnd:
-					if bootSuccess {
+				wolGraceEnd:
+					if recoverySuccessful {
 						rp.logEvent(w.systemID, w.channelID, "WOL_SUCCESS", map[string]any{
 							"status": "online",
 						})
@@ -276,6 +282,62 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 						rp.logEvent(w.systemID, w.channelID, "WOL_FAILED", map[string]any{
 							"reason": "boot grace period timed out",
 						})
+					}
+				}
+
+				// If WOL did not succeed (or was skipped) and we have an ESP module mapped, escalate to physical relay trigger!
+				if !recoverySuccessful && w.moduleID != "" {
+					espIP := ""
+					moduleRec, err := rp.app.FindRecordById("recovery_modules", w.moduleID)
+					if err == nil {
+						espIP = moduleRec.GetString("ip_address")
+					}
+					if espIP != "" {
+						rp.logEvent(w.systemID, w.channelID, "ESP_RELAY_SENT", map[string]any{
+							"module":  w.moduleID,
+							"channel": w.channelNum,
+							"ip":      espIP,
+						})
+
+						errRelay := rp.triggerESP32Relay(espIP, w.channelNum, 500)
+						if errRelay != nil {
+							rp.logEvent(w.systemID, w.channelID, "ESP_RELAY_ERROR", map[string]any{
+								"error": errRelay.Error(),
+							})
+						} else {
+							// Wait for boot grace period after relay pulse
+							graceTicker := time.NewTicker(1 * time.Second)
+							graceTimeout := time.After(time.Duration(w.graceSecs) * time.Second)
+
+							for recoverySuccessful == false {
+								select {
+								case <-ctx.Done():
+									graceTicker.Stop()
+									return
+								case <-graceTimeout:
+									graceTicker.Stop()
+									recoverySuccessful = false
+									goto relayGraceEnd
+								case <-graceTicker.C:
+									if rp.probePorts(w.hostIP, w.probePorts) {
+										graceTicker.Stop()
+										recoverySuccessful = true
+										goto relayGraceEnd
+									}
+								}
+							}
+
+						relayGraceEnd:
+							if recoverySuccessful {
+								rp.logEvent(w.systemID, w.channelID, "RELAY_SUCCESS", map[string]any{
+									"status": "online",
+								})
+							} else {
+								rp.logEvent(w.systemID, w.channelID, "RELAY_FAILED", map[string]any{
+									"reason": "server remained offline after relay trigger boot grace period",
+								})
+							}
+						}
 					}
 				}
 			}
@@ -402,4 +464,34 @@ func (rp *RecoveryProber) runOfflineScanner(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// triggerESP32Relay makes a POST dispatch call to the ESP32 module relay API endpoint.
+func (rp *RecoveryProber) triggerESP32Relay(espIP string, channelNum, pulseMs int) error {
+	payload := map[string]any{
+		"channel":           channelNum,
+		"pulse_duration_ms": pulseMs,
+	}
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	url := fmt.Sprintf("http://%s/api/relay/trigger", espIP)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+	return nil
 }

@@ -140,6 +140,7 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	apiAuth.GET("/recovery/module", h.getRecoveryModule)
 	apiAuth.GET("/recovery/events", h.getRecoveryEvents)
 	apiAuth.POST("/recovery/wake", h.triggerManualWOL)
+	apiAuth.POST("/recovery/relay", h.triggerManualRelay)
 	return nil
 }
 
@@ -603,5 +604,50 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 		"config_hash":     rec.GetString("config_hash"),
 		"channels":        channels,
 	})
+}
+
+// triggerManualRelay handles POST /api/beszel/recovery/relay requests.
+func (h *Hub) triggerManualRelay(e *core.RequestEvent) error {
+	systemID := e.Request.URL.Query().Get("system")
+	if systemID == "" {
+		return e.BadRequestError("Missing system ID", nil)
+	}
+	system, err := h.sm.GetSystem(systemID)
+	if err != nil || !system.HasUser(e.App, e.Auth) {
+		return e.NotFoundError("System not found or access denied", nil)
+	}
+	rec, err := e.App.FindFirstRecordByFilter("recovery_channels", "system = {:system}", dbx.Params{"system": systemID})
+	if err != nil {
+		return e.BadRequestError("Recovery is not configured for this system", err)
+	}
+	moduleID := rec.GetString("module")
+	channelNum := rec.GetInt("channel_number")
+	if moduleID == "" || channelNum <= 0 {
+		return e.BadRequestError("Physical hardware watchdog is not configured for this system", nil)
+	}
+	moduleRec, err := e.App.FindRecordById("recovery_modules", moduleID)
+	if err != nil {
+		return e.NotFoundError("Mapped recovery module not found", err)
+	}
+	espIP := moduleRec.GetString("ip_address")
+	if espIP == "" {
+		return e.BadRequestError("Recovery module IP address is not available", nil)
+	}
+	err = h.sm.rp.triggerESP32Relay(espIP, channelNum, 500)
+	if err != nil {
+		return e.InternalServerError("Failed to contact ESP32 module relay controller", err)
+	}
+	collection, err := e.App.FindCollectionByNameOrId("recovery_events")
+	if err == nil {
+		eventRec := core.NewRecord(collection)
+		eventRec.Set("system", systemID)
+		eventRec.Set("module", moduleID)
+		eventRec.Set("channel", channelNum)
+		eventRec.Set("event", "RELAY_MANUAL_SENT")
+		eventRec.Set("timestamp", time.Now().UTC())
+		eventRec.Set("metadata", fmt.Sprintf(`{"module":"%s","channel":%d,"ip":"%s","source":"MANUAL_UI"}`, moduleID, channelNum, espIP))
+		_ = e.App.Save(eventRec)
+	}
+	return e.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 
