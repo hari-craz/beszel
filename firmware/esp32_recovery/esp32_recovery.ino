@@ -198,9 +198,9 @@ void handleRelayTrigger() {
   }
 
   int pin = RELAY_PINS[targetChannel - 1];
-  digitalWrite(pin, HIGH);
-  delay(durationMs);
   digitalWrite(pin, LOW);
+  delay(durationMs);
+  digitalWrite(pin, HIGH);
   triggerBuzzer(1, 200);
   server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
@@ -250,7 +250,7 @@ void setup() {
 
   for (int i = 0; i < MAX_CHANNELS_LIMIT; i++) {
     pinMode(RELAY_PINS[i], OUTPUT);
-    digitalWrite(RELAY_PINS[i], LOW);
+    digitalWrite(RELAY_PINS[i], HIGH);
   }
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
@@ -434,9 +434,9 @@ void processProberStateMachines() {
               ch.stateStartTime = now;
               ch.recoveryAttempts++;
               int pin = RELAY_PINS[ch.channelNumber - 1];
-              digitalWrite(pin, HIGH);
-              delay(300);
               digitalWrite(pin, LOW);
+              delay(300);
+              digitalWrite(pin, HIGH);
               triggerBuzzer(3, 150);
             }
           }
@@ -460,13 +460,13 @@ void processProberStateMachines() {
                 ch.stateStartTime = now;
                 ch.recoveryAttempts++;
                 int pin = RELAY_PINS[ch.channelNumber - 1];
-                digitalWrite(pin, HIGH);
+                digitalWrite(pin, LOW);
                 delay(8000);
-                digitalWrite(pin, LOW);
-                delay(1500);
                 digitalWrite(pin, HIGH);
-                delay(300);
+                delay(1500);
                 digitalWrite(pin, LOW);
+                delay(300);
+                digitalWrite(pin, HIGH);
                 triggerBuzzer(4, 150);
               } else {
                 ch.state = STATE_CRITICAL;
