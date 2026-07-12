@@ -15,9 +15,9 @@ func init() {
 		"system": false,
 		"listRule": "@request.auth.id != \"\"",
 		"viewRule": "@request.auth.id != \"\"",
-		"createRule": "@request.auth.id != \"\" && @request.auth.role == \"admin\"",
-		"updateRule": "@request.auth.id != \"\" && @request.auth.role == \"admin\"",
-		"deleteRule": "@request.auth.id != \"\" && @request.auth.role == \"admin\"",
+		"createRule": "@request.auth.id != \"\" && @request.auth.role = \"admin\"",
+		"updateRule": "@request.auth.id != \"\" && @request.auth.role = \"admin\"",
+		"deleteRule": "@request.auth.id != \"\" && @request.auth.role = \"admin\"",
 		"fields": [
 			{
 				"id": "text3208210256",
@@ -247,7 +247,7 @@ func init() {
 		]
 	},
 	{
-		"id": "recovery_events",
+		"id": "recoveryevents",
 		"name": "recovery_events",
 		"type": "base",
 		"system": false,
