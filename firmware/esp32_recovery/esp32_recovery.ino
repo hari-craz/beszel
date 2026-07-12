@@ -162,7 +162,7 @@ void handleSaveSetup() {
   String hub = server.arg("hub_url");
 
   preferences.begin("watchdog", false);
-  preferences.putBoolean("provisioned", true);
+  preferences.putBool("provisioned", true);
   preferences.putString("ssid", ssid);
   preferences.putString("password", pass);
   preferences.putString("name", name);
@@ -243,7 +243,7 @@ void setup() {
 
   // Read saved credentials
   preferences.begin("watchdog", true);
-  isProvisioned = preferences.getBoolean("provisioned", false);
+  isProvisioned = preferences.getBool("provisioned", false);
   if (isProvisioned) {
     strncpy(wifiSSID, preferences.getString("ssid", "").c_str(), sizeof(wifiSSID) - 1);
     strncpy(wifiPassword, preferences.getString("password", "").c_str(), sizeof(wifiPassword) - 1);
@@ -324,7 +324,7 @@ void checkConfigButton() {
       // 3 seconds long-press triggers setup config AP reopening
       if (millis() - buttonPressStartTime >= 3000) {
         preferences.begin("watchdog", false);
-        preferences.putBoolean("provisioned", false);
+        preferences.putBool("provisioned", false);
         preferences.end();
         lcd.clear();
         lcd.print("Reset Config...");
