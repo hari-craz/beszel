@@ -125,6 +125,10 @@ msgstr "Dodaj {foo}"
 msgid "Add URL"
 msgstr "Dodaj URL"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Address is LAN-local and may be stale if the module is offline."
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Adjust display options for charts."
 msgstr "Podesite opcije prikaza grafikona."
@@ -190,6 +194,10 @@ msgstr "Jeste li sigurni?"
 #: src/components/copy-to-clipboard.tsx
 msgid "Automatic copy requires a secure context."
 msgstr "Automatsko kopiranje zahtijeva siguran kontekst."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Automatic WOL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -406,6 +414,14 @@ msgstr "Pritisnite za kopiranje"
 msgid "Command line instructions"
 msgstr "Upute za naredbeni redak"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Revision"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Synchronization"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Configure how you receive alert notifications."
 msgstr "Konfigurirajte način primanja obavijesti upozorenja."
@@ -570,6 +586,11 @@ msgstr "Zadano"
 msgid "Default time period"
 msgstr "Zadano vremensko razdoblje"
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "DEGRADED"
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -592,6 +613,10 @@ msgstr "Detalj"
 #: src/components/routes/system/smart-table.tsx
 msgid "Device"
 msgstr "Uređaj"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "DISABLED"
+msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -688,6 +713,10 @@ msgstr "Email obavijesti"
 msgid "Empty"
 msgstr "Prazno"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "ENABLED"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "End Time"
@@ -717,7 +746,6 @@ msgstr "Unesite jednokratnu lozinku."
 msgid "Ephemeral"
 msgstr "Efemeran"
 
-#: src/components/login/auth-form.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/config-yaml.tsx
 #: src/components/routes/settings/heartbeat.tsx
@@ -726,10 +754,15 @@ msgstr "Efemeran"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
 msgstr "Greška"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "ESP IP Address"
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Example:"
@@ -877,9 +910,21 @@ msgstr "Iskorištenost GPU-a"
 msgid "Grid"
 msgstr "Rešetka"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Hardware Recovery Modules"
+msgstr ""
+
 #: src/components/containers-table/containers-table-columns.tsx
 msgid "Health"
 msgstr "Zdravlje"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "HEALTHY"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
@@ -999,6 +1044,14 @@ msgstr "Prosječno Opterećenje"
 msgid "Load state"
 msgstr "Stanje učitavanja"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading events..."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Loading modules and channels..."
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
 msgstr "Učitavanje..."
@@ -1009,8 +1062,8 @@ msgid "Log Out"
 msgstr "Odjava"
 
 #: src/components/login/login.tsx
-msgid "Login"
-msgstr "Prijava"
+#~ msgid "Login"
+#~ msgstr "Prijava"
 
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
@@ -1027,13 +1080,27 @@ msgstr "Zapisi"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "Tražite gdje stvoriti upozorenja? Kliknite ikonu zvona <0/> u tablici sustava."
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAC Address"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Main PID"
 msgstr "Glavni PID"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "MAINTENANCE"
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
 msgstr "Upravljajte postavkama prikaza i obavijesti."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manage ESP32 hardware watchdog and physical relay controllers."
+msgstr ""
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1111,6 +1178,18 @@ msgstr "Mjerna jedinica za mrežu"
 msgid "No"
 msgstr "Ne"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "NO"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "No recent recovery events"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "No Recovery Modules Registered"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "No results found."
@@ -1134,6 +1213,11 @@ msgstr "Nema dostupnih S.M.A.R.T. atributa za ovaj uređaj."
 msgid "No systems found."
 msgstr "Nije pronađen nijedan sustav."
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "NOT INSTALLED"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1144,9 +1228,21 @@ msgstr "Obavijesti"
 msgid "OAuth 2 / OIDC support"
 msgstr "Podrška za OAuth 2 / OIDC"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE PENDING"
+msgstr ""
+
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
 msgstr "Prilikom svakog ponovnog pokretanja, sustavi u bazi podataka bit će ažurirani kako bi odgovarali sustavima definiranim u datoteci."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Once you plug an ESP32 Recovery Module into your network, approval requests will appear here."
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -1156,6 +1252,15 @@ msgstr "Jednokratno"
 #: src/components/login/auth-form.tsx
 msgid "One-time password"
 msgstr "Jednokratna lozinka"
+
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+msgid "ONLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Open Local ESP Portal"
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1251,6 +1356,10 @@ msgstr "Trajan"
 msgid "Persistence"
 msgstr "Postojanost"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Physical watchdogs & channels"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
 msgstr "Molimo <0>konfigurirajte SMTP server</0> kako biste osigurali isporuku upozorenja."
@@ -1311,6 +1420,15 @@ msgstr "Preferirani jezik"
 msgid "Process started"
 msgstr "Proces pokrenut"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "PROTECTED"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Protection Status"
+msgstr ""
+
 #. Use 'Key' if your language requires many more characters
 #: src/components/add-system.tsx
 msgid "Public Key"
@@ -1337,8 +1455,32 @@ msgstr "Pročitaj"
 msgid "Received"
 msgstr "Primljeno"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recent Recovery Events"
+msgstr ""
+
+#: src/components/routes/system.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Recovery"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Module"
+msgstr ""
+
+#: src/components/navbar.tsx
+#: src/components/navbar.tsx
+#: src/components/routes/settings/layout.tsx
+msgid "Recovery Modules"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Protection"
+msgstr ""
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/containers-table/containers-table.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 msgid "Refresh"
 msgstr "Osvježi"
@@ -1346,6 +1488,10 @@ msgstr "Osvježi"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Relationships"
 msgstr "Odnosi"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay Channel"
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1550,6 +1696,15 @@ msgstr "Swap prostor kojeg je zauzeo sustav"
 msgid "Swap Usage"
 msgstr "Swap Iskorištenost"
 
+#: src/components/mode-toggle.tsx
+#: src/components/mode-toggle.tsx
+msgid "Switch theme"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "SYNCED"
+msgstr ""
+
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1659,8 +1814,8 @@ msgstr "Primaoci emaila"
 
 #: src/components/mode-toggle.tsx
 #: src/components/mode-toggle.tsx
-msgid "Toggle theme"
-msgstr "Uključi/isključi temu"
+#~ msgid "Toggle theme"
+#~ msgstr "Uključi/isključi temu"
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1786,6 +1941,14 @@ msgstr "Nepoznato"
 msgid "Unlimited"
 msgstr "Neograničeno"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmapped / Available"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNUSED"
+msgstr ""
+
 #. Context: System is up
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1872,6 +2035,10 @@ msgstr "Vidljiva polja"
 msgid "Waiting for enough records to display"
 msgstr "Potrebno je više podataka za prikaz"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Want to help improve our translations? Check <0>Crowdin</0> for details."
 msgstr "Želite li nam pomoći poboljšati prijevode? Posjetite <0>Crowdin</0> za više detalja."
@@ -1906,6 +2073,10 @@ msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Windows naredba"
 
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "WOL READY"
+msgstr ""
+
 #. Disk write
 #: src/components/routes/system/charts/disk-charts.tsx
 #: src/components/routes/system/disk-io-sheet.tsx
@@ -1927,6 +2098,10 @@ msgstr "YAML Konfiguracija"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Yes"
 msgstr "Da"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "YES"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

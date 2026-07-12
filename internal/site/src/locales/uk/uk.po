@@ -125,6 +125,10 @@ msgstr "Додати {foo}"
 msgid "Add URL"
 msgstr "Додати URL"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Address is LAN-local and may be stale if the module is offline."
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Adjust display options for charts."
 msgstr "Налаштуйте параметри відображення для графіків."
@@ -190,6 +194,10 @@ msgstr "Ви впевнені?"
 #: src/components/copy-to-clipboard.tsx
 msgid "Automatic copy requires a secure context."
 msgstr "Автоматичне копіювання вимагає безпечного контексту."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Automatic WOL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -406,6 +414,14 @@ msgstr "Натисніть, щоб скопіювати"
 msgid "Command line instructions"
 msgstr "Інструкції командного рядка"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Revision"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Synchronization"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Configure how you receive alert notifications."
 msgstr "Налаштуйте, як ви отримуєте сповіщення про тривоги."
@@ -570,6 +586,11 @@ msgstr "За замовчуванням"
 msgid "Default time period"
 msgstr "Стандартний період часу"
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "DEGRADED"
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -592,6 +613,10 @@ msgstr "Деталі"
 #: src/components/routes/system/smart-table.tsx
 msgid "Device"
 msgstr "Пристрій"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "DISABLED"
+msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -688,6 +713,10 @@ msgstr "Сповіщення електронною поштою"
 msgid "Empty"
 msgstr "Порожня"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "ENABLED"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "End Time"
@@ -717,7 +746,6 @@ msgstr "Введіть ваш одноразовий пароль."
 msgid "Ephemeral"
 msgstr "Ефемерний"
 
-#: src/components/login/auth-form.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/config-yaml.tsx
 #: src/components/routes/settings/heartbeat.tsx
@@ -726,10 +754,15 @@ msgstr "Ефемерний"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
 msgstr "Помилка"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "ESP IP Address"
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Example:"
@@ -877,9 +910,21 @@ msgstr "Використання GPU"
 msgid "Grid"
 msgstr "Сітка"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Hardware Recovery Modules"
+msgstr ""
+
 #: src/components/containers-table/containers-table-columns.tsx
 msgid "Health"
 msgstr "Здоров'я"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "HEALTHY"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
@@ -999,6 +1044,14 @@ msgstr "Сер. навантаження"
 msgid "Load state"
 msgstr "Стан завантаження"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading events..."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Loading modules and channels..."
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
 msgstr "Завантаження..."
@@ -1009,8 +1062,8 @@ msgid "Log Out"
 msgstr "Вийти"
 
 #: src/components/login/login.tsx
-msgid "Login"
-msgstr "Увійти"
+#~ msgid "Login"
+#~ msgstr "Увійти"
 
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
@@ -1027,13 +1080,27 @@ msgstr "Журнали"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "Шукаєте, де створити сповіщення? Натисніть на іконки дзвінка <0/> в таблиці систем."
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAC Address"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Main PID"
 msgstr "Основний PID"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "MAINTENANCE"
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
 msgstr "Керуйте параметрами відображення та сповіщень."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manage ESP32 hardware watchdog and physical relay controllers."
+msgstr ""
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1111,6 +1178,18 @@ msgstr "Одиниця виміру мережі"
 msgid "No"
 msgstr "Ні"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "NO"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "No recent recovery events"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "No Recovery Modules Registered"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "No results found."
@@ -1134,6 +1213,11 @@ msgstr "Для цього пристрою немає доступних атр�
 msgid "No systems found."
 msgstr "Систем не знайдено."
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "NOT INSTALLED"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1144,9 +1228,21 @@ msgstr "Сповіщення"
 msgid "OAuth 2 / OIDC support"
 msgstr "Підтримка OAuth 2 / OIDC"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE PENDING"
+msgstr ""
+
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
 msgstr "При кожному перезапуску системи в базі даних будуть оновлені, щоб відповідати системам, визначеним у файлі."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Once you plug an ESP32 Recovery Module into your network, approval requests will appear here."
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -1156,6 +1252,15 @@ msgstr "Одноразовий"
 #: src/components/login/auth-form.tsx
 msgid "One-time password"
 msgstr "Одноразовий пароль"
+
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+msgid "ONLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Open Local ESP Portal"
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1251,6 +1356,10 @@ msgstr "Постійний"
 msgid "Persistence"
 msgstr "Стійкість"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Physical watchdogs & channels"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
 msgstr "Будь ласка, <0>налаштуйте SMTP сервер</0>, щоб забезпечити доставку сповіщень."
@@ -1311,6 +1420,15 @@ msgstr "Бажана мова"
 msgid "Process started"
 msgstr "Процес запущено"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "PROTECTED"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Protection Status"
+msgstr ""
+
 #. Use 'Key' if your language requires many more characters
 #: src/components/add-system.tsx
 msgid "Public Key"
@@ -1337,8 +1455,32 @@ msgstr "Читання"
 msgid "Received"
 msgstr "Отримано"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recent Recovery Events"
+msgstr ""
+
+#: src/components/routes/system.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Recovery"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Module"
+msgstr ""
+
+#: src/components/navbar.tsx
+#: src/components/navbar.tsx
+#: src/components/routes/settings/layout.tsx
+msgid "Recovery Modules"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Protection"
+msgstr ""
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/containers-table/containers-table.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 msgid "Refresh"
 msgstr "Оновити"
@@ -1346,6 +1488,10 @@ msgstr "Оновити"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Relationships"
 msgstr "Зв'язки"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay Channel"
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1550,6 +1696,15 @@ msgstr "Область підкачки, використана системою
 msgid "Swap Usage"
 msgstr "Використання підкачки"
 
+#: src/components/mode-toggle.tsx
+#: src/components/mode-toggle.tsx
+msgid "Switch theme"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "SYNCED"
+msgstr ""
+
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1659,8 +1814,8 @@ msgstr "На електронну пошту"
 
 #: src/components/mode-toggle.tsx
 #: src/components/mode-toggle.tsx
-msgid "Toggle theme"
-msgstr "Перемкнути тему"
+#~ msgid "Toggle theme"
+#~ msgstr "Перемкнути тему"
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1786,6 +1941,14 @@ msgstr "Невідома"
 msgid "Unlimited"
 msgstr "Необмежено"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmapped / Available"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNUSED"
+msgstr ""
+
 #. Context: System is up
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1872,6 +2035,10 @@ msgstr "Видимі стовпці"
 msgid "Waiting for enough records to display"
 msgstr "Очікування достатньої кількості записів для відображення"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Want to help improve our translations? Check <0>Crowdin</0> for details."
 msgstr "Хочете допомогти покращити наші переклади? Подробиці на <0>Crowdin</0>."
@@ -1906,6 +2073,10 @@ msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Команда Windows"
 
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "WOL READY"
+msgstr ""
+
 #. Disk write
 #: src/components/routes/system/charts/disk-charts.tsx
 #: src/components/routes/system/disk-io-sheet.tsx
@@ -1927,6 +2098,10 @@ msgstr "Конфігурація YAML"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Yes"
 msgstr "Так"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "YES"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

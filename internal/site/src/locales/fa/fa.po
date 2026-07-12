@@ -125,6 +125,10 @@ msgstr "افزودن {foo}"
 msgid "Add URL"
 msgstr "افزودن آدرس اینترنتی"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Address is LAN-local and may be stale if the module is offline."
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Adjust display options for charts."
 msgstr "تنظیم گزینه‌های نمایش برای نمودارها."
@@ -190,6 +194,10 @@ msgstr "آیا مطمئن هستید؟"
 #: src/components/copy-to-clipboard.tsx
 msgid "Automatic copy requires a secure context."
 msgstr "کپی خودکار نیاز به یک زمینه امن دارد."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Automatic WOL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -406,6 +414,14 @@ msgstr "برای کپی کردن کلیک کنید"
 msgid "Command line instructions"
 msgstr "دستورالعمل‌های خط فرمان"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Revision"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Synchronization"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Configure how you receive alert notifications."
 msgstr "نحوه دریافت هشدارهای اطلاع‌رسانی را پیکربندی کنید."
@@ -570,6 +586,11 @@ msgstr "پیش‌فرض"
 msgid "Default time period"
 msgstr "بازه زمانی پیش‌فرض"
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "DEGRADED"
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -592,6 +613,10 @@ msgstr "جزئیات"
 #: src/components/routes/system/smart-table.tsx
 msgid "Device"
 msgstr "دستگاه"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "DISABLED"
+msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -688,6 +713,10 @@ msgstr "اعلان‌های ایمیلی"
 msgid "Empty"
 msgstr "خالی"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "ENABLED"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "End Time"
@@ -717,7 +746,6 @@ msgstr "رمز عبور یک‌بار مصرف خود را وارد کنید."
 msgid "Ephemeral"
 msgstr "گذرا"
 
-#: src/components/login/auth-form.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/config-yaml.tsx
 #: src/components/routes/settings/heartbeat.tsx
@@ -726,10 +754,15 @@ msgstr "گذرا"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
 msgstr "خطا"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "ESP IP Address"
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Example:"
@@ -877,9 +910,21 @@ msgstr "میزان استفاده از GPU"
 msgid "Grid"
 msgstr "جدول"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Hardware Recovery Modules"
+msgstr ""
+
 #: src/components/containers-table/containers-table-columns.tsx
 msgid "Health"
 msgstr "سلامتی"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "HEALTHY"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
@@ -999,6 +1044,14 @@ msgstr "میانگین بار"
 msgid "Load state"
 msgstr "وضعیت بارگذاری"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading events..."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Loading modules and channels..."
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
 msgstr "در حال بارگذاری..."
@@ -1009,8 +1062,8 @@ msgid "Log Out"
 msgstr "خروج"
 
 #: src/components/login/login.tsx
-msgid "Login"
-msgstr "ورود"
+#~ msgid "Login"
+#~ msgstr "ورود"
 
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
@@ -1027,13 +1080,27 @@ msgstr "لاگ‌ها"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "به دنبال جایی برای ایجاد هشدار هستید؟ روی آیکون‌های زنگ <0/> در جدول سیستم‌ها کلیک کنید."
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAC Address"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Main PID"
 msgstr "PID اصلی"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "MAINTENANCE"
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
 msgstr "مدیریت تنظیمات نمایش و اعلان‌ها."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manage ESP32 hardware watchdog and physical relay controllers."
+msgstr ""
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1111,6 +1178,18 @@ msgstr "واحد شبکه"
 msgid "No"
 msgstr "خیر"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "NO"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "No recent recovery events"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "No Recovery Modules Registered"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "No results found."
@@ -1134,6 +1213,11 @@ msgstr "هیچ ویژگی S.M.A.R.T برای این دستگاه موجود نی
 msgid "No systems found."
 msgstr "هیچ سیستمی یافت نشد."
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "NOT INSTALLED"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1144,9 +1228,21 @@ msgstr "اعلان‌ها"
 msgid "OAuth 2 / OIDC support"
 msgstr "پشتیبانی از OAuth 2 / OIDC"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE PENDING"
+msgstr ""
+
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
 msgstr "در هر بار راه‌اندازی مجدد، سیستم‌های موجود در پایگاه داده با سیستم‌های تعریف شده در فایل مطابقت داده می‌شوند."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Once you plug an ESP32 Recovery Module into your network, approval requests will appear here."
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -1156,6 +1252,15 @@ msgstr "یک‌بار مصرف"
 #: src/components/login/auth-form.tsx
 msgid "One-time password"
 msgstr "رمز عبور یک‌بار مصرف"
+
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+msgid "ONLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Open Local ESP Portal"
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1251,6 +1356,10 @@ msgstr "دائمی"
 msgid "Persistence"
 msgstr "ماندگاری"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Physical watchdogs & channels"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
 msgstr "لطفاً برای اطمینان از تحویل هشدارها، یک <0>سرور SMTP پیکربندی کنید</0>."
@@ -1311,6 +1420,15 @@ msgstr "زبان ترجیحی"
 msgid "Process started"
 msgstr "فرآیند شروع شد"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "PROTECTED"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Protection Status"
+msgstr ""
+
 #. Use 'Key' if your language requires many more characters
 #: src/components/add-system.tsx
 msgid "Public Key"
@@ -1337,8 +1455,32 @@ msgstr "خواندن"
 msgid "Received"
 msgstr "دریافت شد"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recent Recovery Events"
+msgstr ""
+
+#: src/components/routes/system.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Recovery"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Module"
+msgstr ""
+
+#: src/components/navbar.tsx
+#: src/components/navbar.tsx
+#: src/components/routes/settings/layout.tsx
+msgid "Recovery Modules"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Protection"
+msgstr ""
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/containers-table/containers-table.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 msgid "Refresh"
 msgstr "تازه‌سازی"
@@ -1346,6 +1488,10 @@ msgstr "تازه‌سازی"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Relationships"
 msgstr "روابط"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay Channel"
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1550,6 +1696,15 @@ msgstr "فضای Swap استفاده شده توسط سیستم"
 msgid "Swap Usage"
 msgstr "میزان استفاده از Swap"
 
+#: src/components/mode-toggle.tsx
+#: src/components/mode-toggle.tsx
+msgid "Switch theme"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "SYNCED"
+msgstr ""
+
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1659,8 +1814,8 @@ msgstr "به ایمیل(ها)"
 
 #: src/components/mode-toggle.tsx
 #: src/components/mode-toggle.tsx
-msgid "Toggle theme"
-msgstr "تغییر تم"
+#~ msgid "Toggle theme"
+#~ msgstr "تغییر تم"
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1786,6 +1941,14 @@ msgstr "ناشناخته"
 msgid "Unlimited"
 msgstr "نامحدود"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmapped / Available"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNUSED"
+msgstr ""
+
 #. Context: System is up
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1872,6 +2035,10 @@ msgstr "فیلدهای قابل مشاهده"
 msgid "Waiting for enough records to display"
 msgstr "در انتظار رکوردهای کافی برای نمایش"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Want to help improve our translations? Check <0>Crowdin</0> for details."
 msgstr "می‌خواهید به ما کمک کنید تا ترجمه‌های خود را بهتر کنیم؟ برای جزئیات بیشتر به <0>Crowdin</0> مراجعه کنید."
@@ -1906,6 +2073,10 @@ msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "دستور Windows"
 
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "WOL READY"
+msgstr ""
+
 #. Disk write
 #: src/components/routes/system/charts/disk-charts.tsx
 #: src/components/routes/system/disk-io-sheet.tsx
@@ -1927,6 +2098,10 @@ msgstr "پیکربندی YAML"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Yes"
 msgstr "بله"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "YES"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

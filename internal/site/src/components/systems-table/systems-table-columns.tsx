@@ -424,6 +424,7 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 					</Link>
 				)
 			},
+		},
 		{
 			id: "recovery",
 			name: () => t`Recovery`,

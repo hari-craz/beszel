@@ -125,6 +125,10 @@ msgstr "Hozzáadás {foo}"
 msgid "Add URL"
 msgstr "URL hozzáadása"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Address is LAN-local and may be stale if the module is offline."
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Adjust display options for charts."
 msgstr "A diagramok megjelenítésének beállítása."
@@ -190,6 +194,10 @@ msgstr "Biztos vagy benne?"
 #: src/components/copy-to-clipboard.tsx
 msgid "Automatic copy requires a secure context."
 msgstr "Az automatikus másolás biztonságos környezetet igényel."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Automatic WOL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -406,6 +414,14 @@ msgstr "Kattints a másoláshoz"
 msgid "Command line instructions"
 msgstr "Parancssori utasítások"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Revision"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Config Synchronization"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Configure how you receive alert notifications."
 msgstr "Konfiguráld, hogyan kapod az értesítéseket."
@@ -570,6 +586,11 @@ msgstr "Alapértelmezett"
 msgid "Default time period"
 msgstr "Alapértelmezett időszak"
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "DEGRADED"
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -592,6 +613,10 @@ msgstr "Részlet"
 #: src/components/routes/system/smart-table.tsx
 msgid "Device"
 msgstr "Eszköz"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "DISABLED"
+msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -688,6 +713,10 @@ msgstr "E-mail értesítések"
 msgid "Empty"
 msgstr "Üres"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "ENABLED"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "End Time"
@@ -717,7 +746,6 @@ msgstr "Adja meg az egyszeri jelszavát."
 msgid "Ephemeral"
 msgstr "Ideiglenes"
 
-#: src/components/login/auth-form.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/config-yaml.tsx
 #: src/components/routes/settings/heartbeat.tsx
@@ -726,10 +754,15 @@ msgstr "Ideiglenes"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
 msgstr "Hiba"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "ESP IP Address"
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Example:"
@@ -877,9 +910,21 @@ msgstr "GPU használat"
 msgid "Grid"
 msgstr "Rács"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Hardware Recovery Modules"
+msgstr ""
+
 #: src/components/containers-table/containers-table-columns.tsx
 msgid "Health"
 msgstr "Egészség"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "HEALTHY"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
@@ -999,6 +1044,14 @@ msgstr "Terhelési átlag"
 msgid "Load state"
 msgstr "Betöltési állapot"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading events..."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Loading modules and channels..."
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
 msgstr "Betöltés..."
@@ -1009,8 +1062,8 @@ msgid "Log Out"
 msgstr "Kijelentkezés"
 
 #: src/components/login/login.tsx
-msgid "Login"
-msgstr "Bejelentkezés"
+#~ msgid "Login"
+#~ msgstr "Bejelentkezés"
 
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
@@ -1027,13 +1080,27 @@ msgstr "Naplók"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "Inkább azt keresi, hogy hol hozhat létre riasztásokat? Kattintson a csengő <0/> ikonokra a rendszerek táblázatában."
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAC Address"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Main PID"
 msgstr "Fő PID"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "MAINTENANCE"
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
 msgstr "A megjelenítési és értesítési beállítások kezelése."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manage ESP32 hardware watchdog and physical relay controllers."
+msgstr ""
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1111,6 +1178,18 @@ msgstr "Sávszélesség mértékegysége"
 msgid "No"
 msgstr "Nem"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "NO"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "No recent recovery events"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "No Recovery Modules Registered"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "No results found."
@@ -1134,6 +1213,11 @@ msgstr "Ehhez az eszközhöz nem állnak rendelkezésre S.M.A.R.T. attribútumok
 msgid "No systems found."
 msgstr "Nem található rendszer."
 
+#: src/components/routes/system/recovery-info.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "NOT INSTALLED"
+msgstr ""
+
 #: src/components/command-palette.tsx
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1144,9 +1228,21 @@ msgstr "Értesítések"
 msgid "OAuth 2 / OIDC support"
 msgstr "OAuth 2 / OIDC támogatás"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "OFFLINE PENDING"
+msgstr ""
+
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
 msgstr "Minden újraindításkor az adatbázisban lévő rendszerek frissítésre kerülnek, hogy megfeleljenek a fájlban meghatározott rendszereknek."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Once you plug an ESP32 Recovery Module into your network, approval requests will appear here."
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -1156,6 +1252,15 @@ msgstr "Egyszeri"
 #: src/components/login/auth-form.tsx
 msgid "One-time password"
 msgstr "Egyszeri jelszó"
+
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/system/recovery-info.tsx
+msgid "ONLINE"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Open Local ESP Portal"
+msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1251,6 +1356,10 @@ msgstr "Állandó"
 msgid "Persistence"
 msgstr "Tartósság"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Physical watchdogs & channels"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
 msgstr "Kérjük, <0>konfigurálj egy SMTP szervert</0> az értesítések kézbesítésének biztosítása érdekében."
@@ -1311,6 +1420,15 @@ msgstr "Preferált nyelv"
 msgid "Process started"
 msgstr "Folyamat elindítva"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "PROTECTED"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Protection Status"
+msgstr ""
+
 #. Use 'Key' if your language requires many more characters
 #: src/components/add-system.tsx
 msgid "Public Key"
@@ -1337,8 +1455,32 @@ msgstr "Olvasás"
 msgid "Received"
 msgstr "Fogadott"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recent Recovery Events"
+msgstr ""
+
+#: src/components/routes/system.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Recovery"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Module"
+msgstr ""
+
+#: src/components/navbar.tsx
+#: src/components/navbar.tsx
+#: src/components/routes/settings/layout.tsx
+msgid "Recovery Modules"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Protection"
+msgstr ""
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/containers-table/containers-table.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 msgid "Refresh"
 msgstr "Frissítés"
@@ -1346,6 +1488,10 @@ msgstr "Frissítés"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Relationships"
 msgstr "Kapcsolatok"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Relay Channel"
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1550,6 +1696,15 @@ msgstr "Rendszer által használt swap terület"
 msgid "Swap Usage"
 msgstr "Swap használat"
 
+#: src/components/mode-toggle.tsx
+#: src/components/mode-toggle.tsx
+msgid "Switch theme"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "SYNCED"
+msgstr ""
+
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1659,8 +1814,8 @@ msgstr "E-mailben"
 
 #: src/components/mode-toggle.tsx
 #: src/components/mode-toggle.tsx
-msgid "Toggle theme"
-msgstr "Téma váltása"
+#~ msgid "Toggle theme"
+#~ msgstr "Téma váltása"
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1786,6 +1941,14 @@ msgstr "Ismeretlen"
 msgid "Unlimited"
 msgstr "Korlátlan"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmapped / Available"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNUSED"
+msgstr ""
+
 #. Context: System is up
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1872,6 +2035,10 @@ msgstr "Látható mezők"
 msgid "Waiting for enough records to display"
 msgstr "Elegendő rekordra várva a megjelenítéshez"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 msgid "Want to help improve our translations? Check <0>Crowdin</0> for details."
 msgstr "Szeretne segíteni nekünk abban, hogy fordításaink még jobbak legyenek? További részletekért nézze meg a <0>Crowdin</0> honlapot."
@@ -1906,6 +2073,10 @@ msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Windows parancs"
 
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "WOL READY"
+msgstr ""
+
 #. Disk write
 #: src/components/routes/system/charts/disk-charts.tsx
 #: src/components/routes/system/disk-io-sheet.tsx
@@ -1927,6 +2098,10 @@ msgstr "YAML konfiguráció"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Yes"
 msgstr "Igen"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "YES"
+msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

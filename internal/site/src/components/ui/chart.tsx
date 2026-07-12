@@ -5,7 +5,7 @@ import * as RechartsPrimitive from "recharts"
 import { chartTimeData, cn } from "@/lib/utils"
 import type { ChartData } from "@/types"
 import { Separator } from "./separator"
-import { AxisDomain } from "recharts/types/util/types"
+import type { AxisDomain } from "recharts/types/util/types"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const

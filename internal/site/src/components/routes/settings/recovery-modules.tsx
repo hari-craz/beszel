@@ -100,7 +100,9 @@ export default function RecoveryModulesSettings() {
 			) : modules.length === 0 ? (
 				<div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12 text-center text-muted-foreground">
 					<ShieldAlertIcon className="h-10 w-10 mb-3 text-muted-foreground/60" />
-					<h4 className="font-semibold text-md mb-1"><Trans>No Recovery Modules Registered</Trans></h4>
+					<h4 className="font-semibold text-md mb-1">
+						<Trans>No Recovery Modules Registered</Trans>
+					</h4>
 					<p className="text-sm max-w-sm mb-4">
 						<Trans>Once you plug an ESP32 Recovery Module into your network, approval requests will appear here.</Trans>
 					</p>
@@ -141,14 +143,20 @@ export default function RecoveryModulesSettings() {
 								<CardContent className="space-y-4">
 									<div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
 										<div>
-											<span className="text-muted-foreground"><Trans>Config Synchronization</Trans></span>
+											<span className="text-muted-foreground">
+												<Trans>Config Synchronization</Trans>
+											</span>
 											<div className="font-semibold flex items-center gap-1.5 mt-0.5">
-												<ShieldCheckIcon className={`h-4 w-4 ${isOnline ? "text-green-500" : "text-muted-foreground"}`} />
+												<ShieldCheckIcon
+													className={`h-4 w-4 ${isOnline ? "text-green-500" : "text-muted-foreground"}`}
+												/>
 												{isOnline ? <Trans>SYNCED</Trans> : <Trans>OFFLINE PENDING</Trans>}
 											</div>
 										</div>
 										<div>
-											<span className="text-muted-foreground"><Trans>Config Revision</Trans></span>
+											<span className="text-muted-foreground">
+												<Trans>Config Revision</Trans>
+											</span>
 											<div className="font-semibold mt-0.5">{mod.config_revision}</div>
 										</div>
 									</div>
@@ -156,32 +164,49 @@ export default function RecoveryModulesSettings() {
 									<Separator />
 
 									<div>
-										<h4 className="text-sm font-semibold mb-3"><Trans>Physical watchdogs & channels</Trans></h4>
+										<h4 className="text-sm font-semibold mb-3">
+											<Trans>Physical watchdogs & channels</Trans>
+										</h4>
 										<div className="space-y-2.5">
 											{Array.from({ length: mod.max_channels }).map((_, idx) => {
 												const chanNum = idx + 1
 												const mapping = moduleChannels.find((ch) => ch.channel_number === chanNum)
 												return (
-													<div key={chanNum} className="flex justify-between items-center p-3 rounded-lg border text-sm bg-muted/40">
+													<div
+														key={chanNum}
+														className="flex justify-between items-center p-3 rounded-lg border text-sm bg-muted/40"
+													>
 														<div className="space-y-1">
 															<div className="font-semibold text-primary">Channel {chanNum}</div>
 															{mapping ? (
 																<div className="text-xs text-muted-foreground">
-																	Target: <span className="font-medium text-foreground">{mapping.expand?.system?.name || mapping.system}</span> | Ports: {mapping.probe_ports?.join(", ")}
+																	Target:{" "}
+																	<span className="font-medium text-foreground">
+																		{mapping.expand?.system?.name || mapping.system}
+																	</span>{" "}
+																	| Ports: {mapping.probe_ports?.join(", ")}
 																</div>
 															) : (
-																<div className="text-xs text-muted-foreground"><Trans>Unmapped / Available</Trans></div>
+																<div className="text-xs text-muted-foreground">
+																	<Trans>Unmapped / Available</Trans>
+																</div>
 															)}
 														</div>
 														<div>
 															{mapping ? (
 																mapping.maintenance ? (
-																	<Badge variant="warning"><Trans>MAINTENANCE</Trans></Badge>
+																	<Badge variant="warning">
+																		<Trans>MAINTENANCE</Trans>
+																	</Badge>
 																) : (
-																	<Badge variant="success"><Trans>PROTECTED</Trans></Badge>
+																	<Badge variant="success">
+																		<Trans>PROTECTED</Trans>
+																	</Badge>
 																)
 															) : (
-																<Badge variant="secondary"><Trans>UNUSED</Trans></Badge>
+																<Badge variant="secondary">
+																	<Trans>UNUSED</Trans>
+																</Badge>
 															)}
 														</div>
 													</div>
