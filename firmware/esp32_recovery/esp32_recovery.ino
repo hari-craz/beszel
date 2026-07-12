@@ -15,7 +15,7 @@
 // Pin settings
 #define ONE_WIRE_BUS 4
 #define BUZZER_PIN 12
-const int RELAY_PINS[MAX_CHANNELS_LIMIT] = {16, 17, 25, 26, 27, 32};
+const int RELAY_PINS[MAX_CHANNELS_LIMIT] = {18, 19, 25, 26, 27, 32};
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 OneWire oneWire(ONE_WIRE_BUS);
