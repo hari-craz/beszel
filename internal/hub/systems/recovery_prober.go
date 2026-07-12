@@ -18,6 +18,8 @@ type RecoveryProber struct {
 	app       core.App
 	watchdogs map[string]*systemWatchdog
 	running   bool
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // systemWatchdog stores in-memory state and the cancellation hook for a single system watchdog loop.
@@ -39,9 +41,12 @@ type systemWatchdog struct {
 
 // NewRecoveryProber instantiates a new watchdog manager.
 func NewRecoveryProber(app core.App) *RecoveryProber {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &RecoveryProber{
 		app:       app,
 		watchdogs: make(map[string]*systemWatchdog),
+		ctx:       ctx,
+		cancel:    cancel,
 	}
 }
 
@@ -54,6 +59,9 @@ func (rp *RecoveryProber) Start() error {
 	}
 	rp.running = true
 	rp.mu.Unlock()
+
+	// Start offline modules detection scanner
+	go rp.runOfflineScanner(rp.ctx)
 
 	// Load existing mappings
 	records, err := rp.app.FindRecordsByFilter("recovery_channels", "", "", -1, 0)
@@ -351,4 +359,47 @@ func (rp *RecoveryProber) logEvent(systemID, channelID, event string, metadata m
 	record.Set("metadata", string(metaJSON))
 
 	_ = rp.app.Save(record)
+}
+
+// runOfflineScanner runs a periodic check to transition recovery modules to offline if pings stop.
+func (rp *RecoveryProber) runOfflineScanner(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			records, err := rp.app.FindRecordsByFilter("recovery_modules", "status != 'unapproved'", "", -1, 0)
+			if err != nil {
+				continue
+			}
+			now := time.Now().UTC()
+			for _, rec := range records {
+				lastHeartbeat := rec.GetDateTime("updated").Time()
+				status := rec.GetString("status")
+				if now.Sub(lastHeartbeat) > 90*time.Second {
+					if status != "offline" {
+						rec.Set("status", "offline")
+						_ = rp.app.Save(rec)
+						rp.logEvent("", "", "MODULE_OFFLINE", map[string]any{
+							"module": rec.Id,
+							"name":   rec.GetString("name"),
+							"mac":    rec.GetString("mac_address"),
+						})
+					}
+				} else {
+					if status == "offline" || status == "" {
+						rec.Set("status", "online")
+						_ = rp.app.Save(rec)
+						rp.logEvent("", "", "MODULE_ONLINE", map[string]any{
+							"module": rec.Id,
+							"name":   rec.GetString("name"),
+							"mac":    rec.GetString("mac_address"),
+						})
+					}
+				}
+			}
+		}
+	}
 }

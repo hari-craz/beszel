@@ -183,6 +183,10 @@ msgstr "すべてのコンテナ"
 msgid "All Systems"
 msgstr "すべてのシステム"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Approve Module"
+msgstr ""
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Are you sure you want to delete {name}?"
 msgstr "{name}を削除してもよろしいですか？"
@@ -754,6 +758,7 @@ msgstr "一時的"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1468,6 +1473,10 @@ msgstr ""
 msgid "Recovery Module"
 msgstr ""
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module has been approved."
+msgstr ""
+
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1687,6 +1696,10 @@ msgstr "ステータス"
 #: src/components/systemd-table/systemd-table-columns.tsx
 msgid "Sub State"
 msgstr "サブ状態"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Success"
+msgstr ""
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"
@@ -1921,6 +1934,10 @@ msgstr "ディスクの使用量がしきい値を超えたときにトリガー
 msgid "Type"
 msgstr "タイプ"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNAPPROVED"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Unit file"
 msgstr "ユニットファイル"
@@ -2034,6 +2051,10 @@ msgstr "直近200件のアラートを表示します。"
 #: src/components/systems-table/systems-table.tsx
 msgid "Visible Fields"
 msgstr "表示列"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WAITING APPROVAL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Waiting for enough records to display"

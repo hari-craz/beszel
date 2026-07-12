@@ -118,6 +118,7 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	apiAuth.GET("/config-yaml", config.GetYamlConfig).BindFunc(requireAdminRole)
 	// handle agent websocket connection
 	apiNoAuth.GET("/agent-connect", h.handleAgentConnect)
+	apiNoAuth.POST("/recovery/ping", h.handleRecoveryPing)
 	// get or create universal tokens
 	apiAuth.GET("/universal-token", h.getUniversalToken).BindFunc(excludeReadOnlyRole)
 	// update / delete user alerts
@@ -521,5 +522,86 @@ func (h *Hub) triggerManualWOL(e *core.RequestEvent) error {
 		_ = e.App.Save(eventRec)
 	}
 	return e.JSON(http.StatusOK, map[string]any{"status": "ok"})
+}
+
+type recoveryPingPayload struct {
+	MACAddress      string `json:"mac_address"`
+	IPAddress       string `json:"ip_address"`
+	FirmwareVersion string `json:"firmware_version"`
+	MaxChannels     int    `json:"max_channels"`
+	ConfigRevision  int    `json:"config_revision"`
+	ConfigHash      string `json:"config_hash"`
+}
+
+// handleRecoveryPing handles POST /api/beszel/recovery/ping requests from ESP32 modules.
+func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
+	var payload recoveryPingPayload
+	if err := e.BindBody(&payload); err != nil {
+		return e.BadRequestError("Invalid request payload", err)
+	}
+	if payload.MACAddress == "" || payload.IPAddress == "" {
+		return e.BadRequestError("Missing MAC or IP Address", nil)
+	}
+	rec, err := e.App.FindFirstRecordByFilter("recovery_modules", "mac_address = {:mac}", dbx.Params{"mac": payload.MACAddress})
+	collection, errCol := e.App.FindCollectionByNameOrId("recovery_modules")
+	if errCol != nil {
+		return e.InternalServerError("Recovery modules collection not found", errCol)
+	}
+	var isNew bool
+	if err != nil {
+		isNew = true
+		rec = core.NewRecord(collection)
+		rec.Set("mac_address", payload.MACAddress)
+		rec.Set("name", fmt.Sprintf("Discovered ESP (%s)", payload.MACAddress))
+		rec.Set("max_channels", payload.MaxChannels)
+		rec.Set("status", "unapproved")
+	}
+	rec.Set("ip_address", payload.IPAddress)
+	if payload.FirmwareVersion != "" {
+		rec.Set("firmware_version", payload.FirmwareVersion)
+	}
+	if errSave := e.App.Save(rec); errSave != nil {
+		return e.InternalServerError("Failed to save module record", errSave)
+	}
+	if isNew {
+		collectionEvents, errEv := e.App.FindCollectionByNameOrId("recovery_events")
+		if errEv == nil {
+			eventRec := core.NewRecord(collectionEvents)
+			eventRec.Set("module", rec.Id)
+			eventRec.Set("event", "MODULE_DISCOVERED")
+			eventRec.Set("timestamp", time.Now().UTC())
+			eventRec.Set("metadata", fmt.Sprintf(`{"mac":"%s","ip":"%s"}`, payload.MACAddress, payload.IPAddress))
+			_ = e.App.Save(eventRec)
+		}
+	}
+	if rec.GetString("status") == "unapproved" {
+		return e.JSON(http.StatusOK, map[string]any{
+			"status": "unapproved",
+		})
+	}
+	var channels []map[string]any
+	channelRecords, errChan := e.App.FindRecordsByFilter("recovery_channels", "module = {:module}", "", -1, 0, dbx.Params{"module": rec.Id})
+	if errChan == nil {
+		for _, chRec := range channelRecords {
+			var ports []int
+			portsData := chRec.GetString("probe_ports")
+			if portsData != "" {
+				_ = json.Unmarshal([]byte(portsData), &ports)
+			}
+			channels = append(channels, map[string]any{
+				"channel":     chRec.GetInt("channel_number"),
+				"system":      chRec.GetString("system"),
+				"host_ip":     chRec.GetString("host_ip"),
+				"ports":       ports,
+				"maintenance": chRec.GetBool("maintenance"),
+			})
+		}
+	}
+	return e.JSON(http.StatusOK, map[string]any{
+		"status":          rec.GetString("status"),
+		"config_revision": rec.GetInt("config_revision"),
+		"config_hash":     rec.GetString("config_hash"),
+		"channels":        channels,
+	})
 }
 

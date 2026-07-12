@@ -183,6 +183,10 @@ msgstr "Vsi kontejnerji"
 msgid "All Systems"
 msgstr "Vsi sistemi"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Approve Module"
+msgstr ""
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Are you sure you want to delete {name}?"
 msgstr "Ali ste prepričani, da želite izbrisati {name}?"
@@ -754,6 +758,7 @@ msgstr "Prehodni"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1468,6 +1473,10 @@ msgstr ""
 msgid "Recovery Module"
 msgstr ""
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module has been approved."
+msgstr ""
+
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1687,6 +1696,10 @@ msgstr "Stanje"
 #: src/components/systemd-table/systemd-table-columns.tsx
 msgid "Sub State"
 msgstr "Podstanje"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Success"
+msgstr ""
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"
@@ -1921,6 +1934,10 @@ msgstr "Sproži se, ko uporaba katerega koli diska preseže prag"
 msgid "Type"
 msgstr "Vrsta"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNAPPROVED"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Unit file"
 msgstr "Datoteka enote"
@@ -2034,6 +2051,10 @@ msgstr "Oglejte si svojih 200 najnovejših opozoril."
 #: src/components/systems-table/systems-table.tsx
 msgid "Visible Fields"
 msgstr "Vidna polja"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WAITING APPROVAL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Waiting for enough records to display"

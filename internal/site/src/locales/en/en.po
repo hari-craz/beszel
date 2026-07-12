@@ -178,6 +178,10 @@ msgstr "All Containers"
 msgid "All Systems"
 msgstr "All Systems"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Approve Module"
+msgstr "Approve Module"
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Are you sure you want to delete {name}?"
 msgstr "Are you sure you want to delete {name}?"
@@ -749,6 +753,7 @@ msgstr "Ephemeral"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1463,6 +1468,10 @@ msgstr "Recovery"
 msgid "Recovery Module"
 msgstr "Recovery Module"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module has been approved."
+msgstr "Recovery module has been approved."
+
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1682,6 +1691,10 @@ msgstr "Status"
 #: src/components/systemd-table/systemd-table-columns.tsx
 msgid "Sub State"
 msgstr "Sub State"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Success"
+msgstr "Success"
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"
@@ -1916,6 +1929,10 @@ msgstr "Triggers when usage of any disk exceeds a threshold"
 msgid "Type"
 msgstr "Type"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNAPPROVED"
+msgstr "UNAPPROVED"
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Unit file"
 msgstr "Unit file"
@@ -2029,6 +2046,10 @@ msgstr "View your 200 most recent alerts."
 #: src/components/systems-table/systems-table.tsx
 msgid "Visible Fields"
 msgstr "Visible Fields"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WAITING APPROVAL"
+msgstr "WAITING APPROVAL"
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Waiting for enough records to display"

@@ -45,6 +45,29 @@ export default function RecoveryModulesSettings() {
 	const [modules, setModules] = useState<RecoveryModule[]>([])
 	const [channels, setChannels] = useState<RecoveryChannel[]>([])
 	const [isLoading, setIsLoading] = useState(true)
+	const [isApproving, setIsApproving] = useState<Record<string, boolean>>({})
+
+	async function approveModule(id: string) {
+		setIsApproving((prev) => ({ ...prev, [id]: true }))
+		try {
+			await pb.collection("recovery_modules").update(id, {
+				status: "online",
+			})
+			toast({
+				title: t`Success`,
+				description: t`Recovery module has been approved.`,
+			})
+			fetchData()
+		} catch (error) {
+			toast({
+				title: t`Error`,
+				description: (error as Error).message,
+				variant: "destructive",
+			})
+		} finally {
+			setIsApproving((prev) => ({ ...prev, [id]: false }))
+		}
+	}
 
 	if (!isAdmin()) {
 		redirectPage($router, "settings", { name: "general" })
@@ -111,33 +134,45 @@ export default function RecoveryModulesSettings() {
 				<div className="space-y-6">
 					{modules.map((mod) => {
 						const moduleChannels = channels.filter((ch) => ch.module === mod.id)
-						const isOnline = mod.status === "ONLINE"
+						const isUnapproved = mod.status === "unapproved"
+						const isOnline = mod.status === "online" || mod.status === "ONLINE"
 						return (
 							<Card key={mod.id}>
 								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
 									<div>
 										<CardTitle className="text-lg font-semibold flex items-center gap-2">
 											{mod.name}
-											<Badge variant={isOnline ? "success" : "secondary"}>
-												{isOnline ? <Trans>ONLINE</Trans> : <Trans>OFFLINE</Trans>}
+											<Badge variant={isUnapproved ? "warning" : isOnline ? "success" : "secondary"}>
+												{isUnapproved ? <Trans>WAITING APPROVAL</Trans> : isOnline ? <Trans>ONLINE</Trans> : <Trans>OFFLINE</Trans>}
 											</Badge>
 										</CardTitle>
 										<CardDescription className="font-mono text-xs mt-1">
 											MAC: {mod.mac_address} | Firmware: {mod.firmware_version}
 										</CardDescription>
 									</div>
-									{mod.ip_address && (
-										<div className="flex flex-col items-end gap-1.5">
-											<Button variant="outline" size="sm" asChild>
-												<a href={`http://${mod.ip_address}`} target="_blank" rel="noopener noreferrer">
-													<Trans>Open Local ESP Portal</Trans>
-													<ExternalLinkIcon className="h-3 w-3 ml-1.5" />
-												</a>
-											</Button>
-											<span className="text-[10px] text-muted-foreground text-right max-w-[200px] leading-tight">
-												<Trans>Address is LAN-local and may be stale if the module is offline.</Trans>
-											</span>
-										</div>
+									{isUnapproved ? (
+										<Button
+											size="sm"
+											onClick={() => approveModule(mod.id)}
+											disabled={isApproving[mod.id]}
+										>
+											{isApproving[mod.id] ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
+											<Trans>Approve Module</Trans>
+										</Button>
+									) : (
+										mod.ip_address && (
+											<div className="flex flex-col items-end gap-1.5">
+												<Button variant="outline" size="sm" asChild>
+													<a href={`http://${mod.ip_address}`} target="_blank" rel="noopener noreferrer">
+														<Trans>Open Local ESP Portal</Trans>
+														<ExternalLinkIcon className="h-3 w-3 ml-1.5" />
+													</a>
+												</Button>
+												<span className="text-[10px] text-muted-foreground text-right max-w-[200px] leading-tight">
+													<Trans>Address is LAN-local and may be stale if the module is offline.</Trans>
+												</span>
+											</div>
+										)
 									)}
 								</CardHeader>
 								<CardContent className="space-y-4">
@@ -150,7 +185,13 @@ export default function RecoveryModulesSettings() {
 												<ShieldCheckIcon
 													className={`h-4 w-4 ${isOnline ? "text-green-500" : "text-muted-foreground"}`}
 												/>
-												{isOnline ? <Trans>SYNCED</Trans> : <Trans>OFFLINE PENDING</Trans>}
+												{isUnapproved ? (
+													<Trans>UNAPPROVED</Trans>
+												) : isOnline ? (
+													<Trans>SYNCED</Trans>
+												) : (
+													<Trans>OFFLINE PENDING</Trans>
+												)}
 											</div>
 										</div>
 										<div>

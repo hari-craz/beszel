@@ -183,6 +183,10 @@ msgstr "모든 컨테이너"
 msgid "All Systems"
 msgstr "모든 시스템"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Approve Module"
+msgstr ""
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Are you sure you want to delete {name}?"
 msgstr "{name}을(를) 삭제하시겠습니까?"
@@ -754,6 +758,7 @@ msgstr "일시적"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1468,6 +1473,10 @@ msgstr ""
 msgid "Recovery Module"
 msgstr ""
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module has been approved."
+msgstr ""
+
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1687,6 +1696,10 @@ msgstr "상태"
 #: src/components/systemd-table/systemd-table-columns.tsx
 msgid "Sub State"
 msgstr "하위 상태"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Success"
+msgstr ""
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"
@@ -1921,6 +1934,10 @@ msgstr "디스크 사용량이 임계값을 초과할 때 트리거됩니다."
 msgid "Type"
 msgstr "유형"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "UNAPPROVED"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Unit file"
 msgstr "Unit 파일"
@@ -2034,6 +2051,10 @@ msgstr "최근 200개의 알림을 봅니다."
 #: src/components/systems-table/systems-table.tsx
 msgid "Visible Fields"
 msgstr "표시할 열"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WAITING APPROVAL"
+msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Waiting for enough records to display"
