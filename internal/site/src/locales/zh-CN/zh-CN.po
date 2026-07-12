@@ -1780,6 +1780,10 @@ msgstr "测试 heartbeat"
 msgid "Test notification sent"
 msgstr "测试通知已发送"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "当所有系统都正常运行时，整体状态为 <0>ok</0>；当触发警报时为 <1>警告</1>；当任何系统故障时为 <2>错误</2>。"
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "正在收集足够的数据来显示"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "使用 POST 时，每个 heartbeat 都包含一个 JSON 有效载荷，�
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Windows 安装命令"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

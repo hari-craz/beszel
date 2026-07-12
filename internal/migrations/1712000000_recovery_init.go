@@ -46,6 +46,18 @@ func init() {
 				"required": false
 			},
 			{
+				"id": "modulegwip0001",
+				"name": "gateway_ip",
+				"type": "text",
+				"required": false
+			},
+			{
+				"id": "modulegwname01",
+				"name": "gateway_name",
+				"type": "text",
+				"required": false
+			},
+			{
 				"id": "modulemaxch01",
 				"name": "max_channels",
 				"type": "number",
@@ -116,7 +128,7 @@ func init() {
 				"id": "chanmodule001",
 				"name": "module",
 				"type": "relation",
-				"required": true,
+				"required": false,
 				"collectionId": "recoverymodules",
 				"cascadeDelete": true,
 				"maxSelect": 1
@@ -125,7 +137,7 @@ func init() {
 				"id": "channum0000001",
 				"name": "channel_number",
 				"type": "number",
-				"required": true,
+				"required": false,
 				"onlyInt": true
 			},
 			{
@@ -168,6 +180,37 @@ func init() {
 				"name": "maintenance",
 				"type": "bool",
 				"required": false
+			},
+			{
+				"id": "chanwolenable01",
+				"name": "wol_enabled",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "chanautowol001",
+				"name": "auto_wol",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "chanmacaddr001",
+				"name": "mac_address",
+				"type": "text",
+				"required": false
+			},
+			{
+				"id": "chanbcaddr0001",
+				"name": "broadcast_address",
+				"type": "text",
+				"required": false
+			},
+			{
+				"id": "chanwolport001",
+				"name": "wol_port",
+				"type": "number",
+				"required": false,
+				"onlyInt": true
 			},
 			{
 				"id": "autodate2990389176",

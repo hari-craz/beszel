@@ -1780,6 +1780,10 @@ msgstr "Test-heartbeat"
 msgid "Test notification sent"
 msgstr "Test-varsling sendt"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "Den generelle statusen er <0>ok</0> når alle systemer er oppe, <1>varsel</1> når varsler utløses, og <2>feil</2> når et system er nede."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "Venter på nok registreringer til å vise"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "Ved bruk av POST inkluderer hver heartbeat en JSON-nyttelast med systems
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Windows-kommando"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

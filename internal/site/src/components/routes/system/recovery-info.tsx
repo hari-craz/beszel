@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react"
+import { t } from "@lingui/core/macro"
 import { Trans } from "@lingui/react/macro"
 import { pb } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShieldCheck, ShieldAlert, AlertTriangle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/use-toast"
+import { ShieldCheck, ShieldAlert, AlertTriangle, LoaderCircle } from "lucide-react"
 
 interface RecoveryInfoProps {
 	systemId: string
@@ -13,6 +16,33 @@ interface RecoveryInfoProps {
 export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 	const [events, setEvents] = useState<any[]>([])
 	const [loading, setLoading] = useState(true)
+	const [isWaking, setIsWaking] = useState(false)
+
+	async function triggerManualWake() {
+		setIsWaking(true)
+		try {
+			await pb.send("/api/beszel/recovery/wake", {
+				method: "POST",
+				query: { system: systemId },
+			})
+			toast({
+				title: t`Wake-on-LAN magic packet sent`,
+				description: t`The broadcast has been sent on UDP port 9.`,
+			})
+			const res = await pb.send("/api/beszel/recovery/events", {
+				query: { system: systemId },
+			})
+			setEvents(res || [])
+		} catch (e) {
+			toast({
+				title: t`WOL broadcast failed`,
+				description: (e as Error).message,
+				variant: "destructive",
+			})
+		} finally {
+			setIsWaking(false)
+		}
+	}
 
 	useEffect(() => {
 		let isMounted = true
@@ -103,6 +133,17 @@ export default function RecoveryInfo({ systemId, info }: RecoveryInfoProps) {
 										<Trans>MAC Address</Trans>
 									</span>
 									<span className="font-mono">{info.mac_address || "N/A"}</span>
+								</div>
+								<div className="pt-2 pl-4">
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={triggerManualWake}
+										disabled={isWaking}
+									>
+										{isWaking ? <LoaderCircle className="h-3 w-3 animate-spin mr-1.5" /> : null}
+										<Trans>Wake Server</Trans>
+									</Button>
 								</div>
 							</>
 						)}

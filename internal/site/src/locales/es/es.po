@@ -1780,6 +1780,10 @@ msgstr "Probar latido"
 msgid "Test notification sent"
 msgstr "Notificación de prueba enviada"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "El estado general es <0>ok</0> cuando todos los sistemas están activos, <1>warn</1> cuando se activan alertas y <2>error</2> cuando algún sistema está caído."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "Esperando suficientes registros para mostrar"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "Al usar POST, cada latido incluye una carga útil JSON con un resumen de
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Comando Windows"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

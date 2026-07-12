@@ -1780,6 +1780,10 @@ msgstr "בדוק פעימת לב"
 msgid "Test notification sent"
 msgstr "התראת בדיקה נשלחה"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "הסטטוס הכללי הוא <0>ok</0> כשכל המערכות פועלות, <1>warn</1> כשמופעלות התראות, ו-<2>error</2> כשמערכת כלשהי מושבתת."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "ממתין לרשומות מספיקות לתצוגה"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "בשימוש ב-POST, כל פעימת לב כוללת מטען JSON עם
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "פקודת Windows"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

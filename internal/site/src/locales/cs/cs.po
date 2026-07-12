@@ -1780,6 +1780,10 @@ msgstr "Testovat heartbeat"
 msgid "Test notification sent"
 msgstr "Testovací oznámení odesláno"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "Celkový stav je <0>ok</0>, když jsou všechny systémy v provozu, <1>warn</1>, když jsou spuštěny výstrahy, a <2>error</2>, když je některý systém mimo provoz."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "Čeká se na dostatek záznamů k zobrazení"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "Při použití metody POST obsahuje každý heartbeat JSON payload se so
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Windows příkaz"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

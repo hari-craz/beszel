@@ -138,6 +138,7 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	apiAuth.GET("/recovery/modules", h.getRecoveryModules)
 	apiAuth.GET("/recovery/module", h.getRecoveryModule)
 	apiAuth.GET("/recovery/events", h.getRecoveryEvents)
+	apiAuth.POST("/recovery/wake", h.triggerManualWOL)
 	return nil
 }
 
@@ -407,6 +408,8 @@ func (h *Hub) getRecoveryModules(e *core.RequestEvent) error {
 			"name":             rec.GetString("name"),
 			"mac_address":      rec.GetString("mac_address"),
 			"ip_address":       rec.GetString("ip_address"),
+			"gateway_ip":       rec.GetString("gateway_ip"),
+			"gateway_name":     rec.GetString("gateway_name"),
 			"max_channels":     rec.GetInt("max_channels"),
 			"firmware_version": rec.GetString("firmware_version"),
 			"status":           rec.GetString("status"),
@@ -434,6 +437,8 @@ func (h *Hub) getRecoveryModule(e *core.RequestEvent) error {
 		"name":             rec.GetString("name"),
 		"mac_address":      rec.GetString("mac_address"),
 		"ip_address":       rec.GetString("ip_address"),
+		"gateway_ip":       rec.GetString("gateway_ip"),
+		"gateway_name":     rec.GetString("gateway_name"),
 		"max_channels":     rec.GetInt("max_channels"),
 		"firmware_version": rec.GetString("firmware_version"),
 		"status":           rec.GetString("status"),
@@ -472,5 +477,49 @@ func (h *Hub) getRecoveryEvents(e *core.RequestEvent) error {
 		})
 	}
 	return e.JSON(http.StatusOK, events)
+}
+
+// triggerManualWOL handles POST /api/beszel/recovery/wake requests
+func (h *Hub) triggerManualWOL(e *core.RequestEvent) error {
+	systemID := e.Request.URL.Query().Get("system")
+	if systemID == "" {
+		return e.BadRequestError("Missing system ID", nil)
+	}
+	system, err := h.sm.GetSystem(systemID)
+	if err != nil || !system.HasUser(e.App, e.Auth) {
+		return e.NotFoundError("System not found or access denied", nil)
+	}
+	rec, err := e.App.FindFirstRecordByFilter("recovery_channels", "system = {:system}", dbx.Params{"system": systemID})
+	if err != nil {
+		return e.BadRequestError("Wake-on-LAN is not configured for this system", err)
+	}
+	mac := rec.GetString("mac_address")
+	bcast := rec.GetString("broadcast_address")
+	port := rec.GetInt("wol_port")
+	if mac == "" {
+		return e.BadRequestError("Wake-on-LAN MAC address is not configured", nil)
+	}
+	if bcast == "" {
+		bcast = "255.255.255.255"
+	}
+	if port <= 0 {
+		port = 9
+	}
+	err = SendMagicPacket(mac, bcast, port)
+	if err != nil {
+		return e.InternalServerError("Failed to broadcast Wake-on-LAN magic packet", err)
+	}
+	collection, err := e.App.FindCollectionByNameOrId("recovery_events")
+	if err == nil {
+		eventRec := core.NewRecord(collection)
+		eventRec.Set("system", systemID)
+		eventRec.Set("module", rec.GetString("module"))
+		eventRec.Set("channel", rec.GetInt("channel_number"))
+		eventRec.Set("event", "WOL_MANUAL_SENT")
+		eventRec.Set("timestamp", time.Now().UTC())
+		eventRec.Set("metadata", fmt.Sprintf(`{"mac":"%s","broadcast":"%s","port":%d,"source":"MANUAL_UI"}`, mac, bcast, port))
+		_ = e.App.Save(eventRec)
+	}
+	return e.JSON(http.StatusOK, map[string]any{"status": "ok"})
 }
 

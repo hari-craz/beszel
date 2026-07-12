@@ -1780,6 +1780,10 @@ msgstr "Testni srčni utrip"
 msgid "Test notification sent"
 msgstr "Testno obvestilo je poslano"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "Splošno stanje je <0>v redu</0>, ko vsi sistemi delujejo, <1>opozorilo</1>, ko se sprožijo opozorila, in <2>napaka</2>, ko kateri koli sistem ne deluje."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "Čakam na dovolj zapisov za prikaz"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "Pri uporabi POST vsak srčni utrip vključuje tovor JSON s povzetkom sta
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "Ukaz Windows"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

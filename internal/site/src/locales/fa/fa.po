@@ -1780,6 +1780,10 @@ msgstr "تست ضربان قلب"
 msgid "Test notification sent"
 msgstr "اعلان آزمایشی ارسال شد"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "The broadcast has been sent on UDP port 9."
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
 msgstr "وضعیت کلی زمانی <0>ok</0> است که همه سیستم‌ها بالا باشند، <1>warn</1> زمانی که هشدارها فعال شوند، و <2>error</2> زمانی که هر سیستمی پایین باشد."
@@ -2036,7 +2040,15 @@ msgid "Waiting for enough records to display"
 msgstr "در انتظار رکوردهای کافی برای نمایش"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Wake Server"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Wake-on-LAN magic packet sent"
 msgstr ""
 
 #: src/components/routes/settings/general.tsx
@@ -2072,6 +2084,10 @@ msgstr "هنگام استفاده از POST، هر ضربان قلب شامل ی
 msgctxt "Button to copy install command"
 msgid "Windows command"
 msgstr "دستور Windows"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "WOL broadcast failed"
+msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"

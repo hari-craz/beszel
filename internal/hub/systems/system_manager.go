@@ -45,6 +45,7 @@ type SystemManager struct {
 	systems       *store.Store[string, *System]         // Thread-safe store of active systems
 	sshConfig     *ssh.ClientConfig                     // SSH client configuration for system connections
 	smartFetchMap *expirymap.ExpiryMap[smartFetchState] // Stores last SMART fetch time/result; TTL is only for cleanup
+	rp            *RecoveryProber                       // Watchdog prober service
 }
 
 // hubLike defines the interface requirements for the hub dependency.
@@ -60,11 +61,13 @@ type hubLike interface {
 // NewSystemManager creates a new SystemManager instance with the provided hub.
 // The hub must implement the hubLike interface to provide database and alert functionality.
 func NewSystemManager(hub hubLike) *SystemManager {
-	return &SystemManager{
+	sm := &SystemManager{
 		systems:       store.New(map[string]*System{}),
 		hub:           hub,
 		smartFetchMap: expirymap.New[smartFetchState](time.Hour),
 	}
+	sm.rp = NewRecoveryProber(hub)
+	return sm
 }
 
 // GetSystem returns a system by ID from the store
@@ -86,6 +89,11 @@ func (sm *SystemManager) Initialize() error {
 	err := sm.createSSHClientConfig()
 	if err != nil {
 		return err
+	}
+
+	// Start recovery prober
+	if err := sm.rp.Start(); err != nil {
+		sm.hub.Logger().Error("Failed to start recovery prober", "err", err)
 	}
 
 	// Load existing systems from database (excluding paused ones)

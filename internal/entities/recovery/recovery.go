@@ -10,6 +10,8 @@ type RecoveryModule struct {
 	Name            string    `json:"name" db:"name"`
 	MacAddress      string    `json:"mac_address" db:"mac_address"`
 	IpAddress       string    `json:"ip_address" db:"ip_address"`
+	GatewayIp       string    `json:"gateway_ip" db:"gateway_ip"`
+	GatewayName     string    `json:"gateway_name" db:"gateway_name"`
 	MaxChannels     int       `json:"max_channels" db:"max_channels"`
 	FirmwareVersion string    `json:"firmware_version" db:"firmware_version"`
 	Status          string    `json:"status" db:"status"`
@@ -30,6 +32,11 @@ type RecoveryChannel struct {
 	FailureThreshold  int       `json:"failure_threshold" db:"failure_threshold"`
 	BootGraceSeconds  int       `json:"boot_grace_seconds" db:"boot_grace_seconds"`
 	Maintenance       bool      `json:"maintenance" db:"maintenance"`
+	WolEnabled        bool      `json:"wol_enabled" db:"wol_enabled"`
+	AutoWol           bool      `json:"auto_wol" db:"auto_wol"`
+	MacAddress        string    `json:"mac_address" db:"mac_address"`
+	BroadcastAddress  string    `json:"broadcast_address" db:"broadcast_address"`
+	WolPort           int       `json:"wol_port" db:"wol_port"`
 	Created           time.Time `json:"created" db:"created"`
 	Updated           time.Time `json:"updated" db:"updated"`
 }
