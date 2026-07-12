@@ -224,6 +224,17 @@ void startProvisioningAP() {
   server.begin();
 }
 
+void handleNormalStatus() {
+  String html = "<html><head><title>Recovery Status</title><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='font-family:sans-serif; background:#121214; color:#e4e4e7; padding:20px;'>";
+  html += "<h2>Recovery Module Active</h2>";
+  html += "<p><b>IP Address:</b> " + WiFi.localIP().toString() + "</p>";
+  html += "<p><b>Hub URL:</b> " + String(hubURL) + "</p>";
+  html += "<p><b>Monitored Channels:</b> " + String(activeChannelCount) + "</p>";
+  html += "<p><b>Config Revision:</b> " + String(localConfigRevision) + "</p>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(CONFIG_BUTTON_PIN, INPUT_PULLUP);
@@ -283,6 +294,7 @@ void setup() {
       lcd.print("Retrying background");
     }
 
+    server.on("/", HTTP_GET, handleNormalStatus);
     server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
     server.begin();
     delay(1000);
