@@ -18,6 +18,7 @@
 const int RELAY_PINS[MAX_CHANNELS_LIMIT] = {18, 19, 25, 26, 27, 32};
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
+bool hasLCD = false;
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 Preferences preferences;
@@ -209,13 +210,15 @@ void startProvisioningAP() {
 
   WiFi.softAP(apSSID.c_str());
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("SETUP ACTIVE");
-  lcd.setCursor(0, 1);
-  lcd.print(apSSID);
-  lcd.setCursor(0, 2);
-  lcd.print("IP: 192.168.4.1");
+  if (hasLCD) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("SETUP ACTIVE");
+    lcd.setCursor(0, 1);
+    lcd.print(apSSID);
+    lcd.setCursor(0, 2);
+    lcd.print("IP: 192.168.4.1");
+  }
   triggerBuzzer(3, 100);
 
   server.on("/", HTTP_GET, handleGetSetup);
@@ -246,9 +249,17 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
+  Wire.begin();
+  Wire.beginTransmission(0x27);
+  if (Wire.endTransmission() == 0) {
+    hasLCD = true;
+    lcd.init();
+    lcd.backlight();
+    lcd.clear();
+    Serial.println("LCD initialized.");
+  } else {
+    Serial.println("LCD not found. Running headless.");
+  }
 
   sensors.begin();
 
@@ -270,10 +281,12 @@ void setup() {
   } else {
     // Normal operation boot
     WiFi.begin(wifiSSID, wifiPassword);
-    lcd.setCursor(0, 0);
-    lcd.print("Connecting WiFi...");
-    lcd.setCursor(0, 1);
-    lcd.print(wifiSSID);
+    if (hasLCD) {
+      lcd.setCursor(0, 0);
+      lcd.print("Connecting WiFi...");
+      lcd.setCursor(0, 1);
+      lcd.print(wifiSSID);
+    }
 
     int count = 0;
     while (WiFi.status() != WL_CONNECTED && count < 15) {
@@ -282,16 +295,20 @@ void setup() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      lcd.clear();
-      lcd.print("WiFi Online");
-      lcd.setCursor(0, 1);
-      lcd.print(WiFi.localIP().toString());
+      if (hasLCD) {
+        lcd.clear();
+        lcd.print("WiFi Online");
+        lcd.setCursor(0, 1);
+        lcd.print(WiFi.localIP().toString());
+      }
       triggerBuzzer(2, 100);
     } else {
-      lcd.clear();
-      lcd.print("WiFi Timeout");
-      lcd.setCursor(0, 1);
-      lcd.print("Retrying background");
+      if (hasLCD) {
+        lcd.clear();
+        lcd.print("WiFi Timeout");
+        lcd.setCursor(0, 1);
+        lcd.print("Retrying background");
+      }
     }
 
     server.on("/", HTTP_GET, handleNormalStatus);
@@ -338,8 +355,10 @@ void checkConfigButton() {
         preferences.begin("watchdog", false);
         preferences.putBool("provisioned", false);
         preferences.end();
-        lcd.clear();
-        lcd.print("Reset Config...");
+        if (hasLCD) {
+          lcd.clear();
+          lcd.print("Reset Config...");
+        }
         triggerBuzzer(4, 80);
         delay(1500);
         ESP.restart();
@@ -564,6 +583,8 @@ void syncWithHub() {
 }
 
 void updateLCDDisplay() {
+  if (!hasLCD) return;
+
   unsigned long now = millis();
   if (now - lastDisplayPageRotation < 4000) {
     return;
