@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/henrygd/beszel/internal/alerts"
 	"github.com/henrygd/beszel/internal/hub/config"
@@ -36,6 +37,7 @@ type Hub struct {
 	pubKey string
 	signer ssh.Signer
 	appURL string
+	hbMu   sync.RWMutex
 }
 
 // NewHub creates a new Hub instance with default configuration
@@ -98,9 +100,11 @@ func (h *Hub) StartHub() error {
 			return err
 		}
 		// start heartbeat if configured
+		h.hbMu.RLock()
 		if h.hb != nil {
 			go h.hb.Start(h.hbStop)
 		}
+		h.hbMu.RUnlock()
 		return e.Next()
 	})
 

@@ -143,8 +143,8 @@ msgid "After"
 msgstr "After"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
-msgstr "After setting the environment variables, restart your Beszel hub for changes to take effect."
+#~ msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
+#~ msgstr "After setting the environment variables, restart your Beszel hub for changes to take effect."
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Agent"
@@ -186,6 +186,10 @@ msgstr "Approve Module"
 msgid "Are you sure you want to delete {name}?"
 msgstr "Are you sure you want to delete {name}?"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Are you sure you want to force restart this server? This will cut power instantly."
+msgstr "Are you sure you want to force restart this server? This will cut power instantly."
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "Are you sure?"
 msgstr "Are you sure?"
@@ -197,6 +201,10 @@ msgstr "Automatic copy requires a secure context."
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
 msgstr "Automatic WOL"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Autonomous Hardware Recovery"
+msgstr "Autonomous Hardware Recovery"
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -618,8 +626,8 @@ msgid "Device"
 msgstr "Device"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "DISABLED"
-msgstr "DISABLED"
+#~ msgid "DISABLED"
+#~ msgstr "DISABLED"
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -717,8 +725,8 @@ msgid "Empty"
 msgstr "Empty"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "ENABLED"
-msgstr "ENABLED"
+#~ msgid "ENABLED"
+#~ msgstr "ENABLED"
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -730,8 +738,12 @@ msgid "Endpoint URL"
 msgstr "Endpoint URL"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Endpoint URL to ping (required)"
-msgstr "Endpoint URL to ping (required)"
+#~ msgid "Endpoint URL to ping (required)"
+#~ msgstr "Endpoint URL to ping (required)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
+msgstr "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
 
 #: src/components/login/login.tsx
 msgid "Enter email address to reset password"
@@ -754,9 +766,11 @@ msgstr "Ephemeral"
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -769,8 +783,8 @@ msgid "ESP IP Address"
 msgstr "ESP IP Address"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Example:"
-msgstr "Example:"
+#~ msgid "Example:"
+#~ msgstr "Example:"
 
 #. placeholder {0}: alert.value
 #. placeholder {1}: info.unit
@@ -823,6 +837,10 @@ msgstr "Failed Attributes:"
 msgid "Failed to authenticate"
 msgstr "Failed to authenticate"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Failed to load recovery configuration."
+msgstr "Failed to load recovery configuration."
+
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -867,6 +885,14 @@ msgstr "Firmware"
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
 msgstr "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force Restart"
+msgstr "Force Restart"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force restart triggered"
+msgstr "Force restart triggered"
+
 #: src/components/login/auth-form.tsx
 msgid "Forgot password?"
 msgstr "Forgot password?"
@@ -909,6 +935,14 @@ msgstr "GPU Power Draw"
 msgid "GPU Usage"
 msgstr "GPU Usage"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful Shutdown"
+msgstr "Graceful Shutdown"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful shutdown triggered"
+msgstr "Graceful shutdown triggered"
+
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table.tsx
 msgid "Grid"
@@ -917,6 +951,10 @@ msgstr "Grid"
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware Recovery (ESP32)"
 msgstr "Hardware Recovery (ESP32)"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware recovery is not configured for this system."
+msgstr "Hardware recovery is not configured for this system."
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Hardware Recovery Modules"
@@ -933,6 +971,14 @@ msgstr "HEALTHY"
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
 msgstr "Heartbeat"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat (s)"
+msgstr "Heartbeat (s)"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat interval updated."
+msgstr "Heartbeat interval updated."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Heartbeat Monitoring"
@@ -957,8 +1003,12 @@ msgid "HTTP Method"
 msgstr "HTTP Method"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "HTTP method: POST, GET, or HEAD (default: POST)"
-msgstr "HTTP method: POST, GET, or HEAD (default: POST)"
+msgid "HTTP method used for pinging."
+msgstr "HTTP method used for pinging."
+
+#: src/components/routes/settings/heartbeat.tsx
+#~ msgid "HTTP method: POST, GET, or HEAD (default: POST)"
+#~ msgstr "HTTP method: POST, GET, or HEAD (default: POST)"
 
 #: src/components/routes/system/disk-io-sheet.tsx
 msgctxt "Disk I/O average operation time (iostat await)"
@@ -994,8 +1044,12 @@ msgid "Inactive"
 msgstr "Inactive"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Interval"
-msgstr "Interval"
+#~ msgid "Interval"
+#~ msgstr "Interval"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Interval (seconds)"
+msgstr "Interval (seconds)"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Interventions"
@@ -1059,6 +1113,10 @@ msgstr "Loading events..."
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Loading modules and channels..."
 msgstr "Loading modules and channels..."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading recovery configuration..."
+msgstr "Loading recovery configuration..."
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
@@ -1187,8 +1245,8 @@ msgid "No"
 msgstr "No"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "NO"
-msgstr "NO"
+#~ msgid "NO"
+#~ msgstr "NO"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "No recent recovery events"
@@ -1285,6 +1343,10 @@ msgstr "Or continue with"
 #: src/components/routes/system/cpu-sheet.tsx
 msgid "Other"
 msgstr "Other"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Outbound heartbeat has been updated."
+msgstr "Outbound heartbeat has been updated."
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "Overwrite existing alerts"
@@ -1539,6 +1601,10 @@ msgstr "Reset Password"
 msgid "Resolved"
 msgstr "Resolved"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Restart failed"
+msgstr "Restart failed"
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Restarts"
 msgstr "Restarts"
@@ -1581,6 +1647,7 @@ msgid "Save address using enter key or comma. Leave blank to disable email notif
 msgstr "Save address using enter key or comma. Leave blank to disable email notifications."
 
 #: src/components/routes/settings/general.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 msgid "Save Settings"
 msgstr "Save Settings"
@@ -1610,8 +1677,12 @@ msgid "Search for systems or settings..."
 msgstr "Search for systems or settings..."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Seconds between pings (default: 60)"
-msgstr "Seconds between pings (default: 60)"
+#~ msgid "Seconds between pings (default: 60)"
+#~ msgstr "Seconds between pings (default: 60)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Seconds between pings."
+msgstr "Seconds between pings."
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "See <0>notification settings</0> to configure how you receive alerts."
@@ -1655,8 +1726,8 @@ msgid "Set percentage thresholds for meter colors."
 msgstr "Set percentage thresholds for meter colors."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
-msgstr "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
+#~ msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
+#~ msgstr "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
 
 #: src/components/command-palette.tsx
 #: src/components/command-palette.tsx
@@ -1671,6 +1742,14 @@ msgstr "Settings"
 #: src/components/routes/settings/layout.tsx
 msgid "Settings saved"
 msgstr "Settings saved"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Settings saved successfully"
+msgstr "Settings saved successfully"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Shutdown failed"
+msgstr "Shutdown failed"
 
 #: src/components/login/auth-form.tsx
 msgid "Sign in"
@@ -1708,6 +1787,7 @@ msgstr "Status"
 msgid "Sub State"
 msgstr "Sub State"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr "Success"
@@ -1818,12 +1898,24 @@ msgid "Test notification sent"
 msgstr "Test notification sent"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Test Relay"
+msgstr "Test Relay"
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The broadcast has been sent on UDP port 9."
 msgstr "The broadcast has been sent on UDP port 9."
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button is being held for 8 seconds."
+msgstr "The motherboard power button is being held for 8 seconds."
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button relay has been pressed."
 msgstr "The motherboard power button relay has been pressed."
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button was momentarily pressed."
+msgstr "The motherboard power button was momentarily pressed."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
@@ -1905,8 +1997,8 @@ msgid "Total: {0}"
 msgstr "Total: {0}"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "Trigger Relay Press"
-msgstr "Trigger Relay Press"
+#~ msgid "Trigger Relay Press"
+#~ msgstr "Trigger Relay Press"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"
@@ -2015,6 +2107,10 @@ msgstr "Up ({upSystemsLength})"
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Update"
 msgstr "Update"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Update failed"
+msgstr "Update failed"
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -2173,8 +2269,8 @@ msgid "Yes"
 msgstr "Yes"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "YES"
-msgstr "YES"
+#~ msgid "YES"
+#~ msgstr "YES"
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

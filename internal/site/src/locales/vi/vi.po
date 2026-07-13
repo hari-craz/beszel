@@ -148,8 +148,8 @@ msgid "After"
 msgstr "Sau"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
-msgstr "Sau khi thiết lập các biến môi trường, hãy khởi động lại hub Beszel để các thay đổi có hiệu lực."
+#~ msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
+#~ msgstr "Sau khi thiết lập các biến môi trường, hãy khởi động lại hub Beszel để các thay đổi có hiệu lực."
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Agent"
@@ -191,6 +191,10 @@ msgstr ""
 msgid "Are you sure you want to delete {name}?"
 msgstr "Bạn có chắc chắn muốn xóa {name} không?"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Are you sure you want to force restart this server? This will cut power instantly."
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "Are you sure?"
 msgstr "Bạn có chắc không?"
@@ -201,6 +205,10 @@ msgstr "Sao chép tự động yêu cầu một ngữ cảnh an toàn."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Autonomous Hardware Recovery"
 msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
@@ -623,8 +631,8 @@ msgid "Device"
 msgstr "Thiết bị"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "DISABLED"
-msgstr ""
+#~ msgid "DISABLED"
+#~ msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -722,8 +730,8 @@ msgid "Empty"
 msgstr "Hết pin"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "ENABLED"
-msgstr ""
+#~ msgid "ENABLED"
+#~ msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -735,8 +743,12 @@ msgid "Endpoint URL"
 msgstr "URL điểm cuối"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Endpoint URL to ping (required)"
-msgstr "URL điểm cuối để ping (bắt buộc)"
+#~ msgid "Endpoint URL to ping (required)"
+#~ msgstr "URL điểm cuối để ping (bắt buộc)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Enter email address to reset password"
@@ -759,9 +771,11 @@ msgstr "Tạm thời"
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -774,8 +788,8 @@ msgid "ESP IP Address"
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Example:"
-msgstr "Ví dụ:"
+#~ msgid "Example:"
+#~ msgstr "Ví dụ:"
 
 #. placeholder {0}: alert.value
 #. placeholder {1}: info.unit
@@ -828,6 +842,10 @@ msgstr "Thuộc tính thất bại:"
 msgid "Failed to authenticate"
 msgstr "Xác thực thất bại"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Failed to load recovery configuration."
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -872,6 +890,14 @@ msgstr "Phần sụn"
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
 msgstr "Trong <0>{min}</0> {min, plural, one {phút} other {phút}}"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force Restart"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force restart triggered"
+msgstr ""
+
 #: src/components/login/auth-form.tsx
 msgid "Forgot password?"
 msgstr "Quên mật khẩu?"
@@ -914,6 +940,14 @@ msgstr "Mức tiêu thụ điện của GPU"
 msgid "GPU Usage"
 msgstr "Sử dụng GPU"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful Shutdown"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful shutdown triggered"
+msgstr ""
+
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table.tsx
 msgid "Grid"
@@ -921,6 +955,10 @@ msgstr "Lưới"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware recovery is not configured for this system."
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
@@ -937,6 +975,14 @@ msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat (s)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat interval updated."
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
@@ -962,8 +1008,12 @@ msgid "HTTP Method"
 msgstr "Phương thức HTTP"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "HTTP method: POST, GET, or HEAD (default: POST)"
-msgstr "Phương thức HTTP: POST, GET hoặc HEAD (mặc định: POST)"
+msgid "HTTP method used for pinging."
+msgstr ""
+
+#: src/components/routes/settings/heartbeat.tsx
+#~ msgid "HTTP method: POST, GET, or HEAD (default: POST)"
+#~ msgstr "Phương thức HTTP: POST, GET hoặc HEAD (mặc định: POST)"
 
 #: src/components/routes/system/disk-io-sheet.tsx
 msgctxt "Disk I/O average operation time (iostat await)"
@@ -999,8 +1049,12 @@ msgid "Inactive"
 msgstr "Không hoạt động"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Interval"
-msgstr "Khoảng thời gian"
+#~ msgid "Interval"
+#~ msgstr "Khoảng thời gian"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Interval (seconds)"
+msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Interventions"
@@ -1063,6 +1117,10 @@ msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Loading modules and channels..."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading recovery configuration..."
 msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
@@ -1192,8 +1250,8 @@ msgid "No"
 msgstr "Không"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "NO"
-msgstr ""
+#~ msgid "NO"
+#~ msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "No recent recovery events"
@@ -1290,6 +1348,10 @@ msgstr "Hoặc tiếp tục với"
 #: src/components/routes/system/cpu-sheet.tsx
 msgid "Other"
 msgstr "Khác"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Outbound heartbeat has been updated."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "Overwrite existing alerts"
@@ -1544,6 +1606,10 @@ msgstr "Đặt lại Mật khẩu"
 msgid "Resolved"
 msgstr "Đã giải quyết"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Restart failed"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Restarts"
 msgstr "Khởi động lại"
@@ -1586,6 +1652,7 @@ msgid "Save address using enter key or comma. Leave blank to disable email notif
 msgstr "Lưu địa chỉ bằng cách sử dụng phím enter hoặc dấu phẩy. Để trống để vô hiệu hóa thông báo email."
 
 #: src/components/routes/settings/general.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 msgid "Save Settings"
 msgstr "Lưu Cài đặt"
@@ -1615,8 +1682,12 @@ msgid "Search for systems or settings..."
 msgstr "Tìm kiếm hệ thống hoặc cài đặt..."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Seconds between pings (default: 60)"
-msgstr "Số giây giữa các lần ping (mặc định: 60)"
+#~ msgid "Seconds between pings (default: 60)"
+#~ msgstr "Số giây giữa các lần ping (mặc định: 60)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Seconds between pings."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "See <0>notification settings</0> to configure how you receive alerts."
@@ -1660,8 +1731,8 @@ msgid "Set percentage thresholds for meter colors."
 msgstr "Đặt ngưỡng cho màu sắc đồng hồ."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
-msgstr "Thiết lập các biến môi trường sau trên hub Beszel của bạn để bật giám sát heartbeat:"
+#~ msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
+#~ msgstr "Thiết lập các biến môi trường sau trên hub Beszel của bạn để bật giám sát heartbeat:"
 
 #: src/components/command-palette.tsx
 #: src/components/command-palette.tsx
@@ -1676,6 +1747,14 @@ msgstr "Cài đặt"
 #: src/components/routes/settings/layout.tsx
 msgid "Settings saved"
 msgstr "Cài đặt đã được lưu"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Settings saved successfully"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Shutdown failed"
+msgstr ""
 
 #: src/components/login/auth-form.tsx
 msgid "Sign in"
@@ -1713,6 +1792,7 @@ msgstr "Trạng thái"
 msgid "Sub State"
 msgstr "Trạng thái phụ"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr ""
@@ -1823,11 +1903,23 @@ msgid "Test notification sent"
 msgstr "Thông báo thử nghiệm đã được gửi"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Test Relay"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button is being held for 8 seconds."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button was momentarily pressed."
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
@@ -1910,8 +2002,8 @@ msgid "Total: {0}"
 msgstr "Tổng: {0}"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "Trigger Relay Press"
-msgstr ""
+#~ msgid "Trigger Relay Press"
+#~ msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"
@@ -2020,6 +2112,10 @@ msgstr "Hoạt động ({upSystemsLength})"
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Update"
 msgstr "Cập nhật"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Update failed"
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -2178,8 +2274,8 @@ msgid "Yes"
 msgstr "Có"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "YES"
-msgstr ""
+#~ msgid "YES"
+#~ msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

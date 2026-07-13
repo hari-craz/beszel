@@ -148,8 +148,8 @@ msgid "After"
 msgstr "之后"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
-msgstr "设置环境变量后，重新启动您的 Beszel hub 以使更改生效。"
+#~ msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
+#~ msgstr "设置环境变量后，重新启动您的 Beszel hub 以使更改生效。"
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Agent"
@@ -191,6 +191,10 @@ msgstr ""
 msgid "Are you sure you want to delete {name}?"
 msgstr "您确定要删除 {name} 吗？"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Are you sure you want to force restart this server? This will cut power instantly."
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "Are you sure?"
 msgstr "您确定吗？"
@@ -201,6 +205,10 @@ msgstr "自动复制所需的安全上下文。"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Autonomous Hardware Recovery"
 msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
@@ -623,8 +631,8 @@ msgid "Device"
 msgstr "设备"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "DISABLED"
-msgstr ""
+#~ msgid "DISABLED"
+#~ msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -722,8 +730,8 @@ msgid "Empty"
 msgstr "空电"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "ENABLED"
-msgstr ""
+#~ msgid "ENABLED"
+#~ msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -735,8 +743,12 @@ msgid "Endpoint URL"
 msgstr "端点 URL"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Endpoint URL to ping (required)"
-msgstr "要 ping 的端点 URL (必填)"
+#~ msgid "Endpoint URL to ping (required)"
+#~ msgstr "要 ping 的端点 URL (必填)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Enter email address to reset password"
@@ -759,9 +771,11 @@ msgstr "临时"
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -774,8 +788,8 @@ msgid "ESP IP Address"
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Example:"
-msgstr "示例："
+#~ msgid "Example:"
+#~ msgstr "示例："
 
 #. placeholder {0}: alert.value
 #. placeholder {1}: info.unit
@@ -828,6 +842,10 @@ msgstr "失败属性："
 msgid "Failed to authenticate"
 msgstr "认证失败"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Failed to load recovery configuration."
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -872,6 +890,14 @@ msgstr "固件"
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
 msgstr "持续<0>{min}</0> {min, plural, one {分钟} other {分钟}}"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force Restart"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force restart triggered"
+msgstr ""
+
 #: src/components/login/auth-form.tsx
 msgid "Forgot password?"
 msgstr "忘记密码？"
@@ -914,6 +940,14 @@ msgstr "GPU 功耗"
 msgid "GPU Usage"
 msgstr "GPU 使用率"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful Shutdown"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful shutdown triggered"
+msgstr ""
+
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table.tsx
 msgid "Grid"
@@ -921,6 +955,10 @@ msgstr "网格"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware recovery is not configured for this system."
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
@@ -938,6 +976,14 @@ msgstr ""
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
 msgstr "心跳"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat (s)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat interval updated."
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Heartbeat Monitoring"
@@ -962,8 +1008,12 @@ msgid "HTTP Method"
 msgstr "HTTP 方法"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "HTTP method: POST, GET, or HEAD (default: POST)"
-msgstr "HTTP 方法：POST、GET 或 HEAD (默认：POST)"
+msgid "HTTP method used for pinging."
+msgstr ""
+
+#: src/components/routes/settings/heartbeat.tsx
+#~ msgid "HTTP method: POST, GET, or HEAD (default: POST)"
+#~ msgstr "HTTP 方法：POST、GET 或 HEAD (默认：POST)"
 
 #: src/components/routes/system/disk-io-sheet.tsx
 msgctxt "Disk I/O average operation time (iostat await)"
@@ -999,8 +1049,12 @@ msgid "Inactive"
 msgstr "非活跃"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Interval"
-msgstr "间隔"
+#~ msgid "Interval"
+#~ msgstr "间隔"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Interval (seconds)"
+msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Interventions"
@@ -1063,6 +1117,10 @@ msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Loading modules and channels..."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading recovery configuration..."
 msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
@@ -1192,8 +1250,8 @@ msgid "No"
 msgstr "否"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "NO"
-msgstr ""
+#~ msgid "NO"
+#~ msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "No recent recovery events"
@@ -1290,6 +1348,10 @@ msgstr "或使用以下方式登录"
 #: src/components/routes/system/cpu-sheet.tsx
 msgid "Other"
 msgstr "其他"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Outbound heartbeat has been updated."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "Overwrite existing alerts"
@@ -1544,6 +1606,10 @@ msgstr "重置密码"
 msgid "Resolved"
 msgstr "已解决"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Restart failed"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Restarts"
 msgstr "重启次数"
@@ -1586,6 +1652,7 @@ msgid "Save address using enter key or comma. Leave blank to disable email notif
 msgstr "使用回车键或逗号保存地址。留空以禁用电子邮件通知。"
 
 #: src/components/routes/settings/general.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 msgid "Save Settings"
 msgstr "保存设置"
@@ -1615,8 +1682,12 @@ msgid "Search for systems or settings..."
 msgstr "搜索系统或设置..."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Seconds between pings (default: 60)"
-msgstr "Ping 之间的秒数 (默认：60)"
+#~ msgid "Seconds between pings (default: 60)"
+#~ msgstr "Ping 之间的秒数 (默认：60)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Seconds between pings."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "See <0>notification settings</0> to configure how you receive alerts."
@@ -1660,8 +1731,8 @@ msgid "Set percentage thresholds for meter colors."
 msgstr "设置仪表颜色的百分比阈值。"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
-msgstr "在您的 Beszel hub 上设置以下环境变量以启用 heartbeat 监控："
+#~ msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
+#~ msgstr "在您的 Beszel hub 上设置以下环境变量以启用 heartbeat 监控："
 
 #: src/components/command-palette.tsx
 #: src/components/command-palette.tsx
@@ -1676,6 +1747,14 @@ msgstr "设置"
 #: src/components/routes/settings/layout.tsx
 msgid "Settings saved"
 msgstr "设置已保存"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Settings saved successfully"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Shutdown failed"
+msgstr ""
 
 #: src/components/login/auth-form.tsx
 msgid "Sign in"
@@ -1713,6 +1792,7 @@ msgstr "状态"
 msgid "Sub State"
 msgstr "子状态"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr ""
@@ -1823,11 +1903,23 @@ msgid "Test notification sent"
 msgstr "测试通知已发送"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Test Relay"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button is being held for 8 seconds."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button was momentarily pressed."
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
@@ -1910,8 +2002,8 @@ msgid "Total: {0}"
 msgstr "总计: {0}"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "Trigger Relay Press"
-msgstr ""
+#~ msgid "Trigger Relay Press"
+#~ msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"
@@ -2020,6 +2112,10 @@ msgstr "在线 ({upSystemsLength})"
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Update"
 msgstr "更新"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Update failed"
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -2178,8 +2274,8 @@ msgid "Yes"
 msgstr "是"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "YES"
-msgstr ""
+#~ msgid "YES"
+#~ msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -60,7 +62,7 @@ type AlertInfo struct {
 	Threshold  float64 `json:"threshold"`
 }
 
-// Config holds heartbeat settings read from environment variables.
+// Config holds heartbeat settings read from environment variables or settings file.
 type Config struct {
 	URL      string // endpoint to ping
 	Interval int    // seconds between pings
@@ -74,37 +76,85 @@ type Heartbeat struct {
 	client *http.Client
 }
 
+// GetConfigFromFileOrEnv retrieves configuration from the JSON settings file or falls back to environment variables.
+func GetConfigFromFileOrEnv(app core.App, getEnv func(string) (string, bool)) (bool, Config) {
+	var urlStr string
+	var interval int = defaultInterval
+	var method string = http.MethodPost
+
+	if app != nil {
+		configPath := filepath.Join(app.DataDir(), "heartbeat.json")
+		if data, err := os.ReadFile(configPath); err == nil {
+			var saved struct {
+				URL      string `json:"url"`
+				Interval int    `json:"interval"`
+				Method   string `json:"method"`
+			}
+			if err := json.Unmarshal(data, &saved); err == nil {
+				urlStr = saved.URL
+				if saved.Interval > 0 {
+					interval = saved.Interval
+				}
+				if saved.Method != "" {
+					method = saved.Method
+				}
+			}
+		}
+	}
+
+	if urlStr == "" {
+		urlStr, _ = getEnv("HEARTBEAT_URL")
+		urlStr = strings.TrimSpace(urlStr)
+		if v, ok := getEnv("HEARTBEAT_INTERVAL"); ok {
+			if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+				interval = parsed
+			}
+		}
+		if v, ok := getEnv("HEARTBEAT_METHOD"); ok {
+			v = strings.ToUpper(strings.TrimSpace(v))
+			if v == http.MethodGet || v == http.MethodHead || v == http.MethodPost {
+				method = v
+			}
+		}
+	}
+
+	return urlStr != "", Config{
+		URL:      urlStr,
+		Interval: interval,
+		Method:   method,
+	}
+}
+
+// SaveConfig writes the heartbeat configuration to heartbeat.json
+func SaveConfig(app core.App, urlStr string, interval int, method string) error {
+	configPath := filepath.Join(app.DataDir(), "heartbeat.json")
+	data := map[string]any{
+		"url":      urlStr,
+		"interval": interval,
+		"method":   method,
+	}
+	bytes, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(configPath, bytes, 0644)
+}
+
 // New creates a Heartbeat if configuration is present.
 // Returns nil if HEARTBEAT_URL is not set (feature disabled).
 func New(app core.App, getEnv func(string) (string, bool)) *Heartbeat {
-	url, _ := getEnv("HEARTBEAT_URL")
-	url = strings.TrimSpace(url)
-	if app == nil || url == "" {
+	if app == nil {
 		return nil
 	}
 
-	interval := defaultInterval
-	if v, ok := getEnv("HEARTBEAT_INTERVAL"); ok {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			interval = parsed
-		}
-	}
-
-	method := http.MethodPost
-	if v, ok := getEnv("HEARTBEAT_METHOD"); ok {
-		v = strings.ToUpper(strings.TrimSpace(v))
-		if v == http.MethodGet || v == http.MethodHead {
-			method = v
-		}
+	enabled, cfg := GetConfigFromFileOrEnv(app, getEnv)
+	if !enabled {
+		return nil
 	}
 
 	return &Heartbeat{
-		app: app,
-		config: Config{
-			URL:      url,
-			Interval: interval,
-			Method:   method,
-		},
+		app:    app,
+		config: cfg,
 		client: &http.Client{Timeout: httpTimeout},
 	}
 }

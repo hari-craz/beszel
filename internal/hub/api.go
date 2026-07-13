@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/henrygd/beszel/internal/alerts"
 	"github.com/henrygd/beszel/internal/ghupdate"
 	"github.com/henrygd/beszel/internal/hub/config"
+	"github.com/henrygd/beszel/internal/hub/heartbeat"
 	"github.com/henrygd/beszel/internal/hub/systems"
 	"github.com/henrygd/beszel/internal/hub/utils"
 	"github.com/pocketbase/dbx"
@@ -115,6 +117,7 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	apiAuth.POST("/test-notification", h.SendTestNotification)
 	// heartbeat status and test
 	apiAuth.GET("/heartbeat-status", h.getHeartbeatStatus).BindFunc(requireAdminRole)
+	apiAuth.POST("/heartbeat-status", h.updateHeartbeatStatus).BindFunc(requireAdminRole)
 	apiAuth.POST("/test-heartbeat", h.testHeartbeat).BindFunc(requireAdminRole)
 	// get config.yml content
 	apiAuth.GET("/config-yaml", config.GetYamlConfig).BindFunc(requireAdminRole)
@@ -289,29 +292,82 @@ func (h *Hub) getUniversalToken(e *core.RequestEvent) error {
 
 // getHeartbeatStatus returns current heartbeat configuration and whether it's enabled
 func (h *Hub) getHeartbeatStatus(e *core.RequestEvent) error {
-	if h.hb == nil {
-		return e.JSON(http.StatusOK, map[string]any{
-			"enabled": false,
-			"msg":     "Set HEARTBEAT_URL to enable outbound heartbeat monitoring",
-		})
-	}
-	cfg := h.hb.GetConfig()
+	h.hbMu.RLock()
+	defer h.hbMu.RUnlock()
+
+	enabled, cfg := heartbeat.GetConfigFromFileOrEnv(e.App, utils.GetEnv)
 	return e.JSON(http.StatusOK, map[string]any{
-		"enabled":  true,
+		"enabled":  enabled,
 		"url":      cfg.URL,
 		"interval": cfg.Interval,
 		"method":   cfg.Method,
 	})
 }
 
+// updateHeartbeatStatus saves new heartbeat settings and restarts the heartbeat ticker
+func (h *Hub) updateHeartbeatStatus(e *core.RequestEvent) error {
+	var req struct {
+		URL      string `json:"url"`
+		Interval int    `json:"interval"`
+		Method   string `json:"method"`
+	}
+	if err := e.BindBody(&req); err != nil {
+		return e.BadRequestError("Invalid request body", err)
+	}
+
+	req.URL = strings.TrimSpace(req.URL)
+	if req.URL != "" {
+		if _, err := url.Parse(req.URL); err != nil {
+			return e.BadRequestError("Invalid URL", err)
+		}
+		if req.Interval <= 0 {
+			req.Interval = 60
+		}
+		req.Method = strings.ToUpper(strings.TrimSpace(req.Method))
+		if req.Method != http.MethodGet && req.Method != http.MethodHead && req.Method != http.MethodPost {
+			req.Method = http.MethodPost
+		}
+	}
+
+	// Save to JSON config file
+	if err := heartbeat.SaveConfig(e.App, req.URL, req.Interval, req.Method); err != nil {
+		return e.InternalServerError("Failed to save settings", err)
+	}
+
+	// Stop old heartbeat if running
+	h.hbMu.Lock()
+	defer h.hbMu.Unlock()
+
+	if h.hbStop != nil {
+		close(h.hbStop)
+		h.hbStop = nil
+	}
+	h.hb = nil
+
+	// Start new heartbeat if URL is provided
+	if req.URL != "" {
+		h.hb = heartbeat.New(e.App, utils.GetEnv)
+		if h.hb != nil {
+			h.hbStop = make(chan struct{})
+			go h.hb.Start(h.hbStop)
+		}
+	}
+
+	return e.JSON(http.StatusOK, map[string]any{"success": true})
+}
+
 // testHeartbeat triggers a single heartbeat ping and returns the result
 func (h *Hub) testHeartbeat(e *core.RequestEvent) error {
-	if h.hb == nil {
+	h.hbMu.RLock()
+	hb := h.hb
+	h.hbMu.RUnlock()
+
+	if hb == nil {
 		return e.JSON(http.StatusOK, map[string]any{
-			"err": "Heartbeat not configured. Set HEARTBEAT_URL environment variable.",
+			"err": "Heartbeat not configured.",
 		})
 	}
-	if err := h.hb.Send(); err != nil {
+	if err := hb.Send(); err != nil {
 		return e.JSON(http.StatusOK, map[string]any{"err": err.Error()})
 	}
 	return e.JSON(http.StatusOK, map[string]any{"err": false})

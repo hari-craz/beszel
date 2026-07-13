@@ -148,8 +148,8 @@ msgid "After"
 msgstr "אחרי"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
-msgstr "לאחר הגדרת משתני הסביבה, הפעל מחדש את ה-Beszel hub שלך כדי שהשינויים ייכנסו לתוקף."
+#~ msgid "After setting the environment variables, restart your Beszel hub for changes to take effect."
+#~ msgstr "לאחר הגדרת משתני הסביבה, הפעל מחדש את ה-Beszel hub שלך כדי שהשינויים ייכנסו לתוקף."
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Agent"
@@ -191,6 +191,10 @@ msgstr ""
 msgid "Are you sure you want to delete {name}?"
 msgstr "האם אתה בטוח שברצונך למחוק את {name}?"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Are you sure you want to force restart this server? This will cut power instantly."
+msgstr ""
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "Are you sure?"
 msgstr "האם אתה בטוח?"
@@ -201,6 +205,10 @@ msgstr "העתקה אוטומטית דורשת הקשר מאובטח."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Autonomous Hardware Recovery"
 msgstr ""
 
 #: src/components/routes/system/chart-card.tsx
@@ -623,8 +631,8 @@ msgid "Device"
 msgstr "התקן"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "DISABLED"
-msgstr ""
+#~ msgid "DISABLED"
+#~ msgstr ""
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -722,8 +730,8 @@ msgid "Empty"
 msgstr "ריק"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "ENABLED"
-msgstr ""
+#~ msgid "ENABLED"
+#~ msgstr ""
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -735,8 +743,12 @@ msgid "Endpoint URL"
 msgstr "URL של נקודת קצה"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Endpoint URL to ping (required)"
-msgstr "URL של נקודת קצה לפינג (חובה)"
+#~ msgid "Endpoint URL to ping (required)"
+#~ msgstr "URL של נקודת קצה לפינג (חובה)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
+msgstr ""
 
 #: src/components/login/login.tsx
 msgid "Enter email address to reset password"
@@ -759,9 +771,11 @@ msgstr "זמני"
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/heartbeat.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -774,8 +788,8 @@ msgid "ESP IP Address"
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Example:"
-msgstr "דוגמה:"
+#~ msgid "Example:"
+#~ msgstr "דוגמה:"
 
 #. placeholder {0}: alert.value
 #. placeholder {1}: info.unit
@@ -828,6 +842,10 @@ msgstr "מאפיינים שנכשלו:"
 msgid "Failed to authenticate"
 msgstr "אימות נכשל"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Failed to load recovery configuration."
+msgstr ""
+
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -872,6 +890,14 @@ msgstr "קושחה"
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
 msgstr "למשך <0>{min}</0> {min, plural, one {דקה} other {דקות}}"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force Restart"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Force restart triggered"
+msgstr ""
+
 #: src/components/login/auth-form.tsx
 msgid "Forgot password?"
 msgstr "שכחת סיסמה?"
@@ -914,6 +940,14 @@ msgstr "צריכת חשמל GPU"
 msgid "GPU Usage"
 msgstr "שימוש GPU"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful Shutdown"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Graceful shutdown triggered"
+msgstr ""
+
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table.tsx
 msgid "Grid"
@@ -921,6 +955,10 @@ msgstr "רשת"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware Recovery (ESP32)"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Hardware recovery is not configured for this system."
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
@@ -938,6 +976,14 @@ msgstr ""
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
 msgstr "פעימת לב"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat (s)"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Heartbeat interval updated."
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Heartbeat Monitoring"
@@ -962,8 +1008,12 @@ msgid "HTTP Method"
 msgstr "שיטת HTTP"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "HTTP method: POST, GET, or HEAD (default: POST)"
-msgstr "שיטת HTTP: POST, GET, או HEAD (ברירת מחדל: POST)"
+msgid "HTTP method used for pinging."
+msgstr ""
+
+#: src/components/routes/settings/heartbeat.tsx
+#~ msgid "HTTP method: POST, GET, or HEAD (default: POST)"
+#~ msgstr "שיטת HTTP: POST, GET, או HEAD (ברירת מחדל: POST)"
 
 #: src/components/routes/system/disk-io-sheet.tsx
 msgctxt "Disk I/O average operation time (iostat await)"
@@ -999,8 +1049,12 @@ msgid "Inactive"
 msgstr "לא פעיל"
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Interval"
-msgstr "מרווח"
+#~ msgid "Interval"
+#~ msgstr "מרווח"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Interval (seconds)"
+msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Interventions"
@@ -1063,6 +1117,10 @@ msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Loading modules and channels..."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Loading recovery configuration..."
 msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
@@ -1192,8 +1250,8 @@ msgid "No"
 msgstr "לא"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "NO"
-msgstr ""
+#~ msgid "NO"
+#~ msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "No recent recovery events"
@@ -1290,6 +1348,10 @@ msgstr "או המשך עם"
 #: src/components/routes/system/cpu-sheet.tsx
 msgid "Other"
 msgstr "אחר"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Outbound heartbeat has been updated."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "Overwrite existing alerts"
@@ -1544,6 +1606,10 @@ msgstr "איפוס סיסמה"
 msgid "Resolved"
 msgstr "נפתר"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "Restart failed"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Restarts"
 msgstr "הפעלות מחדש"
@@ -1586,6 +1652,7 @@ msgid "Save address using enter key or comma. Leave blank to disable email notif
 msgstr "שמור כתובת באמצעות מקש enter או פסיק. השאר ריק כדי להשבית התראות אימייל."
 
 #: src/components/routes/settings/general.tsx
+#: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
 msgid "Save Settings"
 msgstr "שמור הגדרות"
@@ -1615,8 +1682,12 @@ msgid "Search for systems or settings..."
 msgstr "חפש מערכות או הגדרות..."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Seconds between pings (default: 60)"
-msgstr "שניות בין פינגים (ברירת מחדל: 60)"
+#~ msgid "Seconds between pings (default: 60)"
+#~ msgstr "שניות בין פינגים (ברירת מחדל: 60)"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Seconds between pings."
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "See <0>notification settings</0> to configure how you receive alerts."
@@ -1660,8 +1731,8 @@ msgid "Set percentage thresholds for meter colors."
 msgstr "הגדר סף אחוזים עבור צבעי מד."
 
 #: src/components/routes/settings/heartbeat.tsx
-msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
-msgstr "הגדר את משתני הסביבה הבאים ב-Beszel hub שלך כדי לאפשר ניטור פעימות לב:"
+#~ msgid "Set the following environment variables on your Beszel hub to enable heartbeat monitoring:"
+#~ msgstr "הגדר את משתני הסביבה הבאים ב-Beszel hub שלך כדי לאפשר ניטור פעימות לב:"
 
 #: src/components/command-palette.tsx
 #: src/components/command-palette.tsx
@@ -1676,6 +1747,14 @@ msgstr "הגדרות"
 #: src/components/routes/settings/layout.tsx
 msgid "Settings saved"
 msgstr "הגדרות נשמרו"
+
+#: src/components/routes/settings/heartbeat.tsx
+msgid "Settings saved successfully"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Shutdown failed"
+msgstr ""
 
 #: src/components/login/auth-form.tsx
 msgid "Sign in"
@@ -1713,6 +1792,7 @@ msgstr "סטטוס"
 msgid "Sub State"
 msgstr "מצב משני"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr ""
@@ -1823,11 +1903,23 @@ msgid "Test notification sent"
 msgstr "התראת בדיקה נשלחה"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Test Relay"
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The broadcast has been sent on UDP port 9."
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button is being held for 8 seconds."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button relay has been pressed."
+msgstr ""
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "The motherboard power button was momentarily pressed."
 msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
@@ -1910,8 +2002,8 @@ msgid "Total: {0}"
 msgstr "סה\"כ: {0}"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "Trigger Relay Press"
-msgstr ""
+#~ msgid "Trigger Relay Press"
+#~ msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Triggered by"
@@ -2020,6 +2112,10 @@ msgstr "למעלה ({upSystemsLength})"
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Update"
 msgstr "עדכן"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Update failed"
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -2178,8 +2274,8 @@ msgid "Yes"
 msgstr "כן"
 
 #: src/components/routes/system/recovery-info.tsx
-msgid "YES"
-msgstr ""
+#~ msgid "YES"
+#~ msgstr ""
 
 #: src/components/routes/settings/layout.tsx
 msgid "Your user settings have been updated."

@@ -1,13 +1,16 @@
 import { t } from "@lingui/core/macro"
 import { Trans } from "@lingui/react/macro"
 import { redirectPage } from "@nanostores/router"
-import { LoaderCircleIcon, SendIcon } from "lucide-react"
+import { LoaderCircleIcon, SendIcon, SaveIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { $router } from "@/components/router"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { isAdmin, pb } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +25,11 @@ interface HeartbeatStatus {
 export default function HeartbeatSettings() {
 	const [status, setStatus] = useState<HeartbeatStatus | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const [isSaving, setIsSaving] = useState(false)
 	const [isTesting, setIsTesting] = useState(false)
+	const [url, setUrl] = useState("")
+	const [interval, setInterval] = useState("60")
+	const [method, setMethod] = useState("POST")
 
 	if (!isAdmin()) {
 		redirectPage($router, "settings", { name: "general" })
@@ -37,6 +44,9 @@ export default function HeartbeatSettings() {
 			setIsLoading(true)
 			const res = await pb.send<HeartbeatStatus>("/api/beszel/heartbeat-status", {})
 			setStatus(res)
+			setUrl(res.url ?? "")
+			setInterval(String(res.interval ?? 60))
+			setMethod(res.method ?? "POST")
 		} catch (error: unknown) {
 			toast({
 				title: t`Error`,
@@ -45,6 +55,34 @@ export default function HeartbeatSettings() {
 			})
 		} finally {
 			setIsLoading(false)
+		}
+	}
+
+	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+		e.preventDefault()
+		setIsSaving(true)
+		try {
+			await pb.send("/api/beszel/heartbeat-status", {
+				method: "POST",
+				body: {
+					url,
+					interval: Number(interval),
+					method,
+				},
+			})
+			toast({
+				title: t`Settings saved successfully`,
+				description: t`Outbound heartbeat has been updated.`,
+			})
+			await fetchStatus()
+		} catch (error: unknown) {
+			toast({
+				title: t`Error`,
+				description: (error as Error).message,
+				variant: "destructive",
+			})
+		} finally {
+			setIsSaving(false)
 		}
 	}
 
@@ -92,128 +130,139 @@ export default function HeartbeatSettings() {
 			</div>
 			<Separator className="my-4" />
 
-			{status?.enabled ? (
-				<EnabledState status={status} isTesting={isTesting} sendTestHeartbeat={sendTestHeartbeat} />
-			) : (
-				<NotEnabledState isLoading={isLoading} />
-			)}
-		</div>
-	)
-}
-
-function EnabledState({
-	status,
-	isTesting,
-	sendTestHeartbeat,
-}: {
-	status: HeartbeatStatus
-	isTesting: boolean
-	sendTestHeartbeat: () => void
-}) {
-	const TestIcon = isTesting ? LoaderCircleIcon : SendIcon
-	return (
-		<div className="space-y-5">
-			<div className="flex items-center gap-2">
-				<Badge variant="success">
-					<Trans>Active</Trans>
-				</Badge>
-			</div>
-			<div className="grid gap-4 sm:grid-cols-2">
-				<ConfigItem label={t`Endpoint URL`} value={status.url ?? ""} mono />
-				<ConfigItem label={t`Interval`} value={`${status.interval}s`} />
-				<ConfigItem label={t`HTTP Method`} value={status.method ?? "POST"} />
-			</div>
-
-			<Separator />
-
-			<div>
-				<h4 className="text-base font-medium mb-1">
-					<Trans>Test heartbeat</Trans>
-				</h4>
-				<p className="text-sm text-muted-foreground leading-relaxed mb-3">
-					<Trans>Send a single heartbeat ping to verify your endpoint is working.</Trans>
-				</p>
-				<Button
-					type="button"
-					variant="outline"
-					className="flex items-center gap-1.5"
-					onClick={sendTestHeartbeat}
-					disabled={isTesting}
-				>
-					<TestIcon className={cn("size-4", isTesting && "animate-spin")} />
-					<Trans>Send test heartbeat</Trans>
-				</Button>
-			</div>
-
-			<Separator />
-
-			<div>
-				<h4 className="text-base font-medium mb-2">
-					<Trans>Payload format</Trans>
-				</h4>
-				<p className="text-sm text-muted-foreground leading-relaxed mb-2">
-					<Trans>
-						When using POST, each heartbeat includes a JSON payload with system status summary, list of down systems,
-						and triggered alerts.
-					</Trans>
-				</p>
-				<p className="text-sm text-muted-foreground leading-relaxed">
-					<Trans>
-						The overall status is <code className="bg-muted rounded-sm px-1 text-primary">ok</code> when all systems are
-						up, <code className="bg-muted rounded-sm px-1 text-primary">warn</code> when alerts are triggered, and{" "}
-						<code className="bg-muted rounded-sm px-1 text-primary">error</code> when any system is down.
-					</Trans>
-				</p>
-			</div>
-		</div>
-	)
-}
-
-function NotEnabledState({ isLoading }: { isLoading?: boolean }) {
-	return (
-		<div className={cn("grid gap-4", isLoading && "animate-pulse")}>
-			<div>
-				<p className="text-sm text-muted-foreground leading-relaxed mb-3">
-					<Trans>Set the following environment variables on your Beszel hub to enable heartbeat monitoring:</Trans>
-				</p>
-				<div className="grid gap-2.5">
-					<EnvVarItem
-						name="HEARTBEAT_URL"
-						description={t`Endpoint URL to ping (required)`}
-						example="https://uptime.betterstack.com/api/v1/heartbeat/xxxx"
-					/>
-					<EnvVarItem name="HEARTBEAT_INTERVAL" description={t`Seconds between pings (default: 60)`} example="60" />
-					<EnvVarItem
-						name="HEARTBEAT_METHOD"
-						description={t`HTTP method: POST, GET, or HEAD (default: POST)`}
-						example="POST"
-					/>
+			{isLoading ? (
+				<div className="animate-pulse space-y-4">
+					<div className="h-8 bg-muted rounded w-1/3"></div>
+					<div className="h-32 bg-muted rounded"></div>
 				</div>
-			</div>
-			<p className="text-sm text-muted-foreground leading-relaxed">
-				<Trans>After setting the environment variables, restart your Beszel hub for changes to take effect.</Trans>
-			</p>
-		</div>
-	)
-}
+			) : (
+				<form onSubmit={handleSubmit} className="space-y-5">
+					<div className="grid gap-4">
+						<div className="grid gap-2">
+							<Label htmlFor="url">
+								<Trans>Endpoint URL</Trans>
+							</Label>
+							<Input
+								id="url"
+								type="text"
+								placeholder="https://uptime.betterstack.com/api/v1/heartbeat/xxxx"
+								value={url}
+								onChange={(e) => setUrl(e.target.value)}
+								className="font-mono"
+							/>
+							<p className="text-xs text-muted-foreground">
+								<Trans>Endpoint URL to ping. Leave blank to disable heartbeat monitoring.</Trans>
+							</p>
+						</div>
 
-function ConfigItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-	return (
-		<div>
-			<p className="text-sm font-medium mb-0.5">{label}</p>
-			<p className={cn("text-sm text-muted-foreground break-all", mono && "font-mono")}>{value}</p>
-		</div>
-	)
-}
+						<div className="grid sm:grid-cols-2 gap-4">
+							<div className="grid gap-2">
+								<Label htmlFor="interval">
+									<Trans>Interval (seconds)</Trans>
+								</Label>
+								<Input
+									id="interval"
+									type="number"
+									min={1}
+									placeholder="60"
+									value={interval}
+									onChange={(e) => setInterval(e.target.value)}
+								/>
+								<p className="text-xs text-muted-foreground">
+									<Trans>Seconds between pings.</Trans>
+								</p>
+							</div>
 
-function EnvVarItem({ name, description, example }: { name: string; description: string; example: string }) {
-	return (
-		<div className="bg-muted/50 rounded-md px-3 py-2.5 grid gap-1.5">
-			<code className="text-sm font-mono text-primary font-medium leading-tight">{name}</code>
-			<p className="text-sm text-muted-foreground">{description}</p>
-			<p className="text-xs text-muted-foreground">
-				<Trans>Example:</Trans> <code className="font-mono">{example}</code>
-			</p>
+							<div className="grid gap-2">
+								<Label htmlFor="method">
+									<Trans>HTTP Method</Trans>
+								</Label>
+								<Select value={method} onValueChange={setMethod}>
+									<SelectTrigger id="method">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="POST">POST</SelectItem>
+										<SelectItem value="GET">GET</SelectItem>
+										<SelectItem value="HEAD">HEAD</SelectItem>
+									</SelectContent>
+								</Select>
+								<p className="text-xs text-muted-foreground">
+									<Trans>HTTP method used for pinging.</Trans>
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<Button type="submit" className="flex items-center gap-1.5" disabled={isSaving}>
+						{isSaving ? (
+							<LoaderCircleIcon className="h-4 w-4 animate-spin" />
+						) : (
+							<SaveIcon className="h-4 w-4" />
+						)}
+						<Trans>Save Settings</Trans>
+					</Button>
+
+					{status?.enabled && (
+						<>
+							<Separator className="my-4" />
+							<div className="space-y-5">
+								<div className="flex items-center gap-2">
+									<Badge variant="success">
+										<Trans>Active</Trans>
+									</Badge>
+								</div>
+								<div>
+									<h4 className="text-base font-medium mb-1">
+										<Trans>Test heartbeat</Trans>
+									</h4>
+									<p className="text-sm text-muted-foreground leading-relaxed mb-3">
+										<Trans>Send a single heartbeat ping to verify your endpoint is working.</Trans>
+									</p>
+									<Button
+										type="button"
+										variant="outline"
+										className="flex items-center gap-1.5"
+										onClick={sendTestHeartbeat}
+										disabled={isTesting}
+									>
+										{isTesting ? (
+											<LoaderCircleIcon className="size-4 animate-spin" />
+										) : (
+											<SendIcon className="size-4" />
+										)}
+										<Trans>Send test heartbeat</Trans>
+									</Button>
+								</div>
+
+								{method === "POST" && (
+									<>
+										<Separator />
+										<div>
+											<h4 className="text-base font-medium mb-2">
+												<Trans>Payload format</Trans>
+											</h4>
+											<p className="text-sm text-muted-foreground leading-relaxed mb-2">
+												<Trans>
+													When using POST, each heartbeat includes a JSON payload with system status summary, list of down systems,
+													and triggered alerts.
+												</Trans>
+											</p>
+											<p className="text-sm text-muted-foreground leading-relaxed">
+												<Trans>
+													The overall status is <code className="bg-muted rounded-sm px-1 text-primary">ok</code> when all systems are
+													up, <code className="bg-muted rounded-sm px-1 text-primary">warn</code> when alerts are triggered, and{" "}
+													<code className="bg-muted rounded-sm px-1 text-primary">error</code> when any system is down.
+												</Trans>
+											</p>
+										</div>
+									</>
+								)}
+							</div>
+						</>
+					)}
+				</form>
+			)}
 		</div>
 	)
 }
