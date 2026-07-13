@@ -1,0 +1,118 @@
+name: Agent CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "agent/**"
+      - "internal/cmd/agent/**"
+      - "internal/entities/**"
+      - "internal/common/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/ci-agent.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "agent/**"
+      - "internal/cmd/agent/**"
+      - "internal/entities/**"
+      - "internal/common/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/ci-agent.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Vet & test agent (linux/amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.x
+
+      - name: Vet
+        run: go vet ./agent/... ./internal/cmd/agent/... ./internal/entities/...
+
+      - name: Test
+        run: go test -tags=testing -race ./agent/... ./internal/cmd/agent/... ./internal/entities/...
+
+      # Non-blocking: no .golangci.yml exists yet, so default-rule output
+      # would surface pre-existing findings unrelated to any given PR.
+      # Tighten this to blocking once a config is written and the scoped
+      # packages are clean under it.
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: >-
+            --timeout=5m
+            ./agent/...
+            ./internal/cmd/agent/...
+
+  build:
+    name: Cross-platform build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: freebsd
+            goarch: amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.x
+
+      # agent/sensors_windows.go and agent/smart_windows.go (compiled only
+      # when GOOS=windows) go:embed the compiled LHM sensor binary, so even
+      # a build-only Windows cross-compile fails without this step. Mirrors
+      # the same step in release.yml.
+      - name: Set up .NET
+        if: matrix.goos == 'windows'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Build .NET LHM executable for Windows sensors
+        if: matrix.goos == 'windows'
+        run: dotnet build -c Release ./agent/lhm/beszel_lhm.csproj
+        shell: bash
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        # Build-only: cross-compiled binaries can't run natively on this
+        # runner, so this is a compile-correctness check, not test execution.
+        # Skips the AGENT_GO_TAGS/NVML glibc-detection tag from the
+        # Makefile - that's a host-glibc optimization for real linux/amd64
+        # release builds, not needed here.
+        run: go build -o /dev/null ./internal/cmd/agent

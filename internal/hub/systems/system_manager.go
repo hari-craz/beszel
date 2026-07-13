@@ -387,3 +387,22 @@ func deactivateAlerts(app core.App, systemID string) error {
 func (sm *SystemManager) TriggerESP32Relay(espIP string, channelNum int, pulseDurationMs int) error {
 	return sm.rp.triggerESP32Relay(espIP, channelNum, pulseDurationMs)
 }
+
+// AcquireRecoveryLock grants exclusive ownership of a channel's recovery
+// lock to owner for ttl, used by manual (admin-triggered) recovery actions
+// so they can't race the automatic watchdog or each other. Returns the
+// minted lease ID and true on success.
+func (sm *SystemManager) AcquireRecoveryLock(channelID, owner string, ttl time.Duration) (string, bool) {
+	return sm.rp.AcquireLock(channelID, owner, ttl)
+}
+
+// ReleaseRecoveryLock releases a lock previously acquired via
+// AcquireRecoveryLock, identified by its lease ID.
+func (sm *SystemManager) ReleaseRecoveryLock(channelID, leaseID string) {
+	sm.rp.ReleaseLock(channelID, leaseID)
+}
+
+// RecoveryLockStatus reports the current lock holder for a channel, if any.
+func (sm *SystemManager) RecoveryLockStatus(channelID string) (owner string, secondsRemaining int, held bool) {
+	return sm.rp.ChannelLockInfo(channelID)
+}

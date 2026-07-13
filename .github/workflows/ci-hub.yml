@@ -1,0 +1,88 @@
+name: Hub CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "internal/hub/**"
+      - "internal/cmd/hub/**"
+      - "internal/alerts/**"
+      - "internal/records/**"
+      - "internal/migrations/**"
+      - "internal/entities/**"
+      - "internal/ghupdate/**"
+      - "internal/common/**"
+      - "internal/site/embed.go"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/ci-hub.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "internal/hub/**"
+      - "internal/cmd/hub/**"
+      - "internal/alerts/**"
+      - "internal/records/**"
+      - "internal/migrations/**"
+      - "internal/entities/**"
+      - "internal/ghupdate/**"
+      - "internal/common/**"
+      - "internal/site/embed.go"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/ci-hub.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build, vet & test hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.x
+
+      # internal/site/embed.go does //go:embed all:dist, and dist/ is
+      # gitignored - the hub won't compile without it. Reuse the Makefile's
+      # build-hub-dev trick (dev build tag + empty stub) so hub CI stays
+      # Go-only and doesn't need a Bun/Node toolchain just to compile-check.
+      - name: Stub frontend dist for embed
+        run: mkdir -p ./internal/site/dist && touch ./internal/site/dist/index.html
+
+      - name: Build
+        run: go build -tags development ./internal/cmd/hub/... ./internal/hub/...
+
+      - name: Vet
+        run: go vet ./internal/hub/... ./internal/cmd/hub/... ./internal/alerts/... ./internal/records/... ./internal/migrations/... ./internal/ghupdate/... ./internal/entities/...
+
+      - name: Test
+        run: go test -tags=testing -race ./internal/hub/... ./internal/alerts/... ./internal/records/... ./internal/ghupdate/... ./internal/entities/...
+
+      # Non-blocking: no .golangci.yml exists yet, so default-rule output
+      # would surface pre-existing findings unrelated to any given PR.
+      # Tighten this to blocking once a config is written and the scoped
+      # packages are clean under it.
+      - name: Lint (non-blocking)
+        continue-on-error: true
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: >-
+            --timeout=5m
+            ./internal/hub/...
+            ./internal/cmd/hub/...
+            ./internal/alerts/...
+            ./internal/records/...
+            ./internal/migrations/...
+            ./internal/ghupdate/...

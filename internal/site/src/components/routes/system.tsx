@@ -70,7 +70,11 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 	if (hasGpu) tabs.push("gpu")
 	if (hasContainers) tabs.push("containers")
 	if (hasSystemd) tabs.push("services")
-	if (system.info.wol_enabled || system.info.esp_mapped) tabs.push("recovery")
+	// The Recovery tab is always shown; RecoveryInfo fetches its own
+	// recovery_channels record and renders a "not configured" state when
+	// none exists, instead of relying on system.info fields that the hub
+	// never actually populates.
+	tabs.push("recovery")
 	tabsRef.current = tabs
 
 	// shared chart props
@@ -148,7 +152,7 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 				{hasSystemd && <LazySystemdTable systemId={system.id} />}
 
-				<RecoveryInfo systemId={system.id} info={system.info} />
+				<RecoveryInfo systemId={system.id} />
 			</>
 		)
 	}
@@ -183,12 +187,10 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 							<Trans>Services</Trans>
 						</TabsTrigger>
 					)}
-					{(system.info.wol_enabled || system.info.esp_mapped) && (
-						<TabsTrigger value="recovery" className="w-full flex items-center gap-2">
-							<ShieldAlert className="size-3.5" />
-							<Trans>Recovery</Trans>
-						</TabsTrigger>
-					)}
+					<TabsTrigger value="recovery" className="w-full flex items-center gap-2">
+						<ShieldAlert className="size-3.5" />
+						<Trans>Recovery</Trans>
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="core" forceMount className={activeTab === "core" ? "contents" : "hidden"}>
@@ -272,11 +274,9 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 					</TabsContent>
 				)}
 
-				{(system.info.wol_enabled || system.info.esp_mapped) && (
-					<TabsContent value="recovery" forceMount className={activeTab === "recovery" ? "contents" : "hidden"}>
-						{mountedTabs.has("recovery") && <RecoveryInfo systemId={system.id} info={system.info} />}
-					</TabsContent>
-				)}
+				<TabsContent value="recovery" forceMount className={activeTab === "recovery" ? "contents" : "hidden"}>
+					{mountedTabs.has("recovery") && <RecoveryInfo systemId={system.id} />}
+				</TabsContent>
 			</Tabs>
 		)
 	}

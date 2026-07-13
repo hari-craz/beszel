@@ -42,6 +42,17 @@ struct MonitoredChannel {
   int ports[3];
   int portCount;
   bool maintenance;
+  // hwRecoveryDisabled gates autonomous SHORT_PRESS/HARD_HOLD escalation for
+  // this channel. Unlike maintenance, this is a persistent policy set from
+  // Beszel/the local portal, not a temporary human intervention. When true,
+  // the channel keeps probing/logging its state but never presses the relay.
+  bool hwRecoveryDisabled;
+  // hubLockUntilMs is a best-effort hint reported by the hub (via
+  // /recovery/ping) that a Beszel-initiated recovery action (e.g. automatic
+  // WOL) is currently in flight for this channel. It is bounded by the ESP's
+  // heartbeat interval and is not a real-time guarantee - see
+  // processProberStateMachines()'s STATE_BOOT_GRACE handling.
+  unsigned long hubLockUntilMs;
   ChannelState state;
   int consecutiveFailures;
   unsigned long lastProbeTime;
@@ -64,6 +75,22 @@ unsigned long heartbeatIntervalMs = 30000;
 unsigned long lastPingTime = 0;
 unsigned long lastDisplayPageRotation = 0;
 int currentDisplayPage = 0;
+
+// Startup grace: no channel may escalate past STATE_VERIFYING_FAILURE until
+// this deadline, so a fresh boot (or watchdog reset) never fires a relay
+// within seconds of coming up.
+#define STARTUP_GRACE_MS 60000UL
+unsigned long startupGraceUntilMs = 0;
+
+// Gateway / NETWORK_VERIFY: distinguishes "one server is down" from "the
+// network itself is down" so a router outage doesn't cause every channel to
+// be hard-rebooted. This mirrors the hub's own gateway check, but runs
+// locally so the ESP's autonomous engine stays safe even when Beszel is
+// unreachable.
+char gatewayIP[16] = "";
+bool networkVerifyActive = false;
+int gatewayConsecutiveOk = 0;
+unsigned long lastGatewayProbeTime = 0;
 
 // Button timers
 unsigned long buttonPressStartTime = 0;
@@ -302,6 +329,7 @@ void setup() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
+      WiFi.gatewayIP().toString().toCharArray(gatewayIP, sizeof(gatewayIP));
       if (hasLCD) {
         lcd.clear();
         lcd.print("WiFi Online");
@@ -317,6 +345,12 @@ void setup() {
         lcd.print("Retrying background");
       }
     }
+
+    // Safe relay initialization already happened above (all pins HIGH/open).
+    // Hold off any autonomous recovery action until fresh verification has
+    // had a chance to run, so a boot/reset never presses a relay within
+    // seconds of coming up.
+    startupGraceUntilMs = millis() + STARTUP_GRACE_MS;
 
     server.on("/", HTTP_GET, handleNormalStatus);
     server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
@@ -393,8 +427,41 @@ bool probeTCPPort(const char* ip, int port) {
   return false;
 }
 
+// probeGateway checks whether the local network gateway is reachable, using
+// the same TCP-connect approach (ports 53/80) as the hub's own gateway
+// check. If no gateway IP is known yet, treat it as reachable rather than
+// blocking escalation on missing configuration.
+bool probeGateway() {
+  if (strlen(gatewayIP) == 0) return true;
+  if (probeTCPPort(gatewayIP, 53)) return true;
+  if (probeTCPPort(gatewayIP, 80)) return true;
+  return false;
+}
+
+// checkNetworkVerifyRecovery re-probes the gateway while NETWORK_VERIFY is
+// active and only clears it after a couple of consecutive successful
+// probes, to avoid flapping back into automatic recovery on a still-shaky
+// connection.
+void checkNetworkVerifyRecovery() {
+  if (!networkVerifyActive) return;
+  unsigned long now = millis();
+  if (now - lastGatewayProbeTime < 5000) return;
+  lastGatewayProbeTime = now;
+
+  if (probeGateway()) {
+    gatewayConsecutiveOk++;
+    if (gatewayConsecutiveOk >= 2) {
+      networkVerifyActive = false;
+      gatewayConsecutiveOk = 0;
+    }
+  } else {
+    gatewayConsecutiveOk = 0;
+  }
+}
+
 void processProberStateMachines() {
   unsigned long now = millis();
+  checkNetworkVerifyRecovery();
   for (int i = 0; i < activeChannelCount; i++) {
     MonitoredChannel& ch = activeChannels[i];
     if (ch.maintenance) {
@@ -430,6 +497,28 @@ void processProberStateMachines() {
           } else {
             ch.consecutiveFailures++;
             if (ch.consecutiveFailures >= 3) {
+              // Startup grace: keep verifying/logging, but never act within
+              // STARTUP_GRACE_MS of boot.
+              if (now < startupGraceUntilMs) {
+                break;
+              }
+              // Per-channel policy: this channel is monitoring-only.
+              if (ch.hwRecoveryDisabled) {
+                break;
+              }
+              // Already known network-down - don't re-probe every tick.
+              if (networkVerifyActive) {
+                break;
+              }
+              if (!probeGateway()) {
+                // Gateway itself is unreachable: this looks like a network
+                // outage, not N simultaneous server failures. Suspend
+                // automatic recovery network-wide until it recovers.
+                networkVerifyActive = true;
+                gatewayConsecutiveOk = 0;
+                lastGatewayProbeTime = now;
+                break;
+              }
               ch.state = STATE_SHORT_PRESS;
               ch.stateStartTime = now;
               ch.recoveryAttempts++;
@@ -455,6 +544,16 @@ void processProberStateMachines() {
             triggerBuzzer(2, 200);
           } else {
             if (now - ch.stateStartTime >= 60000) {
+              // Hard-hold is destructive (it can power OFF a machine that a
+              // hub-initiated WOL just booted), so it gets an extra, more
+              // conservative gate than the short-press escalation above.
+              bool hubLockFresh = (ch.hubLockUntilMs != 0 && now < ch.hubLockUntilMs);
+              if (ch.hwRecoveryDisabled || hubLockFresh || networkVerifyActive) {
+                // Defer, don't cancel: stay in BOOT_GRACE and re-check next
+                // cycle instead of escalating to a destructive hard-hold.
+                ch.stateStartTime = now;
+                break;
+              }
               if (ch.recoveryAttempts < 2) {
                 ch.state = STATE_HARD_HOLD;
                 ch.stateStartTime = now;
@@ -541,7 +640,10 @@ void syncWithHub() {
   int httpCode = http.POST(requestBody);
   if (httpCode == HTTP_CODE_OK) {
     String response = http.getString();
-    StaticJsonDocument<1024> respDoc;
+    // Sized generously for MAX_CHANNELS_LIMIT channels now that the response
+    // carries per-channel hardware_recovery_disabled/hub_lock_* hints in
+    // addition to the original fields.
+    StaticJsonDocument<2048> respDoc;
     DeserializationError err = deserializeJson(respDoc, response);
 
     if (!err) {
@@ -560,6 +662,11 @@ void syncWithHub() {
           const char* host = item["host_ip"];
           strncpy(newCh.hostIP, host, sizeof(newCh.hostIP) - 1);
           newCh.maintenance = item["maintenance"];
+          newCh.hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
+          long lockSecondsRemaining = item["hub_lock_seconds_remaining"] | 0;
+          newCh.hubLockUntilMs = (lockSecondsRemaining > 0)
+            ? (millis() + (unsigned long)lockSecondsRemaining * 1000UL)
+            : 0;
           newCh.state = STATE_ONLINE;
           newCh.consecutiveFailures = 0;
           newCh.lastProbeTime = 0;
@@ -583,6 +690,25 @@ void syncWithHub() {
         localConfigRevision = remoteRevision;
         strncpy(localConfigHash, remoteHash.c_str(), sizeof(localConfigHash) - 1);
         triggerBuzzer(3, 100);
+      } else {
+        // Config revision unchanged, but volatile per-channel hints (hub
+        // lock, maintenance, hardware-recovery-disabled) can legitimately
+        // change between config revisions - refresh those on every ping
+        // without rebuilding channels or resetting probe state/counters.
+        JsonArray channelsArray = respDoc["channels"];
+        for (JsonObject item : channelsArray) {
+          int chanNum = item["channel"];
+          for (int i = 0; i < activeChannelCount; i++) {
+            if (activeChannels[i].channelNumber != chanNum) continue;
+            activeChannels[i].maintenance = item["maintenance"];
+            activeChannels[i].hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
+            long lockSecondsRemaining = item["hub_lock_seconds_remaining"] | 0;
+            activeChannels[i].hubLockUntilMs = (lockSecondsRemaining > 0)
+              ? (millis() + (unsigned long)lockSecondsRemaining * 1000UL)
+              : 0;
+            break;
+          }
+        }
       }
     }
   }
@@ -599,6 +725,17 @@ void updateLCDDisplay() {
   lastDisplayPageRotation = now;
 
   lcd.clear();
+
+  if (networkVerifyActive) {
+    lcd.setCursor(0, 0);
+    lcd.print("NETWORK VERIFY");
+    lcd.setCursor(0, 1);
+    lcd.print("GATEWAY: OFFLINE");
+    lcd.setCursor(0, 2);
+    lcd.print("RECOVERY PAUSED");
+    return;
+  }
+
   if (activeChannelCount == 0) {
     lcd.setCursor(0, 0);
     lcd.print("Recovery Watchdog");

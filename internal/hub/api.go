@@ -517,6 +517,15 @@ func (h *Hub) triggerManualWOL(e *core.RequestEvent) error {
 	if port <= 0 {
 		port = 9
 	}
+	leaseID, acquired := h.sm.AcquireRecoveryLock(rec.Id, "MANUAL_UI", 15*time.Second)
+	if !acquired {
+		return e.JSON(http.StatusConflict, map[string]any{
+			"status":  http.StatusConflict,
+			"message": "A recovery action is already in progress for this system. Please wait for it to complete.",
+			"data":    map[string]any{},
+		})
+	}
+	defer h.sm.ReleaseRecoveryLock(rec.Id, leaseID)
 	err = systems.SendMagicPacket(mac, bcast, port)
 	if err != nil {
 		return e.InternalServerError("Failed to broadcast Wake-on-LAN magic packet", err)
@@ -643,13 +652,19 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 			if portsData != "" {
 				_ = json.Unmarshal([]byte(portsData), &ports)
 			}
-			channels = append(channels, map[string]any{
-				"channel":     chRec.GetInt("channel_number"),
-				"system":      chRec.GetString("system"),
-				"host_ip":     chRec.GetString("host_ip"),
-				"ports":       ports,
-				"maintenance": chRec.GetBool("maintenance"),
-			})
+			channel := map[string]any{
+				"channel":                    chRec.GetInt("channel_number"),
+				"system":                     chRec.GetString("system"),
+				"host_ip":                    chRec.GetString("host_ip"),
+				"ports":                      ports,
+				"maintenance":                chRec.GetBool("maintenance"),
+				"hardware_recovery_disabled": chRec.GetBool("hardware_recovery_disabled"),
+			}
+			if lockOwner, lockSecondsRemaining, lockHeld := h.sm.RecoveryLockStatus(chRec.Id); lockHeld {
+				channel["hub_lock_owner"] = lockOwner
+				channel["hub_lock_seconds_remaining"] = lockSecondsRemaining
+			}
+			channels = append(channels, channel)
 		}
 	}
 	return e.JSON(http.StatusOK, map[string]any{
@@ -686,6 +701,15 @@ func (h *Hub) triggerRelayAction(e *core.RequestEvent, duration int, eventName s
 	if espIP == "" {
 		return e.BadRequestError("Recovery module IP address is not available", nil)
 	}
+	leaseID, acquired := h.sm.AcquireRecoveryLock(rec.Id, "MANUAL_UI", 15*time.Second)
+	if !acquired {
+		return e.JSON(http.StatusConflict, map[string]any{
+			"status":  http.StatusConflict,
+			"message": "A recovery action is already in progress for this system. Please wait for it to complete.",
+			"data":    map[string]any{},
+		})
+	}
+	defer h.sm.ReleaseRecoveryLock(rec.Id, leaseID)
 	err = h.sm.TriggerESP32Relay(espIP, channelNum, duration)
 	if err != nil {
 		return e.InternalServerError("Failed to contact ESP32 module relay controller", err)

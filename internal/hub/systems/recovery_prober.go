@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/henrygd/beszel/internal/hub/expirymap"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -22,6 +25,21 @@ type RecoveryProber struct {
 	running   bool
 	ctx       context.Context
 	cancel    context.CancelFunc
+
+	// locks coordinates hub-side recovery actions (automatic WOL vs. manual
+	// UI actions) so at most one is ever in flight per channel at a time.
+	// It intentionally does not - and cannot - coordinate with the ESP32's
+	// own autonomous relay actions in real time; see ChannelLockInfo, which
+	// is surfaced to the ESP via /recovery/ping as a best-effort hint.
+	locks     *expirymap.ExpiryMap[lockInfo]
+	nextLease uint64
+}
+
+// lockInfo describes the current holder of a channel's recovery lock.
+type lockInfo struct {
+	Owner     string
+	LeaseID   string
+	ExpiresAt time.Time
 }
 
 // systemWatchdog stores in-memory state and the cancellation hook for a single system watchdog loop.
@@ -51,7 +69,63 @@ func NewRecoveryProber(app core.App) *RecoveryProber {
 		watchdogs: make(map[string]*systemWatchdog),
 		ctx:       ctx,
 		cancel:    cancel,
+		locks:     expirymap.New[lockInfo](30 * time.Second),
 	}
+}
+
+// acquireLock grants exclusive ownership of a channel's recovery lock to owner
+// for ttl. Any existing unexpired lease - regardless of owner - blocks
+// acquisition, so two hub-side actions (automatic or manual) can never run
+// concurrently against the same channel, including a duplicate click of the
+// same action. Returns the minted lease ID and true on success.
+func (rp *RecoveryProber) acquireLock(channelID, owner string, ttl time.Duration) (string, bool) {
+	if _, held := rp.locks.GetOk(channelID); held {
+		return "", false
+	}
+	leaseID := strconv.FormatUint(atomic.AddUint64(&rp.nextLease, 1), 36)
+	rp.locks.Set(channelID, lockInfo{Owner: owner, LeaseID: leaseID, ExpiresAt: time.Now().Add(ttl)}, ttl)
+	return leaseID, true
+}
+
+// releaseLock clears channelID's lock only if it still matches leaseID. A
+// stale release from a superseded lease (e.g. an automatic-WOL attempt that
+// was cancelled after its config changed) is a safe no-op instead of
+// deleting a different, newer lease acquired by another actor in the interim.
+func (rp *RecoveryProber) releaseLock(channelID, leaseID string) {
+	if cur, held := rp.locks.GetOk(channelID); held && cur.LeaseID == leaseID {
+		rp.locks.Remove(channelID)
+	}
+}
+
+// lockStatus is a read-only lookup of the current lock holder, if any.
+func (rp *RecoveryProber) lockStatus(channelID string) (owner string, secondsRemaining int, held bool) {
+	cur, ok := rp.locks.GetOk(channelID)
+	if !ok {
+		return "", 0, false
+	}
+	remaining := int(time.Until(cur.ExpiresAt).Seconds())
+	if remaining < 0 {
+		remaining = 0
+	}
+	return cur.Owner, remaining, true
+}
+
+// ChannelLockInfo exposes the current lock holder for a channel so it can be
+// surfaced to the ESP32 module via /recovery/ping as a best-effort hint.
+func (rp *RecoveryProber) ChannelLockInfo(channelID string) (owner string, secondsRemaining int, held bool) {
+	return rp.lockStatus(channelID)
+}
+
+// AcquireLock is the exported entry point used by manual (admin-triggered)
+// recovery actions in the API layer.
+func (rp *RecoveryProber) AcquireLock(channelID, owner string, ttl time.Duration) (string, bool) {
+	return rp.acquireLock(channelID, owner, ttl)
+}
+
+// ReleaseLock is the exported entry point used by manual (admin-triggered)
+// recovery actions in the API layer.
+func (rp *RecoveryProber) ReleaseLock(channelID, leaseID string) {
+	rp.releaseLock(channelID, leaseID)
 }
 
 // Start loads current config and binds pocketbase hooks to maintain the watchdog registry.
@@ -237,111 +311,95 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 					"reason": fmt.Sprintf("failed %d verify checks", w.threshold),
 				})
 
-				// If WOL is enabled and automatic, trigger it
+				// If WOL is enabled and automatic, attempt it. attemptAutomaticWOL
+				// is lock-protected so it can never run concurrently with a
+				// manual WOL/relay action (or a duplicate automatic attempt)
+				// on the same channel.
 				recoverySuccessful := false
 				if w.wolEnabled && w.autoWol && w.macAddress != "" {
-					rp.logEvent(w.systemID, w.channelID, "WOL_SENT", map[string]any{
-						"mac":       w.macAddress,
-						"broadcast": w.bcastIP,
-						"port":      w.wolPort,
-					})
-
-					err := SendMagicPacket(w.macAddress, w.bcastIP, w.wolPort)
-					if err != nil {
-						rp.logEvent(w.systemID, w.channelID, "WOL_ERROR", map[string]any{
-							"error": err.Error(),
-						})
-					}
-
-					// Wait for boot grace period
-					graceTicker := time.NewTicker(1 * time.Second)
-					graceTimeout := time.After(time.Duration(w.graceSecs) * time.Second)
-
-					for recoverySuccessful == false {
-						select {
-						case <-ctx.Done():
-							graceTicker.Stop()
-							return
-						case <-graceTimeout:
-							graceTicker.Stop()
-							recoverySuccessful = false
-							goto wolGraceEnd
-						case <-graceTicker.C:
-							if rp.probePorts(w.hostIP, w.probePorts) {
-								graceTicker.Stop()
-								recoverySuccessful = true
-								goto wolGraceEnd
-							}
-						}
-					}
-
-				wolGraceEnd:
-					if recoverySuccessful {
-						rp.logEvent(w.systemID, w.channelID, "WOL_SUCCESS", map[string]any{
-							"status": "online",
-						})
-					} else {
-						rp.logEvent(w.systemID, w.channelID, "WOL_FAILED", map[string]any{
-							"reason": "boot grace period timed out",
-						})
-					}
+					recoverySuccessful = rp.attemptAutomaticWOL(ctx, w)
 				}
 
-				// If WOL did not succeed (or was skipped) and we have an ESP module mapped, escalate to physical relay trigger!
+				// Beszel must not directly control a relay (see
+				// BESZEL_ESP32_HARDWARE_RECOVERY_BRIEF.md §9 and the final
+				// architecture note: "only the watchdog can verify and
+				// authorize an automatic physical recovery"). If WOL did not
+				// succeed (or was skipped), physical recovery is the ESP32
+				// module's own job - it runs the same verify/escalate ladder
+				// locally and independently, without needing (or waiting for)
+				// an HTTP nudge from the hub. Log this so the recovery
+				// timeline doesn't go silent at this point.
 				if !recoverySuccessful && w.moduleID != "" {
-					espIP := ""
-					moduleRec, err := rp.app.FindRecordById("recovery_modules", w.moduleID)
-					if err == nil {
-						espIP = moduleRec.GetString("ip_address")
-					}
-					if espIP != "" {
-						rp.logEvent(w.systemID, w.channelID, "ESP_RELAY_SENT", map[string]any{
-							"module":  w.moduleID,
-							"channel": w.channelNum,
-							"ip":      espIP,
-						})
-
-						errRelay := rp.triggerESP32Relay(espIP, w.channelNum, 500)
-						if errRelay != nil {
-							rp.logEvent(w.systemID, w.channelID, "ESP_RELAY_ERROR", map[string]any{
-								"error": errRelay.Error(),
-							})
-						} else {
-							// Wait for boot grace period after relay pulse
-							graceTicker := time.NewTicker(1 * time.Second)
-							graceTimeout := time.After(time.Duration(w.graceSecs) * time.Second)
-
-							for recoverySuccessful == false {
-								select {
-								case <-ctx.Done():
-									graceTicker.Stop()
-									return
-								case <-graceTimeout:
-									graceTicker.Stop()
-									recoverySuccessful = false
-									goto relayGraceEnd
-								case <-graceTicker.C:
-									if rp.probePorts(w.hostIP, w.probePorts) {
-										graceTicker.Stop()
-										recoverySuccessful = true
-										goto relayGraceEnd
-									}
-								}
-							}
-
-						relayGraceEnd:
-							if recoverySuccessful {
-								rp.logEvent(w.systemID, w.channelID, "RELAY_SUCCESS", map[string]any{
-									"status": "online",
-								})
-							} else {
-								rp.logEvent(w.systemID, w.channelID, "RELAY_FAILED", map[string]any{
-									"reason": "server remained offline after relay trigger boot grace period",
-								})
-							}
-						}
-					}
+					rp.logEvent(w.systemID, w.channelID, "ESP_AUTONOMOUS_EXPECTED", map[string]any{
+						"module":  w.moduleID,
+						"channel": w.channelNum,
+						"reason":  "WOL did not succeed; physical recovery is owned by the ESP32 module's independent watchdog, not triggered automatically by the hub",
+					})
 				}
+			}
+			if ctx.Err() != nil {
+				return
+			}
+		}
+	}
+}
+
+// attemptAutomaticWOL sends a Wake-on-LAN magic packet for w and waits up to
+// w.graceSecs for the host to respond. It acquires the channel's recovery
+// lock first so it can never race a manual WOL/relay action (or a duplicate
+// automatic attempt) on the same channel; if the lock is already held it
+// logs WOL_BLOCKED_LOCK and returns false immediately instead of proceeding.
+//
+// The lease is released via defer, scoping its lifetime to this single
+// attempt rather than the long-lived watchdog goroutine. If ctx is
+// cancelled mid-wait (e.g. because the channel's config just changed and
+// registerWatchdog cancelled this goroutine to start a fresh one), this
+// function returns promptly - within the wait loop's ~1s tick granularity -
+// and the deferred, lease-ID-checked release frees the lock immediately.
+// That is what makes toggling wol_enabled/auto_wol off take effect right
+// away, without needing a separate, racier force-release call elsewhere.
+func (rp *RecoveryProber) attemptAutomaticWOL(ctx context.Context, w *systemWatchdog) bool {
+	leaseID, acquired := rp.acquireLock(w.channelID, "BESZEL_WOL", time.Duration(w.graceSecs+10)*time.Second)
+	if !acquired {
+		rp.logEvent(w.systemID, w.channelID, "WOL_BLOCKED_LOCK", map[string]any{
+			"reason": "another recovery action is already in progress for this channel",
+		})
+		return false
+	}
+	defer rp.releaseLock(w.channelID, leaseID)
+
+	rp.logEvent(w.systemID, w.channelID, "WOL_SENT", map[string]any{
+		"mac":       w.macAddress,
+		"broadcast": w.bcastIP,
+		"port":      w.wolPort,
+	})
+
+	if err := SendMagicPacket(w.macAddress, w.bcastIP, w.wolPort); err != nil {
+		rp.logEvent(w.systemID, w.channelID, "WOL_ERROR", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	// Wait for boot grace period
+	graceTicker := time.NewTicker(1 * time.Second)
+	defer graceTicker.Stop()
+	graceTimeout := time.After(time.Duration(w.graceSecs) * time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-graceTimeout:
+			rp.logEvent(w.systemID, w.channelID, "WOL_FAILED", map[string]any{
+				"reason": "boot grace period timed out",
+			})
+			return false
+		case <-graceTicker.C:
+			if rp.probePorts(w.hostIP, w.probePorts) {
+				rp.logEvent(w.systemID, w.channelID, "WOL_SUCCESS", map[string]any{
+					"status": "online",
+				})
+				return true
 			}
 		}
 	}
