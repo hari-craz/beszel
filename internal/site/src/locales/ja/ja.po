@@ -121,6 +121,15 @@ msgstr "アクティブ状態"
 msgid "Add {foo}"
 msgstr "{foo}を追加"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Add Device"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Add Recovery Module"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Add URL"
 msgstr "URLを追加"
@@ -338,6 +347,7 @@ msgstr "停止可能"
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Cancel"
 msgstr "キャンセル"
@@ -704,6 +714,10 @@ msgstr "ダウンロード"
 msgid "Duration"
 msgstr "期間"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "e.g. Rack A Watchdog"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Edit"
@@ -775,6 +789,8 @@ msgstr "一時的"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
@@ -885,6 +901,10 @@ msgstr "フィンガープリント"
 #: src/components/routes/system/smart-table.tsx
 msgid "Firmware"
 msgstr "ファームウェア"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Firmware Version"
+msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
@@ -1064,6 +1084,10 @@ msgstr ""
 msgid "Invalid email address."
 msgstr "無効なメールアドレスです。"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "IP Address (Optional)"
+msgstr ""
+
 #: src/components/lang-toggle.tsx
 #: src/components/routes/settings/general.tsx
 msgid "Language"
@@ -1151,6 +1175,7 @@ msgstr "ログ"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "アラートを作成する場所を探していますか？システムテーブルのベル<0/>アイコンをクリックしてください。"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "MAC Address"
 msgstr ""
@@ -1178,10 +1203,18 @@ msgstr ""
 msgid "Manual setup instructions"
 msgstr "手動セットアップの手順"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manually register an ESP32 hardware recovery module."
+msgstr ""
+
 #. Chart select field. Please try to keep this short.
 #: src/components/routes/system/chart-card.tsx
 msgid "Max 1 min"
 msgstr "最大1分"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Max Channels"
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/info-bar.tsx
@@ -1217,10 +1250,15 @@ msgstr "モデル"
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systemd-table/systemd-table-columns.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Name"
 msgstr "名前"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Name and MAC address are required."
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1548,6 +1586,10 @@ msgid "Recovery Module"
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module added successfully."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Recovery module has been approved."
 msgstr ""
 
@@ -1792,6 +1834,7 @@ msgstr "ステータス"
 msgid "Sub State"
 msgstr "サブ状態"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"

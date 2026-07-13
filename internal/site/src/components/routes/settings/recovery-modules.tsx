@@ -10,6 +10,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog"
 import { isAdmin, pb } from "@/lib/api"
 
 interface RecoveryModule {
@@ -49,6 +59,13 @@ export default function RecoveryModulesSettings() {
 	const [isLoading, setIsLoading] = useState(true)
 	const [isApproving, setIsApproving] = useState<Record<string, boolean>>({})
 
+	const [dialogOpen, setDialogOpen] = useState(false)
+	const [newName, setNewName] = useState("")
+	const [newMac, setNewMac] = useState("")
+	const [newIp, setNewIp] = useState("")
+	const [newMaxChannels, setNewMaxChannels] = useState("4")
+	const [newFirmware, setNewFirmware] = useState("1.0.0")
+
 	async function approveModule(id: string) {
 		setIsApproving((prev) => ({ ...prev, [id]: true }))
 		try {
@@ -68,6 +85,47 @@ export default function RecoveryModulesSettings() {
 			})
 		} finally {
 			setIsApproving((prev) => ({ ...prev, [id]: false }))
+		}
+	}
+
+	async function handleAddModule(e: React.FormEvent) {
+		e.preventDefault()
+		if (!newName || !newMac) {
+			toast({
+				title: t`Error`,
+				description: t`Name and MAC address are required.`,
+				variant: "destructive",
+			})
+			return
+		}
+		try {
+			const mac = newMac.trim().toLowerCase()
+			await pb.collection("recovery_modules").create({
+				name: newName.trim(),
+				mac_address: mac,
+				ip_address: newIp.trim() || undefined,
+				max_channels: Number(newMaxChannels),
+				firmware_version: newFirmware.trim() || "1.0.0",
+				status: "online",
+				config_revision: 1,
+			})
+			toast({
+				title: t`Success`,
+				description: t`Recovery module added successfully.`,
+			})
+			setDialogOpen(false)
+			setNewName("")
+			setNewMac("")
+			setNewIp("")
+			setNewMaxChannels("4")
+			setNewFirmware("1.0.0")
+			fetchData()
+		} catch (error) {
+			toast({
+				title: t`Error`,
+				description: (error as Error).message,
+				variant: "destructive",
+			})
 		}
 	}
 
@@ -120,10 +178,100 @@ export default function RecoveryModulesSettings() {
 						<Trans>Manage ESP32 hardware watchdog and physical relay controllers.</Trans>
 					</p>
 				</div>
-				<Button size="sm" onClick={fetchData} disabled={isLoading}>
-					{isLoading ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
-					<Trans>Refresh</Trans>
-				</Button>
+				<div className="flex items-center gap-2">
+					<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+						<DialogTrigger asChild>
+							<Button size="sm" variant="outline">
+								<Trans>Add Device</Trans>
+							</Button>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>
+									<Trans>Add Recovery Module</Trans>
+								</DialogTitle>
+								<DialogDescription>
+									<Trans>Manually register an ESP32 hardware recovery module.</Trans>
+								</DialogDescription>
+							</DialogHeader>
+							<form onSubmit={handleAddModule} className="space-y-4">
+								<div className="grid gap-2">
+									<Label htmlFor="name">
+										<Trans>Name</Trans>
+									</Label>
+									<Input
+										id="name"
+										value={newName}
+										onChange={(e) => setNewName(e.target.value)}
+										placeholder={t`e.g. Rack A Watchdog`}
+										required
+									/>
+								</div>
+								<div className="grid gap-2">
+									<Label htmlFor="mac">
+										<Trans>MAC Address</Trans>
+									</Label>
+									<Input
+										id="mac"
+										value={newMac}
+										onChange={(e) => setNewMac(e.target.value)}
+										placeholder="e.g. aa:bb:cc:dd:ee:ff"
+										required
+									/>
+								</div>
+								<div className="grid gap-2">
+									<Label htmlFor="ip">
+										<Trans>IP Address (Optional)</Trans>
+									</Label>
+									<Input
+										id="ip"
+										value={newIp}
+										onChange={(e) => setNewIp(e.target.value)}
+										placeholder="e.g. 192.168.1.150"
+									/>
+								</div>
+								<div className="grid sm:grid-cols-2 gap-4">
+									<div className="grid gap-2">
+										<Label htmlFor="max_channels">
+											<Trans>Max Channels</Trans>
+										</Label>
+										<Input
+											id="max_channels"
+											type="number"
+											min={1}
+											value={newMaxChannels}
+											onChange={(e) => setNewMaxChannels(e.target.value)}
+											required
+										/>
+									</div>
+									<div className="grid gap-2">
+										<Label htmlFor="firmware">
+											<Trans>Firmware Version</Trans>
+										</Label>
+										<Input
+											id="firmware"
+											value={newFirmware}
+											onChange={(e) => setNewFirmware(e.target.value)}
+											placeholder="1.0.0"
+										/>
+									</div>
+								</div>
+								<DialogFooter className="pt-2">
+									<Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
+										<Trans>Cancel</Trans>
+									</Button>
+									<Button type="submit">
+										<Trans>Add Device</Trans>
+									</Button>
+								</DialogFooter>
+							</form>
+						</DialogContent>
+					</Dialog>
+					<Button size="sm" onClick={fetchData} disabled={isLoading}>
+						{isLoading ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
+						<Trans>Refresh</Trans>
+					</Button>
+				</div>
 			</div>
 			<Separator className="my-4" />
 

@@ -121,6 +121,15 @@ msgstr "Actieve status"
 msgid "Add {foo}"
 msgstr "Voeg {foo} toe"
 
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Add Device"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Add Recovery Module"
+msgstr ""
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Add URL"
 msgstr "Voeg URL toe"
@@ -338,6 +347,7 @@ msgstr "Kan stoppen"
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Cancel"
 msgstr "Annuleren"
@@ -704,6 +714,10 @@ msgstr "Downloaden"
 msgid "Duration"
 msgstr "Duur"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "e.g. Rack A Watchdog"
+msgstr ""
+
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Edit"
@@ -775,6 +789,8 @@ msgstr "Tijdelijk"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
@@ -884,6 +900,10 @@ msgstr "Vingerafdruk"
 
 #: src/components/routes/system/smart-table.tsx
 msgid "Firmware"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Firmware Version"
 msgstr ""
 
 #: src/components/alerts/alerts-sheet.tsx
@@ -1064,6 +1084,10 @@ msgstr ""
 msgid "Invalid email address."
 msgstr "Ongeldig e-mailadres."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "IP Address (Optional)"
+msgstr ""
+
 #: src/components/lang-toggle.tsx
 #: src/components/routes/settings/general.tsx
 msgid "Language"
@@ -1151,6 +1175,7 @@ msgstr "Logboeken"
 msgid "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 msgstr "Zoek je waar je meldingen kunt aanmaken? Klik op de bel <0/> in de systeemtabel."
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "MAC Address"
 msgstr ""
@@ -1178,9 +1203,17 @@ msgstr ""
 msgid "Manual setup instructions"
 msgstr "Handmatige installatie-instructies"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Manually register an ESP32 hardware recovery module."
+msgstr ""
+
 #. Chart select field. Please try to keep this short.
 #: src/components/routes/system/chart-card.tsx
 msgid "Max 1 min"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Max Channels"
 msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1217,10 +1250,15 @@ msgstr ""
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systemd-table/systemd-table-columns.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Name"
 msgstr "Naam"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Name and MAC address are required."
+msgstr ""
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1548,6 +1586,10 @@ msgid "Recovery Module"
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module added successfully."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Recovery module has been approved."
 msgstr ""
 
@@ -1792,6 +1834,7 @@ msgstr ""
 msgid "Sub State"
 msgstr "Substatus"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
