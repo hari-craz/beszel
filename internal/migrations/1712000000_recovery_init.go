@@ -237,6 +237,12 @@ func init() {
 				"onlyInt": true
 			},
 			{
+				"id": "chanhwrecdis01",
+				"name": "hardware_recovery_disabled",
+				"type": "bool",
+				"required": false
+			},
+			{
 				"id": "autodate2990389176",
 				"name": "created",
 				"type": "autodate",

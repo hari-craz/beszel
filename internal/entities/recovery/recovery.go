@@ -41,8 +41,12 @@ type RecoveryChannel struct {
 	MacAddress        string    `json:"mac_address" db:"mac_address"`
 	BroadcastAddress  string    `json:"broadcast_address" db:"broadcast_address"`
 	WolPort           int       `json:"wol_port" db:"wol_port"`
-	Created           time.Time `json:"created" db:"created"`
-	Updated           time.Time `json:"updated" db:"updated"`
+	// HardwareRecoveryDisabled gates the ESP's own autonomous relay escalation for
+	// this channel. It is stored inverted (zero-value false = recovery enabled) so
+	// that channels created before this field existed keep working unchanged.
+	HardwareRecoveryDisabled bool      `json:"hardware_recovery_disabled" db:"hardware_recovery_disabled"`
+	Created                  time.Time `json:"created" db:"created"`
+	Updated                  time.Time `json:"updated" db:"updated"`
 }
 
 // RecoveryEvent logs the history of server states, probing, and execution stages.
