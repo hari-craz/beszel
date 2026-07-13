@@ -1,0 +1,41 @@
+# Beszel Agent - GitOps stack for Portainer
+#
+# Separate from docker-compose.yml (the hub) on purpose - the agent can run
+# on a different host/Portainer environment than the hub, and its TOKEN/KEY
+# requirements shouldn't block deploying the hub by itself.
+#
+# Deploy via Portainer: Stacks -> Add stack -> Build method: Repository,
+# point it at this fork/branch with compose path "docker-compose.agent.yml".
+#
+# First get TOKEN/KEY from the hub's "Add System" dialog (hub must already
+# be running - deploy docker-compose.yml first), then set HUB_URL, TOKEN,
+# KEY in this stack's "Environment variables" field in the Portainer UI.
+#
+# Docs: https://beszel.dev/guide/agent-installation
+# Env vars: https://beszel.dev/guide/environment-variables
+
+services:
+  beszel-agent:
+    build:
+      context: .
+      dockerfile: internal/dockerfile_agent
+    image: beszel-agent:local
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - beszel_agent_data:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # monitor other disks/partitions by mounting a folder in /extra-filesystems
+      # - /mnt/disk1/.beszel:/extra-filesystems/disk1:ro
+    environment:
+      LISTEN: ${AGENT_LISTEN:-45876}
+      HUB_URL: ${HUB_URL:?set HUB_URL to the hub's address, e.g. http://192.168.1.10:8090}
+      TOKEN: ${TOKEN:?set TOKEN from the hub's Add System dialog}
+      KEY: ${KEY:?set KEY from the hub's Add System dialog}
+    healthcheck:
+      test: ["CMD", "/agent", "health"]
+      interval: 120s
+
+volumes:
+  beszel_agent_data:

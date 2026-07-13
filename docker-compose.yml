@@ -1,18 +1,16 @@
-# Beszel Hub + Agent - GitOps stack for Portainer
+# Beszel Hub - GitOps stack for Portainer
+#
+# Hub-only on purpose: deploying just this file never gets blocked by the
+# agent's required TOKEN/KEY vars, which don't exist until the hub has
+# booted once anyway. See docker-compose.agent.yml for the agent.
 #
 # Deploy via Portainer: Stacks -> Add stack -> Build method: Repository,
 # point it at this fork/branch with compose path "docker-compose.yml".
-# Portainer builds both images directly from this repo's Dockerfiles on
-# every redeploy, so no separate registry push is required.
+# Portainer builds the image directly from this repo's Dockerfile on every
+# redeploy, so no separate registry push is required.
 #
-# Set HUB_URL, TOKEN, KEY (and APP_URL if the hub is reachable at something
-# other than http://localhost:8090) in the stack's "Environment variables"
-# field in the Portainer UI rather than hardcoding them here.
-#
-# TOKEN and KEY come from the hub's own "Add System" dialog, which only
-# exists after the hub has started once - so on first deploy: leave TOKEN/
-# KEY blank, deploy just the "beszel" service, open the hub UI and add a
-# system to get real values, then set them and redeploy the full stack.
+# Set APP_URL / HUB_PORT in the stack's "Environment variables" field in
+# the Portainer UI if you don't want the defaults below.
 #
 # Docs: https://beszel.dev/guide/getting-started
 # Env vars: https://beszel.dev/guide/environment-variables
@@ -31,38 +29,11 @@ services:
       - "${HUB_PORT:-8090}:8090"
     volumes:
       - beszel_data:/beszel_data
-      - beszel_socket:/beszel_socket
     healthcheck:
       test: ["CMD", "/beszel", "health", "--url", "http://localhost:8090"]
       interval: 120s
       start_period: 10s
       timeout: 5s
 
-  beszel-agent:
-    build:
-      context: .
-      dockerfile: internal/dockerfile_agent
-    image: beszel-agent:local
-    container_name: beszel-agent
-    restart: unless-stopped
-    depends_on:
-      - beszel
-    volumes:
-      - beszel_agent_data:/var/lib/beszel-agent
-      - beszel_socket:/beszel_socket
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      # monitor other disks/partitions by mounting a folder in /extra-filesystems
-      # - /mnt/disk1/.beszel:/extra-filesystems/disk1:ro
-    environment:
-      LISTEN: /beszel_socket/beszel.sock
-      HUB_URL: ${HUB_URL:-http://localhost:8090}
-      TOKEN: ${TOKEN:?set TOKEN in the Portainer stack environment variables}
-      KEY: ${KEY:?set KEY in the Portainer stack environment variables}
-    healthcheck:
-      test: ["CMD", "/agent", "health"]
-      interval: 120s
-
 volumes:
   beszel_data:
-  beszel_agent_data:
-  beszel_socket:
