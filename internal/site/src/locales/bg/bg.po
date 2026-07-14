@@ -124,11 +124,11 @@ msgstr "Добави {foo}"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Add Device"
-msgstr ""
+msgstr "Добави устройство"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Add Recovery Module"
-msgstr ""
+msgstr "Добави възстановителен модул"
 
 #: src/components/routes/settings/notifications.tsx
 msgid "Add URL"
@@ -136,7 +136,7 @@ msgstr "Добави URL"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Address is LAN-local and may be stale if the module is offline."
-msgstr ""
+msgstr "Адресът е локален за LAN мрежата и може да е остарял, ако модулът е офлайн."
 
 #: src/components/routes/settings/general.tsx
 msgid "Adjust display options for charts."
@@ -193,8 +193,12 @@ msgid "All Systems"
 msgstr "Всички системи"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Approve Module"
+msgid "Allow the ESP32 to trigger the physical relay."
 msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Approve Module"
+msgstr "Одобри модул"
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Are you sure you want to delete {name}?"
@@ -202,6 +206,10 @@ msgstr "Сигурен ли си, че искаш да изтриеш {name}?"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Are you sure you want to force restart this server? This will cut power instantly."
+msgstr "Сигурни ли сте, че искате да рестартирате принудително този сървър? Това ще спре захранването незабавно."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Are you sure you want to unmap this channel?"
 msgstr ""
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
@@ -212,13 +220,15 @@ msgstr "Сигурни ли сте?"
 msgid "Automatic copy requires a secure context."
 msgstr "Автоматичното копиране изисква защитен контескт."
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
-msgstr ""
+msgstr "Автоматично WOL (събуждане по мрежата)"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Autonomous Hardware Recovery"
-msgstr ""
+msgstr "Автономно хардуерно възстановяване"
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Average"
@@ -324,6 +334,10 @@ msgstr "Бита (Kbps, Mbps, Gbps)"
 msgid "Boot state"
 msgstr "Състояние при зареждане"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Broadcast IP"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/general.tsx
 msgid "Bytes (KB/s, MB/s, GB/s)"
@@ -347,6 +361,7 @@ msgstr "Може да се спре"
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Cancel"
@@ -375,6 +390,18 @@ msgstr "Промяна на единиците за показване на ме
 #: src/components/routes/settings/general.tsx
 msgid "Change general application options."
 msgstr "Смени общите опции на приложението."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapped successfully."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapping removed."
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapping updated."
+msgstr ""
 
 #: src/components/routes/system/charts/sensor-charts.tsx
 msgid "Charge"
@@ -438,10 +465,18 @@ msgstr "Инструкции за командната линия"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Config Revision"
-msgstr ""
+msgstr "Ревизия на конфигурацията"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Config Synchronization"
+msgstr "Синхронизация на конфигурацията"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Configure"
+msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Configure Channel Mapping"
 msgstr ""
 
 #: src/components/routes/settings/notifications.tsx
@@ -574,7 +609,7 @@ msgstr "Създаден"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Crit"
-msgstr ""
+msgstr "Крит."
 
 #: src/components/routes/settings/general.tsx
 msgid "Critical (%)"
@@ -615,7 +650,7 @@ msgstr "Времеви диапазон по подразбиране"
 #: src/components/routes/system/recovery-info.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "DEGRADED"
-msgstr ""
+msgstr "ВЛОШЕН"
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -716,7 +751,7 @@ msgstr "Продължителност"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "e.g. Rack A Watchdog"
-msgstr ""
+msgstr "напр. Сторож на рафт А"
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -727,6 +762,10 @@ msgstr "Редактирай"
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Edit {foo}"
 msgstr "Редактиране на {foo}"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Edit Channel Mapping"
+msgstr ""
 
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
@@ -742,6 +781,10 @@ msgstr "Имейл нотификации"
 #: src/lib/i18n.ts
 msgid "Empty"
 msgstr "Празна"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Enable Wake-on-LAN recovery packets."
+msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 #~ msgid "ENABLED"
@@ -762,7 +805,7 @@ msgstr "URL адрес на крайната точка"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Endpoint URL to ping. Leave blank to disable heartbeat monitoring."
-msgstr ""
+msgstr "URL адрес на крайната точка за пинг. Оставете празно, за да деактивирате мониторинга на heartbeat."
 
 #: src/components/login/login.tsx
 msgid "Enter email address to reset password"
@@ -794,6 +837,9 @@ msgstr "Ефимерен"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
@@ -801,7 +847,7 @@ msgstr "Грешка"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "ESP IP Address"
-msgstr ""
+msgstr "IP адрес на ESP"
 
 #: src/components/routes/settings/heartbeat.tsx
 #~ msgid "Example:"
@@ -860,7 +906,7 @@ msgstr "Неуспешно удостоверяване"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
-msgstr ""
+msgstr "Неуспешно зареждане на конфигурацията за възстановяване."
 
 #: src/components/routes/settings/layout.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -885,6 +931,10 @@ msgstr "Неуспешно обнови тревога"
 msgid "Failed: {0}"
 msgstr "Неуспешни: {0}"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Fallback to system host IP"
+msgstr ""
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/system/chart-card.tsx
@@ -904,7 +954,7 @@ msgstr "Фърмуер"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Firmware Version"
-msgstr ""
+msgstr "Версия на фърмуера"
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "For <0>{min}</0> {min, plural, one {minute} other {minutes}}"
@@ -912,11 +962,11 @@ msgstr "За <0>{min}</0> {min, plural, one {минута} other {минути}}
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Force Restart"
-msgstr ""
+msgstr "Принудително рестартиране"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Force restart triggered"
-msgstr ""
+msgstr "Задействано принудително рестартиране"
 
 #: src/components/login/auth-form.tsx
 msgid "Forgot password?"
@@ -946,7 +996,7 @@ msgstr "Глобален"
 
 #: src/components/routes/system.tsx
 msgid "GPU"
-msgstr ""
+msgstr "Видеокарта (GPU)"
 
 #: src/components/routes/system/charts/gpu-charts.tsx
 msgid "GPU Engines"
@@ -960,13 +1010,17 @@ msgstr "Консумация на ток от графична карта"
 msgid "GPU Usage"
 msgstr "Употреба на GPU"
 
-#: src/components/routes/system/recovery-info.tsx
-msgid "Graceful Shutdown"
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Grace (s)"
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Graceful Shutdown"
+msgstr "Безопасно изключване"
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Graceful shutdown triggered"
-msgstr ""
+msgstr "Задействано безопасно изключване"
 
 #: src/components/routes/system/info-bar.tsx
 #: src/components/systems-table/systems-table.tsx
@@ -975,15 +1029,15 @@ msgstr "Мрежово"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware Recovery (ESP32)"
-msgstr ""
+msgstr "Хардуерно възстановяване (ESP32)"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Hardware recovery is not configured for this system."
-msgstr ""
+msgstr "Хардуерното възстановяване не е конфигурирано за тази система."
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Hardware Recovery Modules"
-msgstr ""
+msgstr "Хардуерни възстановителни модули"
 
 #: src/components/containers-table/containers-table-columns.tsx
 msgid "Health"
@@ -991,19 +1045,19 @@ msgstr "Здраве"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "HEALTHY"
-msgstr ""
+msgstr "ЗДРАВ"
 
 #: src/components/routes/settings/layout.tsx
 msgid "Heartbeat"
-msgstr ""
+msgstr "Heartbeat"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Heartbeat (s)"
-msgstr ""
+msgstr "Heartbeat (сек)"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Heartbeat interval updated."
-msgstr ""
+msgstr "Интервалът на heartbeat е обновен."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Heartbeat Monitoring"
@@ -1023,13 +1077,17 @@ msgstr "Команда Homebrew"
 msgid "Host / IP"
 msgstr "Хост / IP"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Host IP to probe (Optional)"
+msgstr ""
+
 #: src/components/routes/settings/heartbeat.tsx
 msgid "HTTP Method"
 msgstr "HTTP метод"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "HTTP method used for pinging."
-msgstr ""
+msgstr "HTTP метод, използван за пинг."
 
 #: src/components/routes/settings/heartbeat.tsx
 #~ msgid "HTTP method: POST, GET, or HEAD (default: POST)"
@@ -1074,11 +1132,11 @@ msgstr "Неактивен"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Interval (seconds)"
-msgstr ""
+msgstr "Интервал (секунди)"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Interventions"
-msgstr ""
+msgstr "Намеси"
 
 #: src/components/login/auth-form.tsx
 msgid "Invalid email address."
@@ -1086,7 +1144,7 @@ msgstr "Невалиден имейл адрес."
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "IP Address (Optional)"
-msgstr ""
+msgstr "IP адрес (по избор)"
 
 #: src/components/lang-toggle.tsx
 #: src/components/routes/settings/general.tsx
@@ -1137,15 +1195,15 @@ msgstr "Състояние на зареждане"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Loading events..."
-msgstr ""
+msgstr "Зареждане на събития..."
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Loading modules and channels..."
-msgstr ""
+msgstr "Зареждане на модули и канали..."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Loading recovery configuration..."
-msgstr ""
+msgstr "Зареждане на конфигурация за възстановяване..."
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Loading..."
@@ -1176,9 +1234,10 @@ msgid "Looking instead for where to create alerts? Click the bell <0/> icons in 
 msgstr "Търсиш къде да създадеш тревоги? Натисни емотиконата за звънец <0/> в таблицата за системи."
 
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "MAC Address"
-msgstr ""
+msgstr "MAC адрес"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Main PID"
@@ -1188,6 +1247,10 @@ msgstr "Главен PID"
 #: src/components/routes/system/recovery-info.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "MAINTENANCE"
+msgstr "ПОДДРЪЖКА"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Maintenance Mode"
 msgstr ""
 
 #: src/components/routes/settings/layout.tsx
@@ -1196,7 +1259,7 @@ msgstr "Управление на предпочитанията за показ
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Manage ESP32 hardware watchdog and physical relay controllers."
-msgstr ""
+msgstr "Управление на ESP32 сторожеви таймер (watchdog) и физически релейни контролери."
 
 #: src/components/add-system.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1205,6 +1268,11 @@ msgstr "Инструкции за ръчна настройка"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Manually register an ESP32 hardware recovery module."
+msgstr "Ръчно регистриране на ESP32 хардуерен възстановителен модул."
+
+#. placeholder {0}: modules.find(m => m.id === selectedModuleId)?.name
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Map system to channel {selectedChannelNum} of module {0}."
 msgstr ""
 
 #. Chart select field. Please try to keep this short.
@@ -1214,7 +1282,7 @@ msgstr "Максимум 1 минута"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Max Channels"
-msgstr ""
+msgstr "Максимум канали"
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/info-bar.tsx
@@ -1258,7 +1326,7 @@ msgstr "Име"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Name and MAC address are required."
-msgstr ""
+msgstr "Името и MAC адресът са задължителни."
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/systems-table/systems-table-columns.tsx
@@ -1293,11 +1361,11 @@ msgstr "Не"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "No recent recovery events"
-msgstr ""
+msgstr "Няма скорошни събития по възстановяване"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "No Recovery Modules Registered"
-msgstr ""
+msgstr "Няма регистрирани възстановителни модули"
 
 #: src/components/command-palette.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1325,7 +1393,7 @@ msgstr "Няма намерени системи."
 #: src/components/routes/system/recovery-info.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "NOT INSTALLED"
-msgstr ""
+msgstr "НЕ Е ИНСТАЛИРАН"
 
 #: src/components/command-palette.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1339,11 +1407,11 @@ msgstr "Поддръжка на OAuth 2 / OIDC"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "OFFLINE"
-msgstr ""
+msgstr "ОФЛАЙН"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "OFFLINE PENDING"
-msgstr ""
+msgstr "В ОЧАКВАНЕ НА ОФЛАЙН"
 
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
@@ -1351,7 +1419,7 @@ msgstr "На всеки рестарт, системите в датабазат
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Once you plug an ESP32 Recovery Module into your network, approval requests will appear here."
-msgstr ""
+msgstr "След като включите ESP32 възстановителен модул в мрежата си, заявките за одобрение ще се появят тук."
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
@@ -1365,11 +1433,11 @@ msgstr "Еднократна парола"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "ONLINE"
-msgstr ""
+msgstr "ОНЛАЙН"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Open Local ESP Portal"
-msgstr ""
+msgstr "Отвори локален ESP портал"
 
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
@@ -1389,7 +1457,7 @@ msgstr "Други"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Outbound heartbeat has been updated."
-msgstr ""
+msgstr "Изходящият heartbeat е обновен."
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "Overwrite existing alerts"
@@ -1436,6 +1504,10 @@ msgstr "Минал"
 msgid "Pause"
 msgstr "Пауза"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Pause watchdogs during system maintenance."
+msgstr ""
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Paused"
 msgstr "На пауза"
@@ -1471,11 +1543,11 @@ msgstr "Устойчивост"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Physical relay reboot triggered"
-msgstr ""
+msgstr "Задействано рестартиране чрез физическо реле"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Physical watchdogs & channels"
-msgstr ""
+msgstr "Физически сторожеви таймери и канали"
 
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
@@ -1533,6 +1605,10 @@ msgstr "Точно използване в записаното време"
 msgid "Preferred Language"
 msgstr "Предпочитан език"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Probe Ports"
+msgstr ""
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Process started"
 msgstr "Процесът стартира"
@@ -1540,11 +1616,11 @@ msgstr "Процесът стартира"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "PROTECTED"
-msgstr ""
+msgstr "ЗАЩИТЕН"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Protection Status"
-msgstr ""
+msgstr "Статус на защита"
 
 #. Use 'Key' if your language requires many more characters
 #: src/components/add-system.tsx
@@ -1574,34 +1650,34 @@ msgstr "Получени"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Recent Recovery Events"
-msgstr ""
+msgstr "Скорошни събития по възстановяване"
 
 #: src/components/routes/system.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Recovery"
-msgstr ""
+msgstr "Възстановяване"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Recovery Module"
-msgstr ""
+msgstr "Възстановителен модул"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Recovery module added successfully."
-msgstr ""
+msgstr "Възстановителният модул е добавен успешно."
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Recovery module has been approved."
-msgstr ""
+msgstr "Възстановителният модул е одобрен."
 
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
 msgid "Recovery Modules"
-msgstr ""
+msgstr "Възстановителни модули"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Recovery Protection"
-msgstr ""
+msgstr "Защита при възстановяване"
 
 #: src/components/containers-table/containers-table.tsx
 #: src/components/containers-table/containers-table.tsx
@@ -1616,11 +1692,11 @@ msgstr "Връзки"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay Channel"
-msgstr ""
+msgstr "Релеен канал"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay trigger failed"
-msgstr ""
+msgstr "Неуспешно задействане на релето"
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1650,7 +1726,7 @@ msgstr "Решен"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Restart failed"
-msgstr ""
+msgstr "Неуспешно рестартиране"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Restarts"
@@ -1693,6 +1769,10 @@ msgstr "Запази {foo}"
 msgid "Save address using enter key or comma. Leave blank to disable email notifications."
 msgstr "Запази адреса с enter или запетая. Остави празно за да изключиш нотификациите чрез имейл."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Save Configuration"
+msgstr ""
+
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1729,7 +1809,7 @@ msgstr "Търси за системи или настройки..."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Seconds between pings."
-msgstr ""
+msgstr "Секунди между пинговете."
 
 #: src/components/alerts/alerts-sheet.tsx
 msgid "See <0>notification settings</0> to configure how you receive alerts."
@@ -1738,6 +1818,10 @@ msgstr "Виж <0>настройките за нотификациите</0> з�
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Select {foo}"
 msgstr "Избери {foo}"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Select a system..."
+msgstr ""
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Send a single heartbeat ping to verify your endpoint is working."
@@ -1792,11 +1876,11 @@ msgstr "Настройките са запазени"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Settings saved successfully"
-msgstr ""
+msgstr "Настройките са запазени успешно"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Shutdown failed"
-msgstr ""
+msgstr "Неуспешно изключване"
 
 #: src/components/login/auth-form.tsx
 msgid "Sign in"
@@ -1837,16 +1921,19 @@ msgstr "Подсъстояние"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
-msgstr ""
+msgstr "Успех"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Success Rate"
-msgstr ""
+msgstr "Процент на успешни"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Successes"
-msgstr ""
+msgstr "Успешни опити"
 
 #: src/components/routes/system/charts/memory-charts.tsx
 msgid "Swap space used by the system"
@@ -1859,11 +1946,11 @@ msgstr "Използване на swap"
 #: src/components/mode-toggle.tsx
 #: src/components/mode-toggle.tsx
 msgid "Switch theme"
-msgstr ""
+msgstr "Превключи темата"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "SYNCED"
-msgstr ""
+msgstr "СИНХРОНИЗИРАН"
 
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
@@ -1880,9 +1967,17 @@ msgstr ""
 msgid "System"
 msgstr "Система"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "System is required."
+msgstr ""
+
 #: src/components/routes/system/charts/load-average-chart.tsx
 msgid "System load averages over time"
 msgstr "Средно натоварване на системата във времето"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "System to protect"
+msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Systemd Services"
@@ -1923,7 +2018,7 @@ msgstr "Температура"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Temperature Thresholds"
-msgstr ""
+msgstr "Температурни прагове"
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -1947,23 +2042,23 @@ msgstr "Тестова нотификация изпратена"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Test Relay"
-msgstr ""
+msgstr "Тест на реле"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "The broadcast has been sent on UDP port 9."
-msgstr ""
+msgstr "Излъчването е изпратено на UDP порт 9."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button is being held for 8 seconds."
-msgstr ""
+msgstr "Бутонът за захранване на дънната платка се държи натиснат за 8 секунди."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button relay has been pressed."
-msgstr ""
+msgstr "Релето на бутона за захранване на дънната платка е натиснато."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "The motherboard power button was momentarily pressed."
-msgstr ""
+msgstr "Бутонът за захранване на дънната платка беше натиснат за момент."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "The overall status is <0>ok</0> when all systems are up, <1>warn</1> when alerts are triggered, and <2>error</2> when any system is down."
@@ -1980,6 +2075,10 @@ msgstr "Това действие не може да бъде отменено. 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "This will permanently delete all selected records from the database."
 msgstr "Това ще доведе до трайно изтриване на всички избрани записи от базата данни."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Threshold"
+msgstr ""
 
 #: src/components/routes/system/charts/disk-charts.tsx
 msgid "Throughput of {extraFsName}"
@@ -2037,7 +2136,7 @@ msgstr "Общо изпратени данни за всеки интерфей�
 #: src/components/routes/system/disk-io-sheet.tsx
 msgctxt "Disk I/O"
 msgid "Total time spent on read/write (can exceed 100%)"
-msgstr ""
+msgstr "Общо време, прекарано в четене/запис (може да надвишава 100%)"
 
 #. placeholder {0}: data.length
 #: src/components/systemd-table/systemd-table.tsx
@@ -2108,7 +2207,7 @@ msgstr "Тип"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "UNAPPROVED"
-msgstr ""
+msgstr "НЕОДОБРЕН"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Unit file"
@@ -2135,12 +2234,16 @@ msgid "Unlimited"
 msgstr "Неограничено"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Unmapped / Available"
+msgid "Unmap Channel"
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmapped / Available"
+msgstr "Некартографиран / Свободен"
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "UNUSED"
-msgstr ""
+msgstr "НЕИЗПОЛЗВАН"
 
 #. Context: System is up
 #: src/components/routes/system/info-bar.tsx
@@ -2158,7 +2261,7 @@ msgstr "Актуализирай"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Update failed"
-msgstr ""
+msgstr "Неуспешно обновяване"
 
 #: src/components/containers-table/containers-table-columns.tsx
 #: src/components/routes/system/smart-table.tsx
@@ -2230,7 +2333,7 @@ msgstr "Видими полета"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "WAITING APPROVAL"
-msgstr ""
+msgstr "ОЧАКВА ОДОБРЕНИЕ"
 
 #: src/components/routes/system/chart-card.tsx
 msgid "Waiting for enough records to display"
@@ -2238,15 +2341,19 @@ msgstr "Изчаква се за достатъчно записи за пока
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Wake Server"
-msgstr ""
+msgstr "Събуди сървър"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN"
+msgstr "Wake-on-LAN"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Wake-on-LAN (WOL)"
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN magic packet sent"
-msgstr ""
+msgstr "Изпратен е Wake-on-LAN вълшебен пакет"
 
 #: src/components/routes/settings/general.tsx
 msgid "Want to help improve our translations? Check <0>Crowdin</0> for details."
@@ -2258,7 +2365,7 @@ msgstr "Иска"
 
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Warn"
-msgstr ""
+msgstr "Предупр."
 
 #: src/components/routes/settings/general.tsx
 msgid "Warning (%)"
@@ -2288,11 +2395,15 @@ msgstr "Команда Windows"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "WOL broadcast failed"
+msgstr "Неуспешно излъчване на WOL"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WOL Port"
 msgstr ""
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"
-msgstr ""
+msgstr "WOL ГОТОВНОСТ"
 
 #. Disk write
 #: src/components/routes/system/charts/disk-charts.tsx

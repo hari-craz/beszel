@@ -11,6 +11,8 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
 	Dialog,
 	DialogContent,
@@ -46,11 +48,23 @@ interface RecoveryChannel {
 	failure_threshold: number
 	boot_grace_seconds: number
 	maintenance: boolean
+	wol_enabled: boolean
+	auto_wol: boolean
+	mac_address?: string
+	broadcast_address?: string
+	wol_port?: number
+	hardware_recovery_disabled: boolean
 	expand?: {
 		system?: {
 			name: string
 		}
 	}
+}
+
+interface SystemItem {
+	id: string
+	name: string
+	host: string
 }
 
 export default function RecoveryModulesSettings() {
@@ -65,6 +79,27 @@ export default function RecoveryModulesSettings() {
 	const [newIp, setNewIp] = useState("")
 	const [newMaxChannels, setNewMaxChannels] = useState("4")
 	const [newFirmware, setNewFirmware] = useState("1.0.0")
+
+	// Systems list and channel mapping dialog states
+	const [systemsList, setSystemsList] = useState<SystemItem[]>([])
+	const [mappingDialogOpen, setMappingDialogOpen] = useState(false)
+	const [selectedModuleId, setSelectedModuleId] = useState("")
+	const [selectedChannelNum, setSelectedChannelNum] = useState<number | null>(null)
+	const [existingMappingId, setExistingMappingId] = useState<string | null>(null)
+
+	// Form fields for channel configuration
+	const [mapSystemId, setMapSystemId] = useState("")
+	const [mapHostIp, setMapHostIp] = useState("")
+	const [mapProbePorts, setMapProbePorts] = useState("22")
+	const [mapFailureThreshold, setMapFailureThreshold] = useState("3")
+	const [mapBootGraceSeconds, setMapBootGraceSeconds] = useState("60")
+	const [mapMaintenance, setMapMaintenance] = useState(false)
+	const [mapWolEnabled, setMapWolEnabled] = useState(false)
+	const [mapAutoWol, setMapAutoWol] = useState(false)
+	const [mapMacAddress, setMapMacAddress] = useState("")
+	const [mapBroadcastAddress, setMapBroadcastAddress] = useState("255.255.255.255")
+	const [mapWolPort, setMapWolPort] = useState("9")
+	const [mapHardwareRecoveryDisabled, setMapHardwareRecoveryDisabled] = useState(false)
 
 	async function approveModule(id: string) {
 		setIsApproving((prev) => ({ ...prev, [id]: true }))
@@ -129,6 +164,130 @@ export default function RecoveryModulesSettings() {
 		}
 	}
 
+	function openMappingDialog(moduleId: string, channelNum: number, existing?: RecoveryChannel) {
+		setSelectedModuleId(moduleId)
+		setSelectedChannelNum(channelNum)
+		if (existing) {
+			setExistingMappingId(existing.id)
+			setMapSystemId(existing.system)
+			setMapHostIp(existing.host_ip || "")
+			setMapProbePorts(existing.probe_ports?.join(", ") || "22")
+			setMapFailureThreshold(String(existing.failure_threshold || 3))
+			setMapBootGraceSeconds(String(existing.boot_grace_seconds || 60))
+			setMapMaintenance(existing.maintenance || false)
+			setMapWolEnabled(existing.wol_enabled || false)
+			setMapAutoWol(existing.auto_wol || false)
+			setMapMacAddress(existing.mac_address || "")
+			setMapBroadcastAddress(existing.broadcast_address || "255.255.255.255")
+			setMapWolPort(String(existing.wol_port || 9))
+			setMapHardwareRecoveryDisabled(existing.hardware_recovery_disabled || false)
+		} else {
+			setExistingMappingId(null)
+			setMapSystemId("")
+			setMapHostIp("")
+			setMapProbePorts("22")
+			setMapFailureThreshold("3")
+			setMapBootGraceSeconds("60")
+			setMapMaintenance(false)
+			setMapWolEnabled(false)
+			setMapAutoWol(false)
+			setMapMacAddress("")
+			setMapBroadcastAddress("255.255.255.255")
+			setMapWolPort("9")
+			setMapHardwareRecoveryDisabled(false)
+		}
+		setMappingDialogOpen(true)
+	}
+
+	async function handleSaveMapping(e: React.FormEvent) {
+		e.preventDefault()
+		if (!mapSystemId) {
+			toast({
+				title: t`Error`,
+				description: t`System is required.`,
+				variant: "destructive",
+			})
+			return
+		}
+
+		const ports = mapProbePorts
+			.split(",")
+			.map((p) => parseInt(p.trim()))
+			.filter((p) => !isNaN(p))
+		if (ports.length === 0) {
+			ports.push(22)
+		}
+
+		let hostIp = mapHostIp.trim()
+		if (!hostIp) {
+			const sys = systemsList.find((s) => s.id === mapSystemId)
+			if (sys) {
+				hostIp = sys.host
+			}
+		}
+
+		const data = {
+			module: selectedModuleId,
+			channel_number: selectedChannelNum,
+			system: mapSystemId,
+			host_ip: hostIp,
+			probe_ports: ports,
+			failure_threshold: Number(mapFailureThreshold),
+			boot_grace_seconds: Number(mapBootGraceSeconds),
+			maintenance: mapMaintenance,
+			wol_enabled: mapWolEnabled,
+			auto_wol: mapAutoWol,
+			mac_address: mapMacAddress.trim() || undefined,
+			broadcast_address: mapBroadcastAddress.trim() || "255.255.255.255",
+			wol_port: Number(mapWolPort),
+			hardware_recovery_disabled: mapHardwareRecoveryDisabled,
+		}
+
+		try {
+			if (existingMappingId) {
+				await pb.collection("recovery_channels").update(existingMappingId, data)
+				toast({
+					title: t`Success`,
+					description: t`Channel mapping updated.`,
+				})
+			} else {
+				await pb.collection("recovery_channels").create(data)
+				toast({
+					title: t`Success`,
+					description: t`Channel mapped successfully.`,
+				})
+			}
+			setMappingDialogOpen(false)
+			fetchData()
+		} catch (error) {
+			toast({
+				title: t`Error`,
+				description: (error as Error).message,
+				variant: "destructive",
+			})
+		}
+	}
+
+	async function handleUnmapChannel() {
+		if (!existingMappingId) return
+		if (!confirm(t`Are you sure you want to unmap this channel?`)) return
+		try {
+			await pb.collection("recovery_channels").delete(existingMappingId)
+			toast({
+				title: t`Success`,
+				description: t`Channel mapping removed.`,
+			})
+			setMappingDialogOpen(false)
+			fetchData()
+		} catch (error) {
+			toast({
+				title: t`Error`,
+				description: (error as Error).message,
+				variant: "destructive",
+			})
+		}
+	}
+
 	async function updateHeartbeat(id: string, value: number) {
 		try {
 			await pb.collection("recovery_modules").update(id, { heartbeat_interval: value })
@@ -154,8 +313,10 @@ export default function RecoveryModulesSettings() {
 			const channelsRes = await pb.collection("recovery_channels").getFullList<RecoveryChannel>({
 				expand: "system",
 			})
+			const systemsRes = await pb.collection("systems").getFullList<SystemItem>()
 			setModules(modulesRes || [])
 			setChannels(channelsRes || [])
+			setSystemsList(systemsRes || [])
 		} catch (error: unknown) {
 			toast({
 				title: t`Error`,
@@ -433,7 +594,7 @@ export default function RecoveryModulesSettings() {
 																</div>
 															)}
 														</div>
-														<div>
+														<div className="flex items-center gap-2">
 															{mapping ? (
 																mapping.maintenance ? (
 																	<Badge variant="warning">
@@ -449,6 +610,14 @@ export default function RecoveryModulesSettings() {
 																	<Trans>UNUSED</Trans>
 																</Badge>
 															)}
+															<Button
+																size="xs"
+																variant="ghost"
+																className="h-7 px-2"
+																onClick={() => openMappingDialog(mod.id, chanNum, mapping)}
+															>
+																<Trans>Configure</Trans>
+															</Button>
 														</div>
 													</div>
 												)
@@ -461,6 +630,205 @@ export default function RecoveryModulesSettings() {
 					})}
 				</div>
 			)}
+
+			<Dialog open={mappingDialogOpen} onOpenChange={setMappingDialogOpen}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle>
+							{existingMappingId ? <Trans>Edit Channel Mapping</Trans> : <Trans>Configure Channel Mapping</Trans>}
+						</DialogTitle>
+						<DialogDescription>
+							<Trans>Map system to channel {selectedChannelNum} of module {modules.find(m => m.id === selectedModuleId)?.name}.</Trans>
+						</DialogDescription>
+					</DialogHeader>
+					<form onSubmit={handleSaveMapping} className="space-y-4">
+						<div className="grid gap-2">
+							<Label htmlFor="map_system">
+								<Trans>System to protect</Trans>
+							</Label>
+							<Select value={mapSystemId} onValueChange={setMapSystemId}>
+								<SelectTrigger id="map_system">
+									<SelectValue placeholder={t`Select a system...`} />
+								</SelectTrigger>
+								<SelectContent>
+									{systemsList.map((sys) => (
+										<SelectItem key={sys.id} value={sys.id}>
+											{sys.name} ({sys.host})
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="map_host_ip">
+								<Trans>Host IP to probe (Optional)</Trans>
+							</Label>
+							<Input
+								id="map_host_ip"
+								value={mapHostIp}
+								onChange={(e) => setMapHostIp(e.target.value)}
+								placeholder={t`Fallback to system host IP`}
+							/>
+						</div>
+
+						<div className="grid sm:grid-cols-3 gap-2">
+							<div className="grid gap-1">
+								<Label htmlFor="map_ports">
+									<Trans>Probe Ports</Trans>
+								</Label>
+								<Input
+									id="map_ports"
+									value={mapProbePorts}
+									onChange={(e) => setMapProbePorts(e.target.value)}
+									placeholder="22"
+									required
+								/>
+							</div>
+							<div className="grid gap-1">
+								<Label htmlFor="map_threshold">
+									<Trans>Threshold</Trans>
+								</Label>
+								<Input
+									id="map_threshold"
+									type="number"
+									min={1}
+									value={mapFailureThreshold}
+									onChange={(e) => setMapFailureThreshold(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="grid gap-1">
+								<Label htmlFor="map_grace">
+									<Trans>Grace (s)</Trans>
+								</Label>
+								<Input
+									id="map_grace"
+									type="number"
+									min={5}
+									value={mapBootGraceSeconds}
+									onChange={(e) => setMapBootGraceSeconds(e.target.value)}
+									required
+								/>
+							</div>
+						</div>
+
+						<div className="flex items-center justify-between border p-2 rounded-lg text-sm bg-muted/20">
+							<div className="space-y-0.5">
+								<Label className="text-sm font-medium">
+									<Trans>Maintenance Mode</Trans>
+								</Label>
+								<p className="text-xs text-muted-foreground">
+									<Trans>Pause watchdogs during system maintenance.</Trans>
+								</p>
+							</div>
+							<Switch
+								checked={mapMaintenance}
+								onCheckedChange={setMapMaintenance}
+							/>
+						</div>
+
+						<div className="border p-3 rounded-lg space-y-3 bg-muted/10">
+							<div className="flex items-center justify-between">
+								<div className="space-y-0.5">
+									<Label className="text-sm font-medium">
+										<Trans>Wake-on-LAN (WOL)</Trans>
+									</Label>
+									<p className="text-xs text-muted-foreground">
+										<Trans>Enable Wake-on-LAN recovery packets.</Trans>
+									</p>
+								</div>
+								<Switch
+									checked={mapWolEnabled}
+									onCheckedChange={setMapWolEnabled}
+								/>
+							</div>
+
+							{mapWolEnabled && (
+								<div className="space-y-2 pt-2 border-t">
+									<div className="flex items-center justify-between">
+										<Label htmlFor="map_auto_wol" className="text-xs">
+											<Trans>Automatic WOL</Trans>
+										</Label>
+										<Switch
+											id="map_auto_wol"
+											checked={mapAutoWol}
+											onCheckedChange={setMapAutoWol}
+										/>
+									</div>
+									<div className="grid gap-1">
+										<Label htmlFor="map_mac" className="text-xs">
+											<Trans>MAC Address</Trans>
+										</Label>
+										<Input
+											id="map_mac"
+											value={mapMacAddress}
+											onChange={(e) => setMapMacAddress(e.target.value)}
+											placeholder="aa:bb:cc:dd:ee:ff"
+										/>
+									</div>
+									<div className="grid sm:grid-cols-2 gap-2">
+										<div className="grid gap-1">
+											<Label htmlFor="map_bcast" className="text-xs">
+												<Trans>Broadcast IP</Trans>
+											</Label>
+											<Input
+												id="map_bcast"
+												value={mapBroadcastAddress}
+												onChange={(e) => setMapBroadcastAddress(e.target.value)}
+												placeholder="255.255.255.255"
+											/>
+										</div>
+										<div className="grid gap-1">
+											<Label htmlFor="map_wol_port" className="text-xs">
+												<Trans>WOL Port</Trans>
+											</Label>
+											<Input
+												id="map_wol_port"
+												type="number"
+												min={1}
+												value={mapWolPort}
+												onChange={(e) => setMapWolPort(e.target.value)}
+											/>
+										</div>
+									</div>
+								</div>
+							)}
+						</div>
+
+						<div className="flex items-center justify-between border p-2 rounded-lg text-sm bg-muted/20">
+							<div className="space-y-0.5">
+								<Label className="text-sm font-medium">
+									<Trans>Autonomous Hardware Recovery</Trans>
+								</Label>
+								<p className="text-xs text-muted-foreground">
+									<Trans>Allow the ESP32 to trigger the physical relay.</Trans>
+								</p>
+							</div>
+							<Switch
+								checked={!mapHardwareRecoveryDisabled}
+								onCheckedChange={(checked) => setMapHardwareRecoveryDisabled(!checked)}
+							/>
+						</div>
+
+						<DialogFooter className="pt-2 flex justify-between gap-2">
+							{existingMappingId && (
+								<Button type="button" variant="destructive" className="mr-auto" onClick={handleUnmapChannel}>
+									<Trans>Unmap Channel</Trans>
+								</Button>
+							)}
+							<div className="flex gap-2 ml-auto">
+								<Button type="button" variant="ghost" onClick={() => setMappingDialogOpen(false)}>
+									<Trans>Cancel</Trans>
+								</Button>
+								<Button type="submit">
+									<Trans>Save Configuration</Trans>
+								</Button>
+							</div>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
 		</div>
 	)
 }

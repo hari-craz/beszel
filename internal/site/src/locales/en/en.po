@@ -188,6 +188,10 @@ msgid "All Systems"
 msgstr "All Systems"
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Allow the ESP32 to trigger the physical relay."
+msgstr "Allow the ESP32 to trigger the physical relay."
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Approve Module"
 msgstr "Approve Module"
 
@@ -199,6 +203,10 @@ msgstr "Are you sure you want to delete {name}?"
 msgid "Are you sure you want to force restart this server? This will cut power instantly."
 msgstr "Are you sure you want to force restart this server? This will cut power instantly."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Are you sure you want to unmap this channel?"
+msgstr "Are you sure you want to unmap this channel?"
+
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "Are you sure?"
 msgstr "Are you sure?"
@@ -207,10 +215,12 @@ msgstr "Are you sure?"
 msgid "Automatic copy requires a secure context."
 msgstr "Automatic copy requires a secure context."
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Automatic WOL"
 msgstr "Automatic WOL"
 
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Autonomous Hardware Recovery"
 msgstr "Autonomous Hardware Recovery"
@@ -319,6 +329,10 @@ msgstr "Bits (Kbps, Mbps, Gbps)"
 msgid "Boot state"
 msgstr "Boot state"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Broadcast IP"
+msgstr "Broadcast IP"
+
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/general.tsx
 msgid "Bytes (KB/s, MB/s, GB/s)"
@@ -342,6 +356,7 @@ msgstr "Can stop"
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Cancel"
@@ -370,6 +385,18 @@ msgstr "Change display units for metrics."
 #: src/components/routes/settings/general.tsx
 msgid "Change general application options."
 msgstr "Change general application options."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapped successfully."
+msgstr "Channel mapped successfully."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapping removed."
+msgstr "Channel mapping removed."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Channel mapping updated."
+msgstr "Channel mapping updated."
 
 #: src/components/routes/system/charts/sensor-charts.tsx
 msgid "Charge"
@@ -438,6 +465,14 @@ msgstr "Config Revision"
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Config Synchronization"
 msgstr "Config Synchronization"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Configure"
+msgstr "Configure"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Configure Channel Mapping"
+msgstr "Configure Channel Mapping"
 
 #: src/components/routes/settings/notifications.tsx
 msgid "Configure how you receive alert notifications."
@@ -723,6 +758,10 @@ msgstr "Edit"
 msgid "Edit {foo}"
 msgstr "Edit {foo}"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Edit Channel Mapping"
+msgstr "Edit Channel Mapping"
+
 #: src/components/login/auth-form.tsx
 #: src/components/login/forgot-pass-form.tsx
 #: src/components/login/otp-forms.tsx
@@ -737,6 +776,10 @@ msgstr "Email notifications"
 #: src/lib/i18n.ts
 msgid "Empty"
 msgstr "Empty"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Enable Wake-on-LAN recovery packets."
+msgstr "Enable Wake-on-LAN recovery packets."
 
 #: src/components/routes/system/recovery-info.tsx
 #~ msgid "ENABLED"
@@ -784,6 +827,9 @@ msgstr "Ephemeral"
 #: src/components/routes/settings/notifications.tsx
 #: src/components/routes/settings/quiet-hours.tsx
 #: src/components/routes/settings/quiet-hours.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
@@ -880,6 +926,10 @@ msgstr "Failed to update alert"
 msgid "Failed: {0}"
 msgstr "Failed: {0}"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Fallback to system host IP"
+msgstr "Fallback to system host IP"
+
 #: src/components/containers-table/containers-table.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
 #: src/components/routes/system/chart-card.tsx
@@ -955,6 +1005,10 @@ msgstr "GPU Power Draw"
 msgid "GPU Usage"
 msgstr "GPU Usage"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Grace (s)"
+msgstr "Grace (s)"
+
 #: src/components/routes/system/recovery-info.tsx
 msgid "Graceful Shutdown"
 msgstr "Graceful Shutdown"
@@ -1017,6 +1071,10 @@ msgstr "Homebrew command"
 #: src/components/add-system.tsx
 msgid "Host / IP"
 msgstr "Host / IP"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Host IP to probe (Optional)"
+msgstr "Host IP to probe (Optional)"
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "HTTP Method"
@@ -1171,6 +1229,7 @@ msgid "Looking instead for where to create alerts? Click the bell <0/> icons in 
 msgstr "Looking instead for where to create alerts? Click the bell <0/> icons in the systems table."
 
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "MAC Address"
 msgstr "MAC Address"
@@ -1184,6 +1243,10 @@ msgstr "Main PID"
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "MAINTENANCE"
 msgstr "MAINTENANCE"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Maintenance Mode"
+msgstr "Maintenance Mode"
 
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
@@ -1201,6 +1264,11 @@ msgstr "Manual setup instructions"
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Manually register an ESP32 hardware recovery module."
 msgstr "Manually register an ESP32 hardware recovery module."
+
+#. placeholder {0}: modules.find(m => m.id === selectedModuleId)?.name
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Map system to channel {selectedChannelNum} of module {0}."
+msgstr "Map system to channel {selectedChannelNum} of module {0}."
 
 #. Chart select field. Please try to keep this short.
 #: src/components/routes/system/chart-card.tsx
@@ -1431,6 +1499,10 @@ msgstr "Past"
 msgid "Pause"
 msgstr "Pause"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Pause watchdogs during system maintenance."
+msgstr "Pause watchdogs during system maintenance."
+
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Paused"
 msgstr "Paused"
@@ -1527,6 +1599,10 @@ msgstr "Precise utilization at the recorded time"
 #: src/components/routes/settings/general.tsx
 msgid "Preferred Language"
 msgstr "Preferred Language"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Probe Ports"
+msgstr "Probe Ports"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Process started"
@@ -1688,6 +1764,10 @@ msgstr "Save {foo}"
 msgid "Save address using enter key or comma. Leave blank to disable email notifications."
 msgstr "Save address using enter key or comma. Leave blank to disable email notifications."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Save Configuration"
+msgstr "Save Configuration"
+
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/heartbeat.tsx
 #: src/components/routes/settings/notifications.tsx
@@ -1733,6 +1813,10 @@ msgstr "See <0>notification settings</0> to configure how you receive alerts."
 #: src/components/routes/settings/quiet-hours.tsx
 msgid "Select {foo}"
 msgstr "Select {foo}"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Select a system..."
+msgstr "Select a system..."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Send a single heartbeat ping to verify your endpoint is working."
@@ -1832,6 +1916,9 @@ msgstr "Sub State"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr "Success"
 
@@ -1875,9 +1962,17 @@ msgstr "SYNCED"
 msgid "System"
 msgstr "System"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "System is required."
+msgstr "System is required."
+
 #: src/components/routes/system/charts/load-average-chart.tsx
 msgid "System load averages over time"
 msgstr "System load averages over time"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "System to protect"
+msgstr "System to protect"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Systemd Services"
@@ -1975,6 +2070,10 @@ msgstr "This action cannot be undone. This will permanently delete all current r
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "This will permanently delete all selected records from the database."
 msgstr "This will permanently delete all selected records from the database."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Threshold"
+msgstr "Threshold"
 
 #: src/components/routes/system/charts/disk-charts.tsx
 msgid "Throughput of {extraFsName}"
@@ -2130,6 +2229,10 @@ msgid "Unlimited"
 msgstr "Unlimited"
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Unmap Channel"
+msgstr "Unmap Channel"
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Unmapped / Available"
 msgstr "Unmapped / Available"
 
@@ -2239,6 +2342,10 @@ msgstr "Wake Server"
 msgid "Wake-on-LAN"
 msgstr "Wake-on-LAN"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Wake-on-LAN (WOL)"
+msgstr "Wake-on-LAN (WOL)"
+
 #: src/components/routes/system/recovery-info.tsx
 msgid "Wake-on-LAN magic packet sent"
 msgstr "Wake-on-LAN magic packet sent"
@@ -2284,6 +2391,10 @@ msgstr "Windows command"
 #: src/components/routes/system/recovery-info.tsx
 msgid "WOL broadcast failed"
 msgstr "WOL broadcast failed"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "WOL Port"
+msgstr "WOL Port"
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "WOL READY"
