@@ -31,6 +31,8 @@ export interface SystemRecord extends RecordModel {
 	info: SystemInfo
 	v: string
 	updated: string
+	/** optional user-configured override for the system's own web page link */
+	web_url?: string
 }
 
 export interface SystemInfo {

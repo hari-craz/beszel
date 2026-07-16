@@ -297,13 +297,22 @@ export const chartMargin = { top: 12, right: 5 }
  */
 export const getHostDisplayValue = (system: SystemRecord): string => system.host.slice(system.host.lastIndexOf("/") + 1)
 
+const URL_SCHEME_RE = /^[a-z][a-z0-9+.-]*:\/\//i
+
 /**
- * Returns an http:// URL to the system's own web page (assumes it serves one
- * on the default port), or null when the host is a Unix socket path rather
- * than a network address.
+ * Returns the URL for a system's own web page: the user-configured
+ * `web_url` override if set (a scheme is added if the user left it off),
+ * otherwise a best-guess http://<host>. Returns null when there's nothing
+ * to link to - e.g. a Unix socket host with no override set, since that
+ * path isn't a browsable network address.
  */
-export const getServerWebUrl = (host: string): string | null =>
-	host && !host.startsWith("/") ? `http://${host}` : null
+export function getServerWebUrl(system: SystemRecord): string | null {
+	const override = system.web_url?.trim()
+	if (override) {
+		return URL_SCHEME_RE.test(override) ? override : `http://${override}`
+	}
+	return system.host && !system.host.startsWith("/") ? `http://${system.host}` : null
+}
 
 // export function formatUptimeString(uptimeSeconds: number): string {
 // 	if (!uptimeSeconds || isNaN(uptimeSeconds)) return ""

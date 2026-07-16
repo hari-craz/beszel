@@ -1529,6 +1529,11 @@ msgstr "Open Local ESP Portal"
 msgid "Open menu"
 msgstr "Open menu"
 
+#. placeholder {0}: hostValue || "host"
+#: src/components/add-system.tsx
+msgid "Optional - defaults to http://{0}"
+msgstr "Optional - defaults to http://{0}"
+
 #: src/components/login/auth-form.tsx
 msgid "Or continue with"
 msgstr "Or continue with"
@@ -2538,6 +2543,10 @@ msgstr "Warning (%)"
 #: src/components/routes/settings/general.tsx
 msgid "Warning thresholds"
 msgstr "Warning thresholds"
+
+#: src/components/add-system.tsx
+msgid "Web URL"
+msgstr "Web URL"
 
 #: src/components/routes/settings/notifications.tsx
 msgid "Webhook / Push notifications"

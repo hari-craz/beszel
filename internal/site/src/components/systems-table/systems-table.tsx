@@ -447,7 +447,7 @@ const SystemCard = memo(
 	({ row, table, colLength }: { row: Row<SystemRecord>; table: TableType<SystemRecord>; colLength: number }) => {
 		const system = row.original
 		const { t } = useLingui()
-		const webUrl = getServerWebUrl(system.host)
+		const webUrl = getServerWebUrl(system)
 
 		return useMemo(() => {
 			return (

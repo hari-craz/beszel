@@ -135,10 +135,10 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			invertSorting: false,
 			Icon: ServerIcon,
 			cell: (info) => {
-				const { name, id, host } = info.row.original
+				const { name, id } = info.row.original
 				const longestName = useStore($longestSystemNameLen)
 				const linkUrl = getPagePath($router, "system", { id })
-				const webUrl = getServerWebUrl(host)
+				const webUrl = getServerWebUrl(info.row.original)
 
 				const nameLinkClass = "truncate z-10 relative"
 				const nameLinkStyle = { width: `${longestName / 1.05}ch` }

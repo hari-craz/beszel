@@ -204,6 +204,15 @@ export const SystemDialog = ({ setOpen, system }: { setOpen: (open: boolean) => 
 							required={!isUnixSocket}
 							className={cn(isUnixSocket && "hidden")}
 						/>
+						<Label htmlFor="web_url" className="xs:text-end whitespace-pre">
+							<Trans>Web URL</Trans>
+						</Label>
+						<Input
+							id="web_url"
+							name="web_url"
+							defaultValue={system?.web_url}
+							placeholder={t`Optional - defaults to http://${hostValue || "host"}`}
+						/>
 						<Label htmlFor="pkey" className="xs:text-end whitespace-pre">
 							<Trans comment="Use 'Key' if your language requires many more characters">Public Key</Trans>
 						</Label>

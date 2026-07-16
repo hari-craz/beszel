@@ -1534,6 +1534,11 @@ msgstr ""
 msgid "Open menu"
 msgstr "Відкрити меню"
 
+#. placeholder {0}: hostValue || "host"
+#: src/components/add-system.tsx
+msgid "Optional - defaults to http://{0}"
+msgstr ""
+
 #: src/components/login/auth-form.tsx
 msgid "Or continue with"
 msgstr "Або продовжити з"
@@ -2543,6 +2548,10 @@ msgstr "Попередження (%)"
 #: src/components/routes/settings/general.tsx
 msgid "Warning thresholds"
 msgstr "Пороги попередження"
+
+#: src/components/add-system.tsx
+msgid "Web URL"
+msgstr ""
 
 #: src/components/routes/settings/notifications.tsx
 msgid "Webhook / Push notifications"
