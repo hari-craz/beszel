@@ -119,6 +119,7 @@ func ClearCollection(t testing.TB, app core.App, collectionName string) error {
 
 func (h *TestHub) Cleanup() {
 	h.GetAlertManager().Stop()
+	h.GetSystemManager().Stop()
 	h.GetSystemManager().RemoveAllSystems()
 	h.TestApp.Cleanup()
 }

@@ -17,12 +17,38 @@ type RecoveryModule struct {
 	Status          string    `json:"status" db:"status"`
 	ConfigRevision        int       `json:"config_revision" db:"config_revision"`
 	ConfigHash            string    `json:"config_hash" db:"config_hash"`
-	HeartbeatInterval     int       `json:"heartbeat_interval" db:"heartbeat_interval"`
+	// PingIntervalSeconds is how often this ESP32 module pings the hub
+	// (POST /recovery/ping). Named to avoid confusion with the unrelated
+	// outbound Beszel-status "Heartbeat Monitoring" feature in
+	// internal/hub/heartbeat.
+	PingIntervalSeconds   int       `json:"ping_interval_seconds" db:"ping_interval_seconds"`
 	Temperature           float64   `json:"temperature" db:"temperature"`
 	TempThresholdWarning  float64   `json:"temp_threshold_warning" db:"temp_threshold_warning"`
 	TempThresholdCritical float64   `json:"temp_threshold_critical" db:"temp_threshold_critical"`
-	Created               time.Time `json:"created" db:"created"`
-	Updated               time.Time `json:"updated" db:"updated"`
+	// ReportedConfigRevision/ReportedConfigHash are what the ESP confirms it is
+	// actually running, as opposed to ConfigRevision/ConfigHash which are what
+	// the hub wants it to run (desired). Sync state is derived by comparing
+	// the two - see computeSyncStatus in internal/hub/api.go.
+	ReportedConfigRevision int    `json:"reported_config_revision" db:"reported_config_revision"`
+	ReportedConfigHash     string `json:"reported_config_hash" db:"reported_config_hash"`
+	// LastConfigSource records which side made the most recent accepted
+	// change: "BESZEL_UI" or "ESP_WEB".
+	LastConfigSource string `json:"last_config_source" db:"last_config_source"`
+	// PendingEspChange is true when the ESP reported a local edit that
+	// conflicted with a hub-side change made in the meantime (both sides
+	// diverged from the same base revision). EspChangePayload holds the
+	// ESP's proposed values until an admin resolves the conflict.
+	PendingEspChange bool `json:"pending_esp_change" db:"pending_esp_change"`
+	EspChangePayload any  `json:"esp_change_payload" db:"esp_change_payload"`
+	// TemperatureMonitoringDisabled/BuzzerDisabled are stored inverted (like
+	// HardwareRecoveryDisabled on RecoveryChannel) so existing modules keep
+	// their current behavior - monitoring/buzzer on - unchanged.
+	TemperatureMonitoringDisabled bool      `json:"temperature_monitoring_disabled" db:"temperature_monitoring_disabled"`
+	BuzzerDisabled                bool      `json:"buzzer_disabled" db:"buzzer_disabled"`
+	BuzzerMuted                   bool      `json:"buzzer_muted" db:"buzzer_muted"`
+	GatewayOnline                 bool      `json:"gateway_online" db:"gateway_online"`
+	Created                       time.Time `json:"created" db:"created"`
+	Updated                       time.Time `json:"updated" db:"updated"`
 }
 
 // RecoveryChannel represents the configuration for a single physical channel on a module.

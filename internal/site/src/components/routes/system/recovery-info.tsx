@@ -17,6 +17,24 @@ interface RecoveryModuleSummary {
 	status: string
 }
 
+// RecoveryModuleDetail is the enriched module payload from
+// GET /api/beszel/recovery/module?id=X (buildRecoveryModuleResponse in
+// internal/hub/api.go) - the hub-computed sync_status/health_score aren't
+// present on the raw recovery_channels->module expand, so this is fetched
+// separately once we know which module this channel belongs to.
+interface RecoveryModuleDetail {
+	id: string
+	sync_status: string
+	health_score: number
+	health_reasons: string[]
+	pending_esp_change: boolean
+}
+
+interface RecoveryStats {
+	recovery_count: number
+	last_recovery: string | null
+}
+
 interface RecoveryChannel {
 	id: string
 	module: string
@@ -49,6 +67,8 @@ type ToggleField = "wol_enabled" | "auto_wol" | "hardware_recovery_disabled"
 export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 	const [fetchState, setFetchState] = useState<FetchState>("loading")
 	const [channel, setChannel] = useState<RecoveryChannel | null>(null)
+	const [moduleDetail, setModuleDetail] = useState<RecoveryModuleDetail | null>(null)
+	const [stats, setStats] = useState<RecoveryStats | null>(null)
 	const [savingField, setSavingField] = useState<ToggleField | null>(null)
 	const [events, setEvents] = useState<any[]>([])
 	const [eventsLoading, setEventsLoading] = useState(true)
@@ -78,6 +98,51 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 			}
 		}
 		fetchChannel()
+		return () => {
+			isMounted = false
+		}
+	}, [systemId])
+
+	useEffect(() => {
+		const moduleId = channel?.expand?.module?.id
+		if (!moduleId) {
+			setModuleDetail(null)
+			return
+		}
+		let isMounted = true
+		async function fetchModuleDetail() {
+			try {
+				const res = await pb.send<RecoveryModuleDetail>("/api/beszel/recovery/module", {
+					query: { id: moduleId },
+				})
+				if (isMounted) {
+					setModuleDetail(res)
+				}
+			} catch (e) {
+				console.error(e)
+			}
+		}
+		fetchModuleDetail()
+		return () => {
+			isMounted = false
+		}
+	}, [channel?.expand?.module?.id])
+
+	useEffect(() => {
+		let isMounted = true
+		async function fetchStats() {
+			try {
+				const res = await pb.send<RecoveryStats>("/api/beszel/recovery/stats", {
+					query: { system: systemId },
+				})
+				if (isMounted) {
+					setStats(res)
+				}
+			} catch (e) {
+				console.error(e)
+			}
+		}
+		fetchStats()
 		return () => {
 			isMounted = false
 		}
@@ -271,19 +336,35 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 	const hasMaint = channel.maintenance
 	const isEspOffline = espModule?.status === "offline"
 
-	let healthScore = 100
+	// Real hub-computed score when an ESP module is present; a simple two-tier
+	// fallback (matching the ESP-less WOL-only case) otherwise.
+	const healthScore = hasEsp && moduleDetail ? moduleDetail.health_score : hasMaint ? 80 : 100
+
+	// A maintenance toggle is "requested" until the module is confirmed
+	// online and synced - i.e. until we know the ESP has actually picked up
+	// the change on a recent ping cycle - and "active" once that's confirmed.
+	const maintenanceRequested =
+		hasMaint && (isEspOffline || (hasEsp && moduleDetail?.sync_status !== "SYNCED"))
+	const maintenanceActive = hasMaint && !maintenanceRequested
+
 	let statusLabel = <Trans>HEALTHY</Trans>
 	let statusColor = "text-green-500"
 	let Icon = ShieldCheck
 
-	if (hasMaint) {
-		healthScore = 80
-		statusLabel = <Trans>MAINTENANCE</Trans>
+	if (maintenanceRequested) {
+		statusLabel = <Trans>MAINTENANCE REQUESTED</Trans>
+		statusColor = "text-yellow-500"
+		Icon = AlertTriangle
+	} else if (maintenanceActive) {
+		statusLabel = <Trans>MAINTENANCE ACTIVE</Trans>
 		statusColor = "text-yellow-500"
 		Icon = AlertTriangle
 	} else if (hasEsp && isEspOffline) {
-		healthScore = 45
 		statusLabel = <Trans>DEGRADED</Trans>
+		statusColor = "text-red-500"
+		Icon = ShieldAlert
+	} else if (hasEsp && (moduleDetail?.sync_status === "CONFLICT" || moduleDetail?.sync_status === "SYNC_ERROR")) {
+		statusLabel = <Trans>SYNC ISSUE</Trans>
 		statusColor = "text-red-500"
 		Icon = ShieldAlert
 	}
@@ -314,7 +395,10 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 						<span className="text-muted-foreground">
 							<Trans>Protection Status</Trans>
 						</span>
-						<span className={`font-semibold ${statusColor}`}>
+						<span
+							className={`font-semibold ${statusColor}`}
+							title={moduleDetail?.health_reasons?.join(", ")}
+						>
 							{statusLabel} ({healthScore}%)
 						</span>
 					</div>
@@ -456,6 +540,25 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 									<div className="font-semibold text-sm mt-0.5">{successRate}%</div>
 								</div>
 							</div>
+
+							{stats && (
+								<div className="grid grid-cols-2 gap-2 text-center text-xs pb-3 border-b mb-3">
+									<div>
+										<div className="text-muted-foreground">
+											<Trans>Recovery Count</Trans>
+										</div>
+										<div className="font-semibold text-sm mt-0.5">{stats.recovery_count}</div>
+									</div>
+									<div>
+										<div className="text-muted-foreground">
+											<Trans>Last Recovery</Trans>
+										</div>
+										<div className="font-semibold text-sm mt-0.5">
+											{stats.last_recovery ? new Date(stats.last_recovery).toLocaleString() : <Trans>Never</Trans>}
+										</div>
+									</div>
+								</div>
+							)}
 
 							{events.length === 0 ? (
 								<div className="flex items-center justify-center h-32 text-muted-foreground text-xs italic">

@@ -20,12 +20,18 @@ func init() {
 		"deleteRule": "@request.auth.id != \"\" && @request.auth.role = \"admin\"",
 		"fields": [
 			{
+				"autogeneratePattern": "[a-z0-9]{15}",
+				"hidden": false,
 				"id": "text3208210256",
+				"max": 15,
+				"min": 15,
 				"name": "id",
-				"type": "text",
-				"required": true,
+				"pattern": "^[a-z0-9]+$",
+				"presentable": false,
 				"primaryKey": true,
-				"system": true
+				"required": true,
+				"system": true,
+				"type": "text"
 			},
 			{
 				"id": "modulename001",
@@ -97,7 +103,7 @@ func init() {
 			},
 			{
 				"id": "modulehb000001",
-				"name": "heartbeat_interval",
+				"name": "ping_interval_seconds",
 				"type": "number",
 				"required": false
 			},
@@ -111,6 +117,61 @@ func init() {
 				"id": "moduletempcrit",
 				"name": "temp_threshold_critical",
 				"type": "number",
+				"required": false
+			},
+			{
+				"id": "modulerepr0001",
+				"name": "reported_config_revision",
+				"type": "number",
+				"required": false,
+				"onlyInt": true
+			},
+			{
+				"id": "modulerephash01",
+				"name": "reported_config_hash",
+				"type": "text",
+				"required": false
+			},
+			{
+				"id": "modulecfgsrc01",
+				"name": "last_config_source",
+				"type": "text",
+				"required": false
+			},
+			{
+				"id": "modulependesp1",
+				"name": "pending_esp_change",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "moduleesppayl1",
+				"name": "esp_change_payload",
+				"type": "json",
+				"required": false
+			},
+			{
+				"id": "moduletempdis1",
+				"name": "temperature_monitoring_disabled",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "modulebuzzdis1",
+				"name": "buzzer_disabled",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "modulebuzzmut1",
+				"name": "buzzer_muted",
+				"type": "bool",
+				"required": false
+			},
+			{
+				"id": "modulegwonlin1",
+				"name": "gateway_online",
+				"type": "bool",
 				"required": false
 			},
 			{
@@ -141,12 +202,18 @@ func init() {
 		"deleteRule": "@request.auth.id != \"\" && @request.auth.role != \"readonly\"",
 		"fields": [
 			{
+				"autogeneratePattern": "[a-z0-9]{15}",
+				"hidden": false,
 				"id": "text3208210256",
+				"max": 15,
+				"min": 15,
 				"name": "id",
-				"type": "text",
-				"required": true,
+				"pattern": "^[a-z0-9]+$",
+				"presentable": false,
 				"primaryKey": true,
-				"system": true
+				"required": true,
+				"system": true,
+				"type": "text"
 			},
 			{
 				"id": "chanmodule001",
@@ -270,12 +337,18 @@ func init() {
 		"deleteRule": null,
 		"fields": [
 			{
+				"autogeneratePattern": "[a-z0-9]{15}",
+				"hidden": false,
 				"id": "text3208210256",
+				"max": 15,
+				"min": 15,
 				"name": "id",
-				"type": "text",
-				"required": true,
+				"pattern": "^[a-z0-9]+$",
+				"presentable": false,
 				"primaryKey": true,
-				"system": true
+				"required": true,
+				"system": true,
+				"type": "text"
 			},
 			{
 				"id": "eventsystem01",

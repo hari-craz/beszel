@@ -110,6 +110,14 @@ func TestSystemManagerNew(t *testing.T) {
 		err = hub.Delete(record)
 		require.NoError(t, err)
 		assert.False(t, sm.HasSystem(record.Id), "System should not exist in the store after deletion")
+
+		// sm.Initialize() above starts RecoveryProber background goroutines
+		// (offline scanner, lock expiry cleaner) inside this bubble. They
+		// must be stopped here, before the bubble exits - stopping them
+		// later via the outer deferred hub.Cleanup() (which runs outside
+		// any bubble) panics with "close of synctest channel from outside
+		// bubble" since that context was created inside this bubble.
+		sm.Stop()
 	})
 
 	testOld(t, hub)

@@ -47,6 +47,11 @@ struct MonitoredChannel {
   // Beszel/the local portal, not a temporary human intervention. When true,
   // the channel keeps probing/logging its state but never presses the relay.
   bool hwRecoveryDisabled;
+  // failureThreshold/bootGraceSeconds are per-channel timing profiles
+  // (Beszel or this device's own local portal can edit them) - previously
+  // hardcoded to 3 and 60s regardless of what was configured.
+  int failureThreshold;
+  int bootGraceSeconds;
   // hubLockUntilMs is a best-effort hint reported by the hub (via
   // /recovery/ping) that a Beszel-initiated recovery action (e.g. automatic
   // WOL) is currently in flight for this channel. It is bounded by the ESP's
@@ -86,11 +91,32 @@ unsigned long startupGraceUntilMs = 0;
 // network itself is down" so a router outage doesn't cause every channel to
 // be hard-rebooted. This mirrors the hub's own gateway check, but runs
 // locally so the ESP's autonomous engine stays safe even when Beszel is
-// unreachable.
+// unreachable. gatewayIP starts auto-detected from DHCP but can be
+// overridden by a local or Beszel-driven settings change.
 char gatewayIP[16] = "";
+char gatewayName[64] = "";
 bool networkVerifyActive = false;
 int gatewayConsecutiveOk = 0;
 unsigned long lastGatewayProbeTime = 0;
+
+// Local settings portal state - module-level settings editable either from
+// this device's own web page or from Beszel, kept in sync via syncWithHub().
+bool temperatureMonitoringDisabled = false;
+float tempThresholdWarningLocal = 50.0;
+float tempThresholdCriticalLocal = 60.0;
+bool buzzerDisabled = false;
+bool buzzerMuted = false;
+
+// Bidirectional config sync: set when this device's own local web portal
+// just applied a settings edit, so the next ping reports it as a
+// local_change. Cleared once the hub's response confirms the new revision
+// was accepted, or leaves it set (so the change keeps being reported) if
+// the hub instead flags a conflict - see syncWithHub().
+bool pendingLocalChange = false;
+int localChangeBaseRevision = 0;
+
+// Connectivity state surfaced on the local dashboard.
+bool lastPingSuccess = false;
 
 // Button timers
 unsigned long buttonPressStartTime = 0;
@@ -161,6 +187,154 @@ window.onload = function() {
   document.getElementById('mac_id').value = window.location.hostname;
   scanNetworks();
 };
+</script>
+</body>
+</html>
+)rawliteral";
+
+// Normal-mode local dashboard/settings portal. Static markup - all values
+// are populated client-side from GET /api/state, and edits are saved via
+// POST /api/settings/save and POST /api/channel/save. This is the "ESP
+// local web portal" from the spec: settings changed here flow back to
+// Beszel via syncWithHub()'s local_change reporting, just as Beszel-side
+// changes flow down via the regular ping response.
+const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Beszel Recovery Module</title>
+<style>
+body { font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; background:#121214; color:#e4e4e7; margin:0; padding:20px; }
+.card { background:#18181b; border:1px solid #27272a; padding:20px; border-radius:8px; max-width:600px; margin:0 auto 16px; }
+h2 { margin-top:0; color:#3b82f6; font-size:18px; }
+h3 { color:#a1a1aa; font-size:12px; text-transform:uppercase; margin:0 0 12px; letter-spacing:0.05em; }
+.row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:13px; border-bottom:1px solid #27272a; }
+.row span:first-child { color:#a1a1aa; }
+.badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; margin-left:6px; }
+.ok { background:#14532d; color:#4ade80; }
+.warn { background:#713f12; color:#facc15; }
+.crit { background:#7f1d1d; color:#f87171; }
+.field { margin-bottom:12px; }
+label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; color:#a1a1aa; margin-bottom:4px; }
+label.inline { display:flex; align-items:center; font-weight:600; }
+input[type=text], input[type=number] { width:100%; padding:8px; background:#27272a; border:1px solid #3f3f46; border-radius:6px; color:#fff; box-sizing:border-box; }
+input[type=checkbox] { margin-right:8px; width:auto; }
+button { background:#3b82f6; color:#fff; padding:8px 16px; border:none; border-radius:6px; font-weight:600; cursor:pointer; font-size:13px; }
+button:hover { background:#2563eb; }
+.chan { border:1px solid #27272a; border-radius:6px; padding:12px; margin-bottom:10px; }
+.chan-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+</style>
+</head>
+<body>
+<div class='card'>
+  <h2 id='moduleTitle'>Recovery Module</h2>
+  <div id='statusRows'></div>
+</div>
+<div class='card'>
+  <h3>Module Settings</h3>
+  <div class='field'><label>Module Name</label><input type='text' id='f_name'></div>
+  <div class='grid2'>
+    <div class='field'><label>Gateway IP</label><input type='text' id='f_gwip' placeholder='blank = auto-detect'></div>
+    <div class='field'><label>Gateway Name</label><input type='text' id='f_gwname'></div>
+  </div>
+  <div class='field'><label>Ping Interval (seconds)</label><input type='number' id='f_ping' min='5'></div>
+  <div class='field'><label class='inline'><input type='checkbox' id='f_tempdis'> Disable Temperature Monitoring</label></div>
+  <div class='grid2'>
+    <div class='field'><label>Warn Threshold (&deg;C)</label><input type='number' id='f_tempwarn'></div>
+    <div class='field'><label>Critical Threshold (&deg;C)</label><input type='number' id='f_tempcrit'></div>
+  </div>
+  <div class='field'><label class='inline'><input type='checkbox' id='f_buzzdis'> Disable Buzzer</label></div>
+  <div class='field'><label class='inline'><input type='checkbox' id='f_buzzmute'> Mute Buzzer Temporarily</label></div>
+  <button onclick='saveSettings()'>Save Module Settings</button>
+</div>
+<div class='card'>
+  <h3>Channels</h3>
+  <div id='channelsList'></div>
+</div>
+<script>
+function badge(text, cls) { return "<span class='badge " + cls + "'>" + text + "</span>"; }
+function esc(v) { return (v === undefined || v === null) ? '' : String(v).replace(/'/g, '&#39;'); }
+function loadState() {
+  fetch('/api/state').then(function(r){ return r.json(); }).then(function(data) {
+    document.getElementById('moduleTitle').textContent = data.name || 'Recovery Module';
+    var rows = '';
+    rows += "<div class='row'><span>Module ID</span><span>" + esc(data.module_id) + "</span></div>";
+    rows += "<div class='row'><span>Firmware</span><span>" + esc(data.firmware_version) + "</span></div>";
+    rows += "<div class='row'><span>IP Address</span><span>" + esc(data.ip) + "</span></div>";
+    rows += "<div class='row'><span>Uptime</span><span>" + data.uptime_seconds + "s</span></div>";
+    rows += "<div class='row'><span>Beszel Connection</span><span>" + (data.beszel_connected ? badge('CONNECTED','ok') : badge('UNREACHABLE','warn')) + "</span></div>";
+    rows += "<div class='row'><span>Gateway</span><span>" + esc(data.gateway_ip || 'N/A') + " " + (data.gateway_online ? badge('ONLINE','ok') : badge('OFFLINE','crit')) + "</span></div>";
+    rows += "<div class='row'><span>Temperature</span><span>" + (data.temperature_monitoring_disabled ? badge('DISABLED','warn') : (Number(data.temperature).toFixed(1) + '&deg;C')) + "</span></div>";
+    rows += "<div class='row'><span>Config Revision</span><span>" + data.config_revision + (data.sync_pending ? badge('SYNC PENDING','warn') : badge('SYNCED','ok')) + "</span></div>";
+    document.getElementById('statusRows').innerHTML = rows;
+
+    document.getElementById('f_name').value = data.name || '';
+    document.getElementById('f_gwip').value = data.gateway_ip || '';
+    document.getElementById('f_gwname').value = data.gateway_name || '';
+    document.getElementById('f_ping').value = data.ping_interval_seconds || 30;
+    document.getElementById('f_tempdis').checked = !!data.temperature_monitoring_disabled;
+    document.getElementById('f_tempwarn').value = data.temp_threshold_warning || 50;
+    document.getElementById('f_tempcrit').value = data.temp_threshold_critical || 60;
+    document.getElementById('f_buzzdis').checked = !!data.buzzer_disabled;
+    document.getElementById('f_buzzmute').checked = !!data.buzzer_muted;
+
+    var chHtml = '';
+    (data.channels || []).forEach(function(ch) {
+      var cls = ch.state_label === 'OK' ? 'ok' : (ch.state_label === 'CRIT' ? 'crit' : 'warn');
+      chHtml += "<div class='chan'>";
+      chHtml += "<div class='chan-head'><b>Channel " + ch.channel + "</b>" + badge(ch.state_label, cls) + "</div>";
+      chHtml += "<div class='field'><label>Host IP</label><input type='text' id='ch_host_" + ch.channel + "' value='" + esc(ch.host_ip) + "'></div>";
+      chHtml += "<div class='grid2'>";
+      chHtml += "<div class='field'><label>Probe Ports</label><input type='text' id='ch_ports_" + ch.channel + "' value='" + esc((ch.ports||[]).join(',')) + "'></div>";
+      chHtml += "<div class='field'><label>Failure Threshold</label><input type='number' id='ch_thresh_" + ch.channel + "' value='" + ch.failure_threshold + "'></div>";
+      chHtml += "</div>";
+      chHtml += "<div class='field'><label>Boot Grace (seconds)</label><input type='number' id='ch_grace_" + ch.channel + "' value='" + ch.boot_grace_seconds + "'></div>";
+      chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_maint_" + ch.channel + "' " + (ch.maintenance ? 'checked' : '') + "> Maintenance Mode</label></div>";
+      chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_hwdis_" + ch.channel + "' " + (ch.hardware_recovery_disabled ? 'checked' : '') + "> Disable Autonomous Recovery</label></div>";
+      chHtml += "<button onclick='saveChannel(" + ch.channel + ")'>Save Channel " + ch.channel + "</button>";
+      chHtml += "</div>";
+    });
+    document.getElementById('channelsList').innerHTML = chHtml || "<p style='color:#a1a1aa;font-size:13px;'>No channels configured yet.</p>";
+  });
+}
+function saveSettings() {
+  var body = {
+    name: document.getElementById('f_name').value,
+    gateway_ip: document.getElementById('f_gwip').value,
+    gateway_name: document.getElementById('f_gwname').value,
+    ping_interval_seconds: parseInt(document.getElementById('f_ping').value, 10) || 30,
+    temperature_monitoring_disabled: document.getElementById('f_tempdis').checked,
+    temp_threshold_warning: parseFloat(document.getElementById('f_tempwarn').value) || 50,
+    temp_threshold_critical: parseFloat(document.getElementById('f_tempcrit').value) || 60,
+    buzzer_disabled: document.getElementById('f_buzzdis').checked,
+    buzzer_muted: document.getElementById('f_buzzmute').checked
+  };
+  fetch('/api/settings/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    .then(function(){ loadState(); });
+}
+function saveChannel(chan) {
+  var portsRaw = document.getElementById('ch_ports_' + chan).value.split(',');
+  var ports = [];
+  for (var i = 0; i < portsRaw.length; i++) {
+    var p = parseInt(portsRaw[i].trim(), 10);
+    if (!isNaN(p)) ports.push(p);
+  }
+  var body = {
+    channel: chan,
+    host_ip: document.getElementById('ch_host_' + chan).value,
+    probe_ports: ports,
+    failure_threshold: parseInt(document.getElementById('ch_thresh_' + chan).value, 10) || 3,
+    boot_grace_seconds: parseInt(document.getElementById('ch_grace_' + chan).value, 10) || 60,
+    maintenance: document.getElementById('ch_maint_' + chan).checked,
+    hardware_recovery_disabled: document.getElementById('ch_hwdis_' + chan).checked
+  };
+  fetch('/api/channel/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    .then(function(){ loadState(); });
+}
+loadState();
+setInterval(loadState, 10000);
 </script>
 </body>
 </html>
@@ -259,16 +433,156 @@ void startProvisioningAP() {
   server.begin();
 }
 
-void handleNormalStatus() {
-  String html = "<html><head><title>Recovery Status</title><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='font-family:sans-serif; background:#121214; color:#e4e4e7; padding:20px;'>";
-  html += "<h2>Recovery Module Active</h2>";
-  html += "<p><b>IP Address:</b> " + WiFi.localIP().toString() + "</p>";
-  html += "<p><b>Hub URL:</b> " + String(hubURL) + "</p>";
-  html += "<p><b>Heartbeat Interval:</b> " + String(heartbeatIntervalMs / 1000) + "s</p>";
-  html += "<p><b>Monitored Channels:</b> " + String(activeChannelCount) + "</p>";
-  html += "<p><b>Config Revision:</b> " + String(localConfigRevision) + "</p>";
-  html += "</body></html>";
-  server.send(200, "text/html", html);
+void handleDashboard() {
+  server.send(200, "text/html", DASHBOARD_HTML);
+}
+
+// channelStateLabel mirrors updateLCDDisplay()'s short labels, reused here
+// for the dashboard's channel status badges.
+const char* channelStateLabel(ChannelState state) {
+  switch (state) {
+    case STATE_ONLINE: return "OK";
+    case STATE_VERIFYING_FAILURE: return "VERIFY";
+    case STATE_SHORT_PRESS:
+    case STATE_HARD_HOLD: return "PRESS";
+    case STATE_BOOT_GRACE: return "BOOT";
+    case STATE_CRITICAL: return "CRIT";
+    default: return "WARN";
+  }
+}
+
+// handleGetState handles GET /api/state, returning the module/channel state
+// the dashboard page renders and pre-fills its settings forms from.
+void handleGetState() {
+  StaticJsonDocument<2048> doc;
+  doc["module_id"] = WiFi.macAddress();
+  doc["name"] = moduleName;
+  doc["firmware_version"] = FIRMWARE_VERSION;
+  doc["ip"] = WiFi.localIP().toString();
+  doc["uptime_seconds"] = millis() / 1000;
+  doc["beszel_connected"] = lastPingSuccess;
+  doc["gateway_ip"] = gatewayIP;
+  doc["gateway_name"] = gatewayName;
+  doc["gateway_online"] = !networkVerifyActive;
+  doc["temperature_monitoring_disabled"] = temperatureMonitoringDisabled;
+
+  float temp = sensors.getTempCByIndex(0);
+  doc["temperature"] = (temp == DEVICE_DISCONNECTED_C) ? 0.0 : temp;
+  doc["temp_threshold_warning"] = tempThresholdWarningLocal;
+  doc["temp_threshold_critical"] = tempThresholdCriticalLocal;
+  doc["buzzer_disabled"] = buzzerDisabled;
+  doc["buzzer_muted"] = buzzerMuted;
+  doc["ping_interval_seconds"] = heartbeatIntervalMs / 1000;
+  doc["config_revision"] = localConfigRevision;
+  doc["sync_pending"] = pendingLocalChange;
+
+  JsonArray channels = doc.createNestedArray("channels");
+  for (int i = 0; i < activeChannelCount; i++) {
+    MonitoredChannel& ch = activeChannels[i];
+    JsonObject chObj = channels.createNestedObject();
+    chObj["channel"] = ch.channelNumber;
+    chObj["host_ip"] = ch.hostIP;
+    chObj["failure_threshold"] = ch.failureThreshold;
+    chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
+    chObj["maintenance"] = ch.maintenance;
+    chObj["hardware_recovery_disabled"] = ch.hwRecoveryDisabled;
+    chObj["state_label"] = channelStateLabel(ch.state);
+    JsonArray ports = chObj.createNestedArray("ports");
+    for (int p = 0; p < ch.portCount; p++) {
+      ports.add(ch.ports[p]);
+    }
+  }
+
+  String response;
+  serializeJson(doc, response);
+  server.send(200, "application/json", response);
+}
+
+// handleSaveSettings handles POST /api/settings/save - module-level settings
+// edited from this device's own dashboard. Applies immediately and reports
+// the change to the hub on the next ping via markLocalChange().
+void handleSaveSettings() {
+  if (server.method() != HTTP_POST) {
+    server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
+    return;
+  }
+  StaticJsonDocument<512> doc;
+  if (deserializeJson(doc, server.arg("plain"))) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  const char* name = doc["name"] | "";
+  if (name[0] != '\0') strncpy(moduleName, name, sizeof(moduleName) - 1);
+  const char* gwip = doc["gateway_ip"] | "";
+  strncpy(gatewayIP, gwip, sizeof(gatewayIP) - 1);
+  const char* gwname = doc["gateway_name"] | "";
+  strncpy(gatewayName, gwname, sizeof(gatewayName) - 1);
+
+  long pingInterval = doc["ping_interval_seconds"] | 30;
+  if (pingInterval < 5) pingInterval = 5;
+  heartbeatIntervalMs = pingInterval * 1000UL;
+
+  temperatureMonitoringDisabled = doc["temperature_monitoring_disabled"] | false;
+  tempThresholdWarningLocal = doc["temp_threshold_warning"] | 50.0;
+  tempThresholdCriticalLocal = doc["temp_threshold_critical"] | 60.0;
+  buzzerDisabled = doc["buzzer_disabled"] | false;
+  buzzerMuted = doc["buzzer_muted"] | false;
+
+  markLocalChange();
+  server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
+
+// handleSaveChannel handles POST /api/channel/save - a single channel's
+// settings edited from this device's own dashboard. Note: unlike module
+// settings, per-channel edits are only kept in memory (not persisted to
+// NVS) - a reboot before the next successful hub sync reverts to whatever
+// channel config the hub last pushed. This is an accepted limitation of
+// this first version rather than building structured array persistence on
+// top of ESP32 Preferences' flat key-value store.
+void handleSaveChannel() {
+  if (server.method() != HTTP_POST) {
+    server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
+    return;
+  }
+  StaticJsonDocument<512> doc;
+  if (deserializeJson(doc, server.arg("plain"))) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  int chanNum = doc["channel"] | 0;
+  MonitoredChannel* target = nullptr;
+  for (int i = 0; i < activeChannelCount; i++) {
+    if (activeChannels[i].channelNumber == chanNum) {
+      target = &activeChannels[i];
+      break;
+    }
+  }
+  if (target == nullptr) {
+    server.send(404, "application/json", "{\"error\":\"Channel not found\"}");
+    return;
+  }
+
+  const char* host = doc["host_ip"] | "";
+  if (host[0] != '\0') strncpy(target->hostIP, host, sizeof(target->hostIP) - 1);
+  target->failureThreshold = doc["failure_threshold"] | target->failureThreshold;
+  target->bootGraceSeconds = doc["boot_grace_seconds"] | target->bootGraceSeconds;
+  target->maintenance = doc["maintenance"] | target->maintenance;
+  target->hwRecoveryDisabled = doc["hardware_recovery_disabled"] | target->hwRecoveryDisabled;
+
+  if (doc.containsKey("probe_ports")) {
+    JsonArray ports = doc["probe_ports"];
+    target->portCount = 0;
+    for (JsonVariant p : ports) {
+      if (target->portCount < 3) {
+        target->ports[target->portCount++] = p.as<int>();
+      }
+    }
+  }
+
+  markLocalChange();
+  server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
 void setup() {
@@ -307,6 +621,15 @@ void setup() {
     heartbeatIntervalMs = preferences.getInt("heartbeat", 30000);
     localConfigRevision = preferences.getInt("revision", 0);
     strncpy(localConfigHash, preferences.getString("hash", "").c_str(), sizeof(localConfigHash) - 1);
+    // Local settings-portal state saved by markLocalChange(). A blank saved
+    // gateway IP means "use DHCP auto-detection" (set later once connected).
+    strncpy(gatewayIP, preferences.getString("gwip", "").c_str(), sizeof(gatewayIP) - 1);
+    strncpy(gatewayName, preferences.getString("gwname", "").c_str(), sizeof(gatewayName) - 1);
+    temperatureMonitoringDisabled = preferences.getBool("tempdis", false);
+    tempThresholdWarningLocal = preferences.getFloat("tempwarn", 50.0);
+    tempThresholdCriticalLocal = preferences.getFloat("tempcrit", 60.0);
+    buzzerDisabled = preferences.getBool("buzzdis", false);
+    buzzerMuted = preferences.getBool("buzzmute", false);
   }
   preferences.end();
 
@@ -329,7 +652,11 @@ void setup() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      WiFi.gatewayIP().toString().toCharArray(gatewayIP, sizeof(gatewayIP));
+      // Only auto-detect from DHCP if no custom gateway override was saved
+      // (via the local settings portal or a Beszel-pushed change).
+      if (strlen(gatewayIP) == 0) {
+        WiFi.gatewayIP().toString().toCharArray(gatewayIP, sizeof(gatewayIP));
+      }
       if (hasLCD) {
         lcd.clear();
         lcd.print("WiFi Online");
@@ -352,7 +679,10 @@ void setup() {
     // seconds of coming up.
     startupGraceUntilMs = millis() + STARTUP_GRACE_MS;
 
-    server.on("/", HTTP_GET, handleNormalStatus);
+    server.on("/", HTTP_GET, handleDashboard);
+    server.on("/api/state", HTTP_GET, handleGetState);
+    server.on("/api/settings/save", HTTP_POST, handleSaveSettings);
+    server.on("/api/channel/save", HTTP_POST, handleSaveChannel);
     server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
     server.begin();
     delay(1000);
@@ -411,6 +741,9 @@ void checkConfigButton() {
 }
 
 void triggerBuzzer(int beepCount, int durationMs) {
+  // Silencing the buzzer (disabled or temporarily muted) never affects
+  // relay/probe/recovery logic - only the audible pattern is skipped.
+  if (buzzerDisabled || buzzerMuted) return;
   buzzerPatternBeeps = beepCount;
   buzzerPatternGap = durationMs;
   buzzerPatternStartTime = millis();
@@ -459,6 +792,60 @@ void checkNetworkVerifyRecovery() {
   }
 }
 
+// computeLocalConfigHash produces a simple, deterministic hash of the
+// current local configuration, for display/debugging only. It does NOT need
+// to match the hub's own hash algorithm - sync state between Beszel and this
+// firmware is driven by comparing revision numbers, not by requiring
+// byte-identical hashes across Go and this firmware.
+String computeLocalConfigHash() {
+  String canonical = String(moduleName) + "|" + String(gatewayIP) + "|" + String(gatewayName) + "|" +
+    String(heartbeatIntervalMs) + "|" + String(temperatureMonitoringDisabled) + "|" +
+    String(tempThresholdWarningLocal, 1) + "|" + String(tempThresholdCriticalLocal, 1) + "|" +
+    String(buzzerDisabled) + "|" + String(buzzerMuted);
+  for (int i = 0; i < activeChannelCount; i++) {
+    MonitoredChannel& ch = activeChannels[i];
+    canonical += "|ch" + String(ch.channelNumber) + ":" + String(ch.hostIP) + ":" +
+      String(ch.maintenance) + ":" + String(ch.hwRecoveryDisabled) + ":" +
+      String(ch.failureThreshold) + ":" + String(ch.bootGraceSeconds);
+    for (int p = 0; p < ch.portCount; p++) {
+      canonical += "," + String(ch.ports[p]);
+    }
+  }
+
+  uint32_t hash = 2166136261UL; // FNV-1a 32-bit offset basis
+  for (size_t i = 0; i < canonical.length(); i++) {
+    hash ^= (uint8_t)canonical[i];
+    hash *= 16777619UL; // FNV prime
+  }
+  char hex[9];
+  snprintf(hex, sizeof(hex), "%08x", hash);
+  return String(hex);
+}
+
+// markLocalChange bumps the local revision, recomputes the local hash, and
+// flags the change to be reported to the hub on the next ping. Call this
+// right after applying any settings-save from this device's own web portal.
+void markLocalChange() {
+  localChangeBaseRevision = localConfigRevision;
+  localConfigRevision++;
+  String newHash = computeLocalConfigHash();
+  strncpy(localConfigHash, newHash.c_str(), sizeof(localConfigHash) - 1);
+  pendingLocalChange = true;
+
+  preferences.begin("watchdog", false);
+  preferences.putInt("revision", localConfigRevision);
+  preferences.putString("hash", localConfigHash);
+  preferences.putString("gwip", gatewayIP);
+  preferences.putString("gwname", gatewayName);
+  preferences.putBool("tempdis", temperatureMonitoringDisabled);
+  preferences.putFloat("tempwarn", tempThresholdWarningLocal);
+  preferences.putFloat("tempcrit", tempThresholdCriticalLocal);
+  preferences.putBool("buzzdis", buzzerDisabled);
+  preferences.putBool("buzzmute", buzzerMuted);
+  preferences.putString("name", moduleName);
+  preferences.end();
+}
+
 void processProberStateMachines() {
   unsigned long now = millis();
   checkNetworkVerifyRecovery();
@@ -496,7 +883,8 @@ void processProberStateMachines() {
             ch.consecutiveFailures = 0;
           } else {
             ch.consecutiveFailures++;
-            if (ch.consecutiveFailures >= 3) {
+            int threshold = (ch.failureThreshold > 0) ? ch.failureThreshold : 3;
+            if (ch.consecutiveFailures >= threshold) {
               // Startup grace: keep verifying/logging, but never act within
               // STARTUP_GRACE_MS of boot.
               if (now < startupGraceUntilMs) {
@@ -543,7 +931,8 @@ void processProberStateMachines() {
             ch.recoveryAttempts = 0;
             triggerBuzzer(2, 200);
           } else {
-            if (now - ch.stateStartTime >= 60000) {
+            unsigned long bootGraceMs = (ch.bootGraceSeconds > 0) ? (unsigned long)ch.bootGraceSeconds * 1000UL : 60000UL;
+            if (now - ch.stateStartTime >= bootGraceMs) {
               // Hard-hold is destructive (it can power OFF a machine that a
               // hub-initiated WOL just booted), so it gets an extra, more
               // conservative gate than the short-press escalation above.
@@ -623,21 +1012,58 @@ void syncWithHub() {
   http.begin(hubURL);
   http.addHeader("Content-Type", "application/json");
 
-  StaticJsonDocument<512> doc;
+  // Sized generously to fit a full local_change payload (module + all
+  // channels) alongside the regular ping fields.
+  StaticJsonDocument<2048> doc;
   doc["mac_address"] = WiFi.macAddress();
   doc["ip_address"] = WiFi.localIP().toString();
   doc["firmware_version"] = FIRMWARE_VERSION;
   doc["max_channels"] = MAX_CHANNELS_LIMIT;
   doc["config_revision"] = localConfigRevision;
   doc["config_hash"] = localConfigHash;
-  if (currentTemp > 0) {
+  if (!temperatureMonitoringDisabled && currentTemp > 0) {
     doc["temperature"] = currentTemp;
+  }
+
+  // Report a pending local edit (from this device's own web portal) so the
+  // hub can accept it as the new desired state, or flag a conflict if its
+  // own desired config has moved on since this edit was made.
+  if (pendingLocalChange) {
+    JsonObject localChange = doc.createNestedObject("local_change");
+    localChange["base_revision"] = localChangeBaseRevision;
+    JsonObject moduleObj = localChange.createNestedObject("module");
+    moduleObj["name"] = moduleName;
+    moduleObj["gateway_ip"] = gatewayIP;
+    moduleObj["gateway_name"] = gatewayName;
+    moduleObj["ping_interval_seconds"] = heartbeatIntervalMs / 1000;
+    moduleObj["temperature_monitoring_disabled"] = temperatureMonitoringDisabled;
+    moduleObj["temp_threshold_warning"] = tempThresholdWarningLocal;
+    moduleObj["temp_threshold_critical"] = tempThresholdCriticalLocal;
+    moduleObj["buzzer_disabled"] = buzzerDisabled;
+    moduleObj["buzzer_muted"] = buzzerMuted;
+
+    JsonArray channelsArr = localChange.createNestedArray("channels");
+    for (int i = 0; i < activeChannelCount; i++) {
+      MonitoredChannel& ch = activeChannels[i];
+      JsonObject chObj = channelsArr.createNestedObject();
+      chObj["channel"] = ch.channelNumber;
+      chObj["host_ip"] = ch.hostIP;
+      chObj["failure_threshold"] = ch.failureThreshold;
+      chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
+      chObj["maintenance"] = ch.maintenance;
+      chObj["hardware_recovery_disabled"] = ch.hwRecoveryDisabled;
+      JsonArray portsArr = chObj.createNestedArray("probe_ports");
+      for (int p = 0; p < ch.portCount; p++) {
+        portsArr.add(ch.ports[p]);
+      }
+    }
   }
 
   String requestBody;
   serializeJson(doc, requestBody);
 
   int httpCode = http.POST(requestBody);
+  lastPingSuccess = (httpCode == HTTP_CODE_OK);
   if (httpCode == HTTP_CODE_OK) {
     String response = http.getString();
     // Sized generously for MAX_CHANNELS_LIMIT channels now that the response
@@ -649,8 +1075,43 @@ void syncWithHub() {
     if (!err) {
       int remoteRevision = respDoc["config_revision"];
       String remoteHash = respDoc["config_hash"];
+      bool conflict = respDoc["pending_esp_change"] | false;
 
-      if (remoteRevision > localConfigRevision && remoteHash != localConfigHash) {
+      // A pending local edit is resolved once the hub's desired revision
+      // catches up to what we reported - whether because it accepted our
+      // change (revision now equals what we sent) or because a conflict is
+      // now being tracked hub-side instead (still shows as pending until an
+      // admin resolves it, so keep resending until the flag clears).
+      if (pendingLocalChange && !conflict && remoteRevision >= localConfigRevision) {
+        pendingLocalChange = false;
+      }
+
+      // While we have our own unconfirmed local edit in flight, don't let a
+      // stale/older hub-pushed value overwrite it - we'd just fight
+      // ourselves. Once accepted (pendingLocalChange cleared above) or if
+      // there was never a pending local edit, hub-pushed values apply
+      // normally below.
+      bool applyHubPush = !pendingLocalChange;
+
+      if (applyHubPush) {
+        const char* pushedName = respDoc["name"] | "";
+        if (pushedName[0] != '\0') strncpy(moduleName, pushedName, sizeof(moduleName) - 1);
+        const char* pushedGwIp = respDoc["gateway_ip"] | "";
+        if (pushedGwIp[0] != '\0') strncpy(gatewayIP, pushedGwIp, sizeof(gatewayIP) - 1);
+        const char* pushedGwName = respDoc["gateway_name"] | "";
+        strncpy(gatewayName, pushedGwName, sizeof(gatewayName) - 1);
+        temperatureMonitoringDisabled = respDoc["temperature_monitoring_disabled"] | false;
+        tempThresholdWarningLocal = respDoc["temp_threshold_warning"] | 50.0;
+        tempThresholdCriticalLocal = respDoc["temp_threshold_critical"] | 60.0;
+        buzzerDisabled = respDoc["buzzer_disabled"] | false;
+        buzzerMuted = respDoc["buzzer_muted"] | false;
+        long pushedPingInterval = respDoc["ping_interval_seconds"] | 0;
+        if (pushedPingInterval >= 5) {
+          heartbeatIntervalMs = pushedPingInterval * 1000UL;
+        }
+      }
+
+      if (applyHubPush && remoteRevision > localConfigRevision && remoteHash != localConfigHash) {
         JsonArray channelsArray = respDoc["channels"];
         activeChannelCount = 0;
 
@@ -663,6 +1124,8 @@ void syncWithHub() {
           strncpy(newCh.hostIP, host, sizeof(newCh.hostIP) - 1);
           newCh.maintenance = item["maintenance"];
           newCh.hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
+          newCh.failureThreshold = item["failure_threshold"] | 3;
+          newCh.bootGraceSeconds = item["boot_grace_seconds"] | 60;
           long lockSecondsRemaining = item["hub_lock_seconds_remaining"] | 0;
           newCh.hubLockUntilMs = (lockSecondsRemaining > 0)
             ? (millis() + (unsigned long)lockSecondsRemaining * 1000UL)
@@ -690,7 +1153,7 @@ void syncWithHub() {
         localConfigRevision = remoteRevision;
         strncpy(localConfigHash, remoteHash.c_str(), sizeof(localConfigHash) - 1);
         triggerBuzzer(3, 100);
-      } else {
+      } else if (applyHubPush) {
         // Config revision unchanged, but volatile per-channel hints (hub
         // lock, maintenance, hardware-recovery-disabled) can legitimately
         // change between config revisions - refresh those on every ping
@@ -702,6 +1165,8 @@ void syncWithHub() {
             if (activeChannels[i].channelNumber != chanNum) continue;
             activeChannels[i].maintenance = item["maintenance"];
             activeChannels[i].hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
+            activeChannels[i].failureThreshold = item["failure_threshold"] | 3;
+            activeChannels[i].bootGraceSeconds = item["boot_grace_seconds"] | 60;
             long lockSecondsRemaining = item["hub_lock_seconds_remaining"] | 0;
             activeChannels[i].hubLockUntilMs = (lockSecondsRemaining > 0)
               ? (millis() + (unsigned long)lockSecondsRemaining * 1000UL)
@@ -770,15 +1235,7 @@ void updateLCDDisplay() {
     lcd.print(ch.hostIP);
     lcd.setCursor(15, i + 1);
 
-    switch (ch.state) {
-      case STATE_ONLINE: lcd.print("OK"); break;
-      case STATE_VERIFYING_FAILURE: lcd.print("VERIFY"); break;
-      case STATE_SHORT_PRESS:
-      case STATE_HARD_HOLD: lcd.print("PRESS"); break;
-      case STATE_BOOT_GRACE: lcd.print("BOOT"); break;
-      case STATE_CRITICAL: lcd.print("CRIT"); break;
-      default: lcd.print("WARN"); break;
-    }
+    lcd.print(channelStateLabel(ch.state));
   }
   currentDisplayPage = (currentDisplayPage + 1) % ((activeChannelCount + itemsPerPage - 1) / itemsPerPage);
 }

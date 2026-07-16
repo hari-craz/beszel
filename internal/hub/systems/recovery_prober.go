@@ -249,6 +249,24 @@ func (rp *RecoveryProber) deregisterWatchdog(channelID string) {
 	}
 }
 
+// Stop cancels all background work owned by the RecoveryProber: the
+// offline-module scanner, the recovery-lock expiry map's cleaner goroutine,
+// and every per-channel watchdog goroutine. Intended for test cleanup
+// (mirrors AlertManager.Stop()) - production shutdown just exits the
+// process, so this isn't wired into normal hub startup/shutdown. Safe to
+// call multiple times.
+func (rp *RecoveryProber) Stop() {
+	rp.mu.Lock()
+	defer rp.mu.Unlock()
+
+	for channelID, w := range rp.watchdogs {
+		w.cancel()
+		delete(rp.watchdogs, channelID)
+	}
+	rp.locks.StopCleaner()
+	rp.cancel()
+}
+
 // runWatchdog runs the checking state machine loop.
 func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 	ticker := time.NewTicker(5 * time.Second)
@@ -297,13 +315,17 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 
 				// All verify checks failed. Verify network gateway status.
 				gatewayIP := rp.getGatewayIP(w.systemID)
-				if gatewayIP != "" && !rp.probeGateway(gatewayIP) {
-					// Gateway itself is down. Classify as network issue.
-					rp.logEvent(w.systemID, w.channelID, "NETWORK_FAILURE", map[string]any{
-						"gateway": gatewayIP,
-						"reason":  "gateway port probe failed",
-					})
-					continue
+				if gatewayIP != "" {
+					gatewayOK := rp.probeGateway(gatewayIP)
+					rp.updateGatewayOnlineStatus(w.systemID, gatewayOK)
+					if !gatewayOK {
+						// Gateway itself is down. Classify as network issue.
+						rp.logEvent(w.systemID, w.channelID, "NETWORK_FAILURE", map[string]any{
+							"gateway": gatewayIP,
+							"reason":  "gateway port probe failed",
+						})
+						continue
+					}
 				}
 
 				// Gateway is online. Server down is officially classified.
@@ -450,6 +472,31 @@ func (rp *RecoveryProber) getGatewayIP(systemID string) string {
 		return ""
 	}
 	return moduleRec.GetString("gateway_ip")
+}
+
+// updateGatewayOnlineStatus persists whether the gateway is currently
+// reachable on the recovery_modules record mapped to systemID's channel, so
+// the health score and frontend can show gateway status without a separate
+// always-on polling loop - this only runs when a channel's fast-verify has
+// already failed and gateway health needs checking anyway.
+func (rp *RecoveryProber) updateGatewayOnlineStatus(systemID string, online bool) {
+	chanRec, err := rp.app.FindFirstRecordByFilter("recovery_channels", "system = {:system}", dbx.Params{"system": systemID})
+	if err != nil {
+		return
+	}
+	moduleID := chanRec.GetString("module")
+	if moduleID == "" {
+		return
+	}
+	moduleRec, err := rp.app.FindRecordById("recovery_modules", moduleID)
+	if err != nil {
+		return
+	}
+	if moduleRec.GetBool("gateway_online") == online {
+		return
+	}
+	moduleRec.Set("gateway_online", online)
+	_ = rp.app.Save(moduleRec)
 }
 
 // logEvent creates an audit trail entry in recovery_events.

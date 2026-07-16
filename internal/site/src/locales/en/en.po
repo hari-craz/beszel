@@ -192,6 +192,10 @@ msgid "Allow the ESP32 to trigger the physical relay."
 msgstr "Allow the ESP32 to trigger the physical relay."
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Applied the ESP's reported configuration."
+msgstr "Applied the ESP's reported configuration."
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Approve Module"
 msgstr "Approve Module"
 
@@ -308,6 +312,10 @@ msgstr "Before"
 msgid "Below {0}{1} in last {2, plural, one {# minute} other {# minutes}}"
 msgstr "Below {0}{1} in last {2, plural, one {# minute} other {# minutes}}"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Beszel (Desired)"
+msgstr "Beszel (Desired)"
+
 #: src/components/login/auth-form.tsx
 msgid "Beszel supports OpenID Connect and many OAuth2 authentication providers."
 msgstr "Beszel supports OpenID Connect and many OAuth2 authentication providers."
@@ -332,6 +340,10 @@ msgstr "Boot state"
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Broadcast IP"
 msgstr "Broadcast IP"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Buzzer"
+msgstr "Buzzer"
 
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/general.tsx
@@ -670,9 +682,13 @@ msgstr "Detail"
 msgid "Device"
 msgstr "Device"
 
-#: src/components/routes/system/recovery-info.tsx
-#~ msgid "DISABLED"
-#~ msgstr "DISABLED"
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Disable"
+msgstr "Disable"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "DISABLED"
+msgstr "DISABLED"
 
 #. Context: Battery state
 #: src/lib/i18n.ts
@@ -781,6 +797,10 @@ msgstr "Empty"
 msgid "Enable Wake-on-LAN recovery packets."
 msgstr "Enable Wake-on-LAN recovery packets."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Enabled"
+msgstr "Enabled"
+
 #: src/components/routes/system/recovery-info.tsx
 #~ msgid "ENABLED"
 #~ msgstr "ENABLED"
@@ -835,10 +855,22 @@ msgstr "Ephemeral"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/tokens-fingerprints.tsx
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Error"
 msgstr "Error"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "ESP (Local Change)"
+msgstr "ESP (Local Change)"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "ESP IP Address"
@@ -979,6 +1011,18 @@ msgstr "FreeBSD command"
 msgid "Full"
 msgstr "Full"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Gateway"
+msgstr "Gateway"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Gateway IP"
+msgstr "Gateway IP"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Gateway name"
+msgstr "Gateway name"
+
 #. Context: General settings
 #: src/components/routes/settings/general.tsx
 #: src/components/routes/settings/layout.tsx
@@ -1038,6 +1082,10 @@ msgstr "Hardware Recovery Modules"
 msgid "Health"
 msgstr "Health"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Health Score"
+msgstr "Health Score"
+
 #: src/components/routes/system/recovery-info.tsx
 msgid "HEALTHY"
 msgstr "HEALTHY"
@@ -1047,12 +1095,12 @@ msgid "Heartbeat"
 msgstr "Heartbeat"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Heartbeat (s)"
-msgstr "Heartbeat (s)"
+#~ msgid "Heartbeat (s)"
+#~ msgstr "Heartbeat (s)"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Heartbeat interval updated."
-msgstr "Heartbeat interval updated."
+#~ msgid "Heartbeat interval updated."
+#~ msgstr "Heartbeat interval updated."
 
 #: src/components/routes/settings/heartbeat.tsx
 msgid "Heartbeat Monitoring"
@@ -1112,6 +1160,10 @@ msgstr "Idle"
 msgid "If you've lost the password to your admin account, you may reset it using the following command."
 msgstr "If you've lost the password to your admin account, you may reset it using the following command."
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Ignore"
+msgstr "Ignore"
+
 #: src/components/containers-table/containers-table-columns.tsx
 msgctxt "Docker image"
 msgid "Image"
@@ -1141,10 +1193,26 @@ msgstr "Invalid email address."
 msgid "IP Address (Optional)"
 msgstr "IP Address (Optional)"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Keep Beszel Value"
+msgstr "Keep Beszel Value"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Kept Beszel's configuration."
+msgstr "Kept Beszel's configuration."
+
 #: src/components/lang-toggle.tsx
 #: src/components/routes/settings/general.tsx
 msgid "Language"
 msgstr "Language"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Last Heartbeat"
+msgstr "Last Heartbeat"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Last Recovery"
+msgstr "Last Recovery"
 
 #: src/components/systems-table/systems-table.tsx
 msgid "Layout"
@@ -1187,6 +1255,10 @@ msgstr "Load Avg"
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Load state"
 msgstr "Load state"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Loading conflict details..."
+msgstr "Loading conflict details..."
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Loading events..."
@@ -1239,14 +1311,21 @@ msgid "Main PID"
 msgstr "Main PID"
 
 #: src/components/routes/settings/recovery-modules.tsx
-#: src/components/routes/system/recovery-info.tsx
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "MAINTENANCE"
 msgstr "MAINTENANCE"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAINTENANCE ACTIVE"
+msgstr "MAINTENANCE ACTIVE"
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Maintenance Mode"
 msgstr "Maintenance Mode"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "MAINTENANCE REQUESTED"
+msgstr "MAINTENANCE REQUESTED"
 
 #: src/components/routes/settings/layout.tsx
 msgid "Manage display and notification preferences."
@@ -1310,6 +1389,10 @@ msgstr "Memory usage of docker containers"
 msgid "Model"
 msgstr "Model"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Mute"
+msgstr "Mute"
+
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
@@ -1343,6 +1426,10 @@ msgstr "Network traffic of public interfaces"
 #: src/components/routes/settings/general.tsx
 msgid "Network unit"
 msgstr "Network unit"
+
+#: src/components/routes/system/recovery-info.tsx
+msgid "Never"
+msgstr "Never"
 
 #: src/components/systemd-table/systemd-table.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -1405,8 +1492,8 @@ msgid "OFFLINE"
 msgstr "OFFLINE"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "OFFLINE PENDING"
-msgstr "OFFLINE PENDING"
+#~ msgid "OFFLINE PENDING"
+#~ msgstr "OFFLINE PENDING"
 
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
@@ -1544,6 +1631,14 @@ msgstr "Physical relay reboot triggered"
 msgid "Physical watchdogs & channels"
 msgstr "Physical watchdogs & channels"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Ping Interval (s)"
+msgstr "Ping Interval (s)"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Ping interval updated."
+msgstr "Ping interval updated."
+
 #: src/components/routes/settings/notifications.tsx
 msgid "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
 msgstr "Please <0>configure an SMTP server</0> to ensure alerts are delivered."
@@ -1631,6 +1726,10 @@ msgstr "Queue Depth"
 msgid "Quiet Hours"
 msgstr "Quiet Hours"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Re-enable"
+msgstr "Re-enable"
+
 #. Disk read
 #: src/components/routes/system/charts/disk-charts.tsx
 #: src/components/routes/system/disk-io-sheet.tsx
@@ -1653,6 +1752,10 @@ msgid "Recovery"
 msgstr "Recovery"
 
 #: src/components/routes/system/recovery-info.tsx
+msgid "Recovery Count"
+msgstr "Recovery Count"
+
+#: src/components/routes/system/recovery-info.tsx
 msgid "Recovery Module"
 msgstr "Recovery Module"
 
@@ -1661,8 +1764,28 @@ msgid "Recovery module added successfully."
 msgstr "Recovery module added successfully."
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module disabled."
+msgstr "Recovery module disabled."
+
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Recovery module has been approved."
 msgstr "Recovery module has been approved."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module ignored."
+msgstr "Recovery module ignored."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module re-enabled."
+msgstr "Recovery module re-enabled."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module rejected."
+msgstr "Recovery module rejected."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Recovery module removed."
+msgstr "Recovery module removed."
 
 #: src/components/navbar.tsx
 #: src/components/navbar.tsx
@@ -1681,6 +1804,10 @@ msgstr "Recovery Protection"
 msgid "Refresh"
 msgstr "Refresh"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Reject"
+msgstr "Reject"
+
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Relationships"
 msgstr "Relationships"
@@ -1692,6 +1819,14 @@ msgstr "Relay Channel"
 #: src/components/routes/system/recovery-info.tsx
 msgid "Relay trigger failed"
 msgstr "Relay trigger failed"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Remove"
+msgstr "Remove"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Remove \"{name}\" permanently? This cannot be undone. The physical ESP32 will keep running its own local watchdog independently."
+msgstr "Remove \"{name}\" permanently? This cannot be undone. The physical ESP32 will keep running its own local watchdog independently."
 
 #: src/components/login/login.tsx
 msgid "Request a one-time password"
@@ -1713,6 +1848,14 @@ msgstr "Requires"
 msgid "Reset Password"
 msgstr "Reset Password"
 
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Resolve Configuration Conflict"
+msgstr "Resolve Configuration Conflict"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Resolve Conflict"
+msgstr "Resolve Conflict"
+
 #: src/components/alerts-history-columns.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/routes/settings/alerts-history-data-table.tsx
@@ -1730,6 +1873,10 @@ msgstr "Restarts"
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "Resume"
 msgstr "Resume"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Revision"
+msgstr "Revision"
 
 #: src/components/systems-table/systems-table-columns.tsx
 msgctxt "Root disk label"
@@ -1919,6 +2066,12 @@ msgstr "Sub State"
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "Success"
 msgstr "Success"
 
@@ -1943,9 +2096,13 @@ msgstr "Swap Usage"
 msgid "Switch theme"
 msgstr "Switch theme"
 
+#: src/components/routes/system/recovery-info.tsx
+msgid "SYNC ISSUE"
+msgstr "SYNC ISSUE"
+
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "SYNCED"
-msgstr "SYNCED"
+#~ msgid "SYNCED"
+#~ msgstr "SYNCED"
 
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
@@ -2012,8 +2169,12 @@ msgid "Temperature"
 msgstr "Temperature"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Temperature Thresholds"
-msgstr "Temperature Thresholds"
+msgid "Temperature Monitoring"
+msgstr "Temperature Monitoring"
+
+#: src/components/routes/settings/recovery-modules.tsx
+#~ msgid "Temperature Thresholds"
+#~ msgstr "Temperature Thresholds"
 
 #: src/components/routes/settings/general.tsx
 msgid "Temperature unit"
@@ -2066,6 +2227,10 @@ msgstr "Then log into the backend and reset your user account password in the us
 #: src/components/systems-table/systems-table-columns.tsx
 msgid "This action cannot be undone. This will permanently delete all current records for {name} from the database."
 msgstr "This action cannot be undone. This will permanently delete all current records for {name} from the database."
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "This module reported a local settings change that was made while Beszel's desired configuration had already moved on. Choose which side's configuration should win."
+msgstr "This module reported a local settings change that was made while Beszel's desired configuration had already moved on. Choose which side's configuration should win."
 
 #: src/components/routes/settings/alerts-history-data-table.tsx
 msgid "This will permanently delete all selected records from the database."
@@ -2288,6 +2453,10 @@ msgstr "Usage"
 #: src/components/routes/system/charts/disk-charts.tsx
 msgid "Usage of root partition"
 msgstr "Usage of root partition"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "Use ESP Value"
+msgstr "Use ESP Value"
 
 #: src/components/routes/system/charts/memory-charts.tsx
 #: src/components/routes/system/charts/memory-charts.tsx

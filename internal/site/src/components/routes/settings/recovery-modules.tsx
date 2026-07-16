@@ -30,11 +30,27 @@ interface RecoveryModule {
 	mac_address: string
 	ip_address?: string
 	max_channels: number
-	heartbeat_interval?: number
+	ping_interval_seconds?: number
 	firmware_version: string
 	status: string
 	config_revision: number
 	config_hash?: string
+	reported_config_revision?: number
+	reported_config_hash?: string
+	last_config_source?: string
+	pending_esp_change?: boolean
+	sync_status?: string
+	health_score?: number
+	health_reasons?: string[]
+	gateway_ip?: string
+	gateway_name?: string
+	gateway_online?: boolean
+	temperature?: number
+	temperature_monitoring_disabled?: boolean
+	temp_threshold_warning?: number
+	temp_threshold_critical?: number
+	buzzer_disabled?: boolean
+	buzzer_muted?: boolean
 	updated: string
 }
 
@@ -67,11 +83,49 @@ interface SystemItem {
 	host: string
 }
 
+// syncStatusMeta maps each config-sync state to a Badge variant and label,
+// keeping the mapping in one place instead of repeating it inline.
+const syncStatusMeta: Record<string, { variant: "success" | "warning" | "destructive" | "secondary"; label: string }> = {
+	SYNCED: { variant: "success", label: "SYNCED" },
+	SYNC_PENDING: { variant: "warning", label: "SYNC PENDING" },
+	OFFLINE_PENDING: { variant: "warning", label: "OFFLINE PENDING" },
+	CONFLICT: { variant: "destructive", label: "CONFLICT" },
+	SYNC_ERROR: { variant: "destructive", label: "SYNC ERROR" },
+}
+
+function healthScoreColor(score: number): string {
+	if (score >= 90) return "text-green-500"
+	if (score >= 75) return "text-yellow-500"
+	if (score >= 50) return "text-orange-500"
+	return "text-red-500"
+}
+
+// timeAgo renders a short relative-time string ("4s ago", "3m ago", ...) for
+// the "Last Heartbeat" display, avoiding a new date-formatting dependency.
+function timeAgo(dateStr?: string): string {
+	if (!dateStr) return "N/A"
+	const diffMs = Date.now() - new Date(dateStr).getTime()
+	const diffSec = Math.max(0, Math.floor(diffMs / 1000))
+	if (diffSec < 60) return `${diffSec}s ago`
+	if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+	if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+	return `${Math.floor(diffSec / 86400)}d ago`
+}
+
 export default function RecoveryModulesSettings() {
 	const [modules, setModules] = useState<RecoveryModule[]>([])
 	const [channels, setChannels] = useState<RecoveryChannel[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [isApproving, setIsApproving] = useState<Record<string, boolean>>({})
+
+	// Conflict resolution dialog state
+	const [conflictDialogOpen, setConflictDialogOpen] = useState(false)
+	const [conflictModuleId, setConflictModuleId] = useState("")
+	const [conflictData, setConflictData] = useState<{
+		esp_change?: { module?: Record<string, unknown>; channels?: Record<string, unknown>[] }
+		desired?: { config_revision: number; config_hash: string }
+	} | null>(null)
+	const [isResolvingConflict, setIsResolvingConflict] = useState(false)
 
 	const [dialogOpen, setDialogOpen] = useState(false)
 	const [newName, setNewName] = useState("")
@@ -120,6 +174,113 @@ export default function RecoveryModulesSettings() {
 			})
 		} finally {
 			setIsApproving((prev) => ({ ...prev, [id]: false }))
+		}
+	}
+
+	// ignoreModule/rejectModule mirror approveModule's direct-collection-update
+	// pattern. Ignored/rejected modules are never treated as approved by
+	// handleRecoveryPing, so a rejected ESP that keeps pinging in stays
+	// unapproved-equivalent rather than being silently re-approved.
+	async function ignoreModule(id: string) {
+		try {
+			await pb.collection("recovery_modules").update(id, { status: "ignored" })
+			toast({ title: t`Success`, description: t`Recovery module ignored.` })
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	async function rejectModule(id: string) {
+		try {
+			await pb.collection("recovery_modules").update(id, { status: "rejected" })
+			toast({ title: t`Success`, description: t`Recovery module rejected.` })
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	async function disableModule(id: string) {
+		try {
+			await pb.collection("recovery_modules").update(id, { status: "disabled" })
+			toast({ title: t`Success`, description: t`Recovery module disabled.` })
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	async function reenableModule(id: string) {
+		try {
+			await pb.collection("recovery_modules").update(id, { status: "online" })
+			toast({ title: t`Success`, description: t`Recovery module re-enabled.` })
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	// removeModule deletes the module record outright. Per the spec, channel
+	// mappings should be cleared first so historical recovery_events (which
+	// only reference the module/channel by ID, not a hard foreign key
+	// requirement) remain queryable without a dangling reference assumption.
+	async function removeModule(id: string, name: string) {
+		if (!confirm(t`Remove "${name}" permanently? This cannot be undone. The physical ESP32 will keep running its own local watchdog independently.`)) return
+		try {
+			const moduleChannels = channels.filter((ch) => ch.module === id)
+			for (const ch of moduleChannels) {
+				await pb.collection("recovery_channels").delete(ch.id)
+			}
+			await pb.collection("recovery_modules").delete(id)
+			toast({ title: t`Success`, description: t`Recovery module removed.` })
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	// updateModuleField is the shared confirmed-update path for the simple
+	// module-level settings below (gateway, temperature, buzzer) - same
+	// pattern as updatePingInterval, generalized to any field.
+	async function updateModuleField(id: string, fields: Record<string, unknown>) {
+		try {
+			await pb.collection("recovery_modules").update(id, fields)
+			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...fields } : m)))
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	async function openConflictDialog(id: string) {
+		setConflictModuleId(id)
+		setConflictDialogOpen(true)
+		setConflictData(null)
+		try {
+			const res = await pb.send(`/api/beszel/recovery/module/conflict`, { query: { id } })
+			setConflictData(res)
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	async function resolveConflict(useEsp: boolean) {
+		setIsResolvingConflict(true)
+		try {
+			await pb.send("/api/beszel/recovery/module/conflict", {
+				method: "POST",
+				body: { module_id: conflictModuleId, use_esp: useEsp },
+			})
+			toast({
+				title: t`Success`,
+				description: useEsp ? t`Applied the ESP's reported configuration.` : t`Kept Beszel's configuration.`,
+			})
+			setConflictDialogOpen(false)
+			fetchData()
+		} catch (error) {
+			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		} finally {
+			setIsResolvingConflict(false)
 		}
 	}
 
@@ -212,8 +373,8 @@ export default function RecoveryModulesSettings() {
 
 		const ports = mapProbePorts
 			.split(",")
-			.map((p) => parseInt(p.trim()))
-			.filter((p) => !isNaN(p))
+			.map((p) => parseInt(p.trim(), 10))
+			.filter((p) => !Number.isNaN(p))
 		if (ports.length === 0) {
 			ports.push(22)
 		}
@@ -288,11 +449,11 @@ export default function RecoveryModulesSettings() {
 		}
 	}
 
-	async function updateHeartbeat(id: string, value: number) {
+	async function updatePingInterval(id: string, value: number) {
 		try {
-			await pb.collection("recovery_modules").update(id, { heartbeat_interval: value })
-			toast({ title: t`Success`, description: t`Heartbeat interval updated.` })
-			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, heartbeat_interval: value } : m)))
+			await pb.collection("recovery_modules").update(id, { ping_interval_seconds: value })
+			toast({ title: t`Success`, description: t`Ping interval updated.` })
+			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ping_interval_seconds: value } : m)))
 		} catch (error) {
 			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
 		}
@@ -456,8 +617,9 @@ export default function RecoveryModulesSettings() {
 					{modules.map((mod) => {
 						const moduleChannels = channels.filter((ch) => ch.module === mod.id)
 						const isUnapproved = mod.status === "unapproved"
+						const isDisabled = mod.status === "disabled"
 						const isOnline = mod.status === "online" || mod.status === "ONLINE"
-						const temp = mod.temperature
+						const temp = mod.temperature ?? 0
 						const tempWarn = mod.temp_threshold_warning || 50
 						const tempCrit = mod.temp_threshold_critical || 60
 						let tempColor = "text-green-500 font-semibold"
@@ -472,8 +634,16 @@ export default function RecoveryModulesSettings() {
 									<div>
 										<CardTitle className="text-lg font-semibold flex items-center gap-2">
 											{mod.name}
-											<Badge variant={isUnapproved ? "warning" : isOnline ? "success" : "secondary"}>
-												{isUnapproved ? <Trans>WAITING APPROVAL</Trans> : isOnline ? <Trans>ONLINE</Trans> : <Trans>OFFLINE</Trans>}
+											<Badge variant={isUnapproved ? "warning" : isDisabled ? "secondary" : isOnline ? "success" : "secondary"}>
+												{isUnapproved ? (
+													<Trans>WAITING APPROVAL</Trans>
+												) : isDisabled ? (
+													<Trans>DISABLED</Trans>
+												) : isOnline ? (
+													<Trans>ONLINE</Trans>
+												) : (
+													<Trans>OFFLINE</Trans>
+												)}
 											</Badge>
 										</CardTitle>
 										<CardDescription className="font-mono text-xs mt-1">
@@ -488,28 +658,48 @@ export default function RecoveryModulesSettings() {
 										</CardDescription>
 									</div>
 									{isUnapproved ? (
-										<Button
-											size="sm"
-											onClick={() => approveModule(mod.id)}
-											disabled={isApproving[mod.id]}
-										>
-											{isApproving[mod.id] ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
-											<Trans>Approve Module</Trans>
-										</Button>
+										<div className="flex items-center gap-2">
+											<Button size="sm" variant="ghost" onClick={() => rejectModule(mod.id)}>
+												<Trans>Reject</Trans>
+											</Button>
+											<Button size="sm" variant="outline" onClick={() => ignoreModule(mod.id)}>
+												<Trans>Ignore</Trans>
+											</Button>
+											<Button size="sm" onClick={() => approveModule(mod.id)} disabled={isApproving[mod.id]}>
+												{isApproving[mod.id] ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
+												<Trans>Approve Module</Trans>
+											</Button>
+										</div>
 									) : (
-										mod.ip_address && (
-											<div className="flex flex-col items-end gap-1.5">
+										<div className="flex flex-col items-end gap-1.5">
+											{mod.ip_address && (
 												<Button variant="outline" size="sm" asChild>
 													<a href={`http://${mod.ip_address}`} target="_blank" rel="noopener noreferrer">
 														<Trans>Open Local ESP Portal</Trans>
 														<ExternalLinkIcon className="h-3 w-3 ml-1.5" />
 													</a>
 												</Button>
+											)}
+											<div className="flex items-center gap-2">
+												{isDisabled ? (
+													<Button size="sm" variant="outline" onClick={() => reenableModule(mod.id)}>
+														<Trans>Re-enable</Trans>
+													</Button>
+												) : (
+													<Button size="sm" variant="outline" onClick={() => disableModule(mod.id)}>
+														<Trans>Disable</Trans>
+													</Button>
+												)}
+												<Button size="sm" variant="destructive" onClick={() => removeModule(mod.id, mod.name)}>
+													<Trans>Remove</Trans>
+												</Button>
+											</div>
+											{mod.ip_address && (
 												<span className="text-[10px] text-muted-foreground text-right max-w-[200px] leading-tight">
 													<Trans>Address is LAN-local and may be stale if the module is offline.</Trans>
 												</span>
-											</div>
-										)
+											)}
+										</div>
 									)}
 								</CardHeader>
 								<CardContent className="space-y-4">
@@ -520,16 +710,32 @@ export default function RecoveryModulesSettings() {
 											</span>
 											<div className="font-semibold flex items-center gap-1.5 mt-0.5">
 												<ShieldCheckIcon
-													className={`h-4 w-4 ${isOnline ? "text-green-500" : "text-muted-foreground"}`}
+													className={`h-4 w-4 ${
+														mod.sync_status === "SYNCED"
+															? "text-green-500"
+															: mod.sync_status === "CONFLICT" || mod.sync_status === "SYNC_ERROR"
+																? "text-red-500"
+																: "text-muted-foreground"
+													}`}
 												/>
 												{isUnapproved ? (
 													<Trans>UNAPPROVED</Trans>
-												) : isOnline ? (
-													<Trans>SYNCED</Trans>
 												) : (
-													<Trans>OFFLINE PENDING</Trans>
+													<Badge variant={syncStatusMeta[mod.sync_status ?? ""]?.variant ?? (isOnline ? "success" : "secondary")}>
+														{syncStatusMeta[mod.sync_status ?? ""]?.label ?? (isOnline ? "SYNCED" : "OFFLINE PENDING")}
+													</Badge>
 												)}
 											</div>
+											{!isUnapproved && mod.sync_status === "CONFLICT" && (
+												<Button
+													size="sm"
+													variant="destructive"
+													className="mt-1.5 h-6 px-2 text-[11px]"
+													onClick={() => openConflictDialog(mod.id)}
+												>
+													<Trans>Resolve Conflict</Trans>
+												</Button>
+											)}
 										</div>
 										<div>
 											<span className="text-muted-foreground">
@@ -539,26 +745,130 @@ export default function RecoveryModulesSettings() {
 										</div>
 										<div>
 											<span className="text-muted-foreground">
-												<Trans>Heartbeat (s)</Trans>
+												<Trans>Ping Interval (s)</Trans>
 											</span>
 											<div className="mt-0.5">
 												<Input
 													type="number"
 													className="h-7 w-20 px-2 py-1 text-xs"
-													defaultValue={mod.heartbeat_interval || 30}
+													defaultValue={mod.ping_interval_seconds || 30}
 													onBlur={(e) => {
-														const val = parseInt(e.target.value)
-														if (!isNaN(val) && val >= 5) updateHeartbeat(mod.id, val)
+														const val = parseInt(e.target.value, 10)
+														if (!Number.isNaN(val) && val >= 5) updatePingInterval(mod.id, val)
 													}}
 												/>
 											</div>
 										</div>
 										<div>
 											<span className="text-muted-foreground">
-												<Trans>Temperature Thresholds</Trans>
+												<Trans>Health Score</Trans>
 											</span>
-											<div className="font-semibold text-xs mt-0.5">
-												<Trans>Warn</Trans>: {mod.temp_threshold_warning || 50}°C / <Trans>Crit</Trans>: {mod.temp_threshold_critical || 60}°C
+											<div
+												className={`font-semibold mt-0.5 ${healthScoreColor(mod.health_score ?? 0)}`}
+												title={mod.health_reasons?.join(", ")}
+											>
+												{mod.health_score !== undefined ? `${mod.health_score}%` : "N/A"}
+											</div>
+										</div>
+										<div>
+											<span className="text-muted-foreground">
+												<Trans>Last Heartbeat</Trans>
+											</span>
+											<div className="font-semibold mt-0.5">{timeAgo(mod.updated)}</div>
+										</div>
+										<div>
+											<span className="text-muted-foreground">
+												<Trans>Gateway</Trans>
+											</span>
+											<div className="mt-0.5 space-y-1">
+												<div className="flex items-center gap-1">
+													<ShieldCheckIcon
+														className={`h-3.5 w-3.5 shrink-0 ${mod.gateway_online ? "text-green-500" : "text-muted-foreground"}`}
+													/>
+													<Input
+														className="h-7 px-2 py-1 text-xs"
+														defaultValue={mod.gateway_name || ""}
+														placeholder={t`Gateway name`}
+														onBlur={(e) => {
+															const val = e.target.value.trim()
+															if (val !== (mod.gateway_name || "")) updateModuleField(mod.id, { gateway_name: val })
+														}}
+													/>
+												</div>
+												<Input
+													className="h-7 px-2 py-1 text-xs font-mono"
+													defaultValue={mod.gateway_ip || ""}
+													placeholder={t`Gateway IP`}
+													onBlur={(e) => {
+														const val = e.target.value.trim()
+														if (val !== (mod.gateway_ip || "")) updateModuleField(mod.id, { gateway_ip: val })
+													}}
+												/>
+											</div>
+										</div>
+										<div>
+											<div className="flex items-center justify-between gap-2">
+												<span className="text-muted-foreground">
+													<Trans>Temperature Monitoring</Trans>
+												</span>
+												<Switch
+													checked={!mod.temperature_monitoring_disabled}
+													onCheckedChange={(checked) =>
+														updateModuleField(mod.id, { temperature_monitoring_disabled: !checked })
+													}
+												/>
+											</div>
+											{!mod.temperature_monitoring_disabled && (
+												<div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+													<Trans>Warn</Trans>
+													<Input
+														type="number"
+														className="h-6 w-14 px-1 py-0.5 text-xs"
+														defaultValue={tempWarn}
+														onBlur={(e) => {
+															const val = parseInt(e.target.value, 10)
+															if (!Number.isNaN(val)) updateModuleField(mod.id, { temp_threshold_warning: val })
+														}}
+													/>
+													°C /
+													<Trans>Crit</Trans>
+													<Input
+														type="number"
+														className="h-6 w-14 px-1 py-0.5 text-xs"
+														defaultValue={tempCrit}
+														onBlur={(e) => {
+															const val = parseInt(e.target.value, 10)
+															if (!Number.isNaN(val)) updateModuleField(mod.id, { temp_threshold_critical: val })
+														}}
+													/>
+													°C
+												</div>
+											)}
+										</div>
+										<div>
+											<span className="text-muted-foreground">
+												<Trans>Buzzer</Trans>
+											</span>
+											<div className="mt-1 flex items-center gap-3">
+												<div className="flex items-center gap-1.5">
+													<Switch
+														checked={!mod.buzzer_disabled}
+														onCheckedChange={(checked) => updateModuleField(mod.id, { buzzer_disabled: !checked })}
+													/>
+													<span className="text-xs text-muted-foreground">
+														<Trans>Enabled</Trans>
+													</span>
+												</div>
+												<div className="flex items-center gap-1.5">
+													<Switch
+														checked={mod.buzzer_muted ?? false}
+														disabled={mod.buzzer_disabled}
+														onCheckedChange={(checked) => updateModuleField(mod.id, { buzzer_muted: checked })}
+													/>
+													<span className="text-xs text-muted-foreground">
+														<Trans>Mute</Trans>
+													</span>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -611,7 +921,7 @@ export default function RecoveryModulesSettings() {
 																</Badge>
 															)}
 															<Button
-																size="xs"
+																size="sm"
 																variant="ghost"
 																className="h-7 px-2"
 																onClick={() => openMappingDialog(mod.id, chanNum, mapping)}
@@ -827,6 +1137,71 @@ export default function RecoveryModulesSettings() {
 							</div>
 						</DialogFooter>
 					</form>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle>
+							<Trans>Resolve Configuration Conflict</Trans>
+						</DialogTitle>
+						<DialogDescription>
+							<Trans>
+								This module reported a local settings change that was made while Beszel's desired configuration had
+								already moved on. Choose which side's configuration should win.
+							</Trans>
+						</DialogDescription>
+					</DialogHeader>
+					{!conflictData ? (
+						<div className="flex justify-center items-center h-24 text-muted-foreground text-sm">
+							<LoaderCircleIcon className="h-5 w-5 animate-spin mr-2" />
+							<Trans>Loading conflict details...</Trans>
+						</div>
+					) : (
+						<div className="grid sm:grid-cols-2 gap-3 text-sm">
+							<div className="border rounded-lg p-3 space-y-1.5 bg-muted/20">
+								<div className="font-semibold flex items-center gap-1.5">
+									<Trans>Beszel (Desired)</Trans>
+								</div>
+								<div className="text-xs text-muted-foreground">
+									<Trans>Revision</Trans>: {conflictData.desired?.config_revision}
+								</div>
+								<div className="text-xs font-mono break-all text-muted-foreground">
+									{conflictData.desired?.config_hash}
+								</div>
+							</div>
+							<div className="border rounded-lg p-3 space-y-1.5 bg-muted/20">
+								<div className="font-semibold flex items-center gap-1.5">
+									<Trans>ESP (Local Change)</Trans>
+								</div>
+								{conflictData.esp_change?.module && (
+									<pre className="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">
+										{JSON.stringify(conflictData.esp_change.module, null, 2)}
+									</pre>
+								)}
+								{conflictData.esp_change?.channels && conflictData.esp_change.channels.length > 0 && (
+									<pre className="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">
+										{JSON.stringify(conflictData.esp_change.channels, null, 2)}
+									</pre>
+								)}
+							</div>
+						</div>
+					)}
+					<DialogFooter className="pt-2">
+						<Button
+							variant="outline"
+							disabled={isResolvingConflict || !conflictData}
+							onClick={() => resolveConflict(false)}
+						>
+							{isResolvingConflict ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
+							<Trans>Keep Beszel Value</Trans>
+						</Button>
+						<Button disabled={isResolvingConflict || !conflictData} onClick={() => resolveConflict(true)}>
+							{isResolvingConflict ? <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" /> : null}
+							<Trans>Use ESP Value</Trans>
+						</Button>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 		</div>

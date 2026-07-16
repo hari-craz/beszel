@@ -148,6 +148,9 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	apiAuth.POST("/recovery/relay", h.triggerManualRelay)
 	apiAuth.POST("/recovery/shutdown", h.triggerManualShutdown)
 	apiAuth.POST("/recovery/force-restart", h.triggerManualForceRestart)
+	apiAuth.GET("/recovery/module/conflict", h.getRecoveryModuleConflict)
+	apiAuth.POST("/recovery/module/conflict", h.resolveRecoveryModuleConflict)
+	apiAuth.GET("/recovery/stats", h.getRecoveryStats)
 	return nil
 }
 
@@ -457,6 +460,176 @@ func (h *Hub) refreshSmartData(e *core.RequestEvent) error {
 	return e.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// computeRecoverySyncStatus derives the module's config-sync state from
+// desired (config_revision/config_hash) vs. reported
+// (reported_config_revision/reported_config_hash) values, plus whether an
+// ESP-side change is pending manual conflict resolution. Revision numbers
+// are the authoritative signal; hash is only used to catch a same-revision
+// mismatch (SYNC_ERROR) since the ESP and hub don't share a hash algorithm.
+func computeRecoverySyncStatus(rec *core.Record) string {
+	if rec.GetBool("pending_esp_change") {
+		return "CONFLICT"
+	}
+	desiredRev := rec.GetInt("config_revision")
+	reportedRev := rec.GetInt("reported_config_revision")
+
+	if rec.GetString("status") == "offline" {
+		if reportedRev < desiredRev {
+			return "OFFLINE_PENDING"
+		}
+		return "SYNCED"
+	}
+	if reportedRev == desiredRev {
+		desiredHash := rec.GetString("config_hash")
+		reportedHash := rec.GetString("reported_config_hash")
+		if desiredHash != "" && reportedHash != "" && desiredHash != reportedHash {
+			return "SYNC_ERROR"
+		}
+		return "SYNCED"
+	}
+	if reportedRev < desiredRev {
+		return "SYNC_PENDING"
+	}
+	// reportedRev > desiredRev without pending_esp_change - the ESP is ahead
+	// of what the hub expects outside of the normal accept/conflict path.
+	return "SYNC_ERROR"
+}
+
+// recoveryHealthScore is the weighted 0-100 Recovery Protection score plus a
+// breakdown of any lost points, adapted to telemetry Beszel actually
+// collects today (no reset-reason counting yet, so "firmware/integration"
+// stands in for reset stability).
+type recoveryHealthScore struct {
+	Score   int      `json:"score"`
+	Reasons []string `json:"reasons"`
+}
+
+// computeRecoveryHealthScore weighs: heartbeat/online (30), config sync (20),
+// channel protection (20), gateway health (10), temperature (10), and
+// firmware/integration (10).
+func computeRecoveryHealthScore(rec *core.Record, syncStatus string, channels []map[string]any) recoveryHealthScore {
+	score := 0
+	var reasons []string
+
+	switch rec.GetString("status") {
+	case "online":
+		score += 30
+	case "unapproved":
+		reasons = append(reasons, "Module is awaiting approval")
+	default:
+		reasons = append(reasons, "Module is offline")
+	}
+
+	if syncStatus == "SYNCED" {
+		score += 20
+	} else {
+		reasons = append(reasons, fmt.Sprintf("Configuration sync status is %s", syncStatus))
+	}
+
+	if total := len(channels); total > 0 {
+		protected := 0
+		for _, ch := range channels {
+			hasSystem, _ := ch["system"].(string)
+			disabled, _ := ch["hardware_recovery_disabled"].(bool)
+			if hasSystem != "" && !disabled {
+				protected++
+			}
+		}
+		score += int(20 * float64(protected) / float64(total))
+		if protected < total {
+			reasons = append(reasons, fmt.Sprintf("%d of %d channels lack full protection", total-protected, total))
+		}
+	} else {
+		reasons = append(reasons, "No channels configured")
+	}
+
+	if rec.GetString("gateway_ip") == "" {
+		score += 10 // no gateway configured to check - don't penalize
+	} else if rec.GetBool("gateway_online") {
+		score += 10
+	} else {
+		reasons = append(reasons, "Gateway is unreachable")
+	}
+
+	if rec.GetBool("temperature_monitoring_disabled") {
+		score += 10 // intentionally disabled - don't penalize
+	} else {
+		temp := rec.GetFloat("temperature")
+		warn := rec.GetFloat("temp_threshold_warning")
+		crit := rec.GetFloat("temp_threshold_critical")
+		if warn == 0 {
+			warn = 50
+		}
+		if crit == 0 {
+			crit = 60
+		}
+		if temp >= crit {
+			reasons = append(reasons, fmt.Sprintf("Temperature critical (%.1f°C)", temp))
+		} else if temp >= warn {
+			score += 5
+			reasons = append(reasons, fmt.Sprintf("Temperature elevated (%.1f°C)", temp))
+		} else {
+			score += 10
+		}
+	}
+
+	if rec.GetString("firmware_version") != "" && rec.GetString("status") != "unapproved" {
+		score += 10
+	} else {
+		reasons = append(reasons, "Module not fully integrated")
+	}
+
+	return recoveryHealthScore{Score: score, Reasons: reasons}
+}
+
+// buildRecoveryModuleResponse assembles the full JSON response for a single
+// recovery_modules record, shared by getRecoveryModules and getRecoveryModule
+// so both endpoints stay in sync as fields are added.
+func (h *Hub) buildRecoveryModuleResponse(e *core.RequestEvent, rec *core.Record) map[string]any {
+	var channels []map[string]any
+	chRecords, _ := e.App.FindRecordsByFilter("recovery_channels", "module = {:module}", "", -1, 0, dbx.Params{"module": rec.Id})
+	for _, ch := range chRecords {
+		channels = append(channels, map[string]any{
+			"system":                     ch.GetString("system"),
+			"hardware_recovery_disabled": ch.GetBool("hardware_recovery_disabled"),
+		})
+	}
+
+	syncStatus := computeRecoverySyncStatus(rec)
+	health := computeRecoveryHealthScore(rec, syncStatus, channels)
+
+	return map[string]any{
+		"id":                               rec.Id,
+		"name":                             rec.GetString("name"),
+		"mac_address":                      rec.GetString("mac_address"),
+		"ip_address":                       rec.GetString("ip_address"),
+		"gateway_ip":                       rec.GetString("gateway_ip"),
+		"gateway_name":                     rec.GetString("gateway_name"),
+		"gateway_online":                   rec.GetBool("gateway_online"),
+		"max_channels":                     rec.GetInt("max_channels"),
+		"firmware_version":                 rec.GetString("firmware_version"),
+		"status":                           rec.GetString("status"),
+		"config_revision":                  rec.GetInt("config_revision"),
+		"config_hash":                      rec.GetString("config_hash"),
+		"reported_config_revision":         rec.GetInt("reported_config_revision"),
+		"reported_config_hash":             rec.GetString("reported_config_hash"),
+		"last_config_source":               rec.GetString("last_config_source"),
+		"pending_esp_change":               rec.GetBool("pending_esp_change"),
+		"sync_status":                      syncStatus,
+		"health_score":                     health.Score,
+		"health_reasons":                   health.Reasons,
+		"ping_interval_seconds":            rec.GetInt("ping_interval_seconds"),
+		"temperature":                      rec.GetFloat("temperature"),
+		"temperature_monitoring_disabled":  rec.GetBool("temperature_monitoring_disabled"),
+		"temp_threshold_warning":           rec.GetFloat("temp_threshold_warning"),
+		"temp_threshold_critical":          rec.GetFloat("temp_threshold_critical"),
+		"buzzer_disabled":                  rec.GetBool("buzzer_disabled"),
+		"buzzer_muted":                     rec.GetBool("buzzer_muted"),
+		"created":                          rec.GetDateTime("created").Time(),
+		"updated":                          rec.GetDateTime("updated").Time(),
+	}
+}
+
 // getRecoveryModules handles GET /api/beszel/recovery/modules requests
 func (h *Hub) getRecoveryModules(e *core.RequestEvent) error {
 	var modules []map[string]any
@@ -465,24 +638,7 @@ func (h *Hub) getRecoveryModules(e *core.RequestEvent) error {
 		return e.InternalServerError("Failed to query recovery modules", err)
 	}
 	for _, rec := range records {
-		modules = append(modules, map[string]any{
-			"id":               rec.Id,
-			"name":             rec.GetString("name"),
-			"mac_address":      rec.GetString("mac_address"),
-			"ip_address":       rec.GetString("ip_address"),
-			"gateway_ip":       rec.GetString("gateway_ip"),
-			"gateway_name":     rec.GetString("gateway_name"),
-			"max_channels":     rec.GetInt("max_channels"),
-			"firmware_version": rec.GetString("firmware_version"),
-			"status":           rec.GetString("status"),
-			"config_revision":  rec.GetInt("config_revision"),
-			"config_hash":      rec.GetString("config_hash"),
-			"temperature":      rec.GetFloat("temperature"),
-			"temp_threshold_warning": rec.GetFloat("temp_threshold_warning"),
-			"temp_threshold_critical": rec.GetFloat("temp_threshold_critical"),
-			"created":          rec.GetDateTime("created").Time(),
-			"updated":          rec.GetDateTime("updated").Time(),
-		})
+		modules = append(modules, h.buildRecoveryModuleResponse(e, rec))
 	}
 	return e.JSON(http.StatusOK, modules)
 }
@@ -497,25 +653,107 @@ func (h *Hub) getRecoveryModule(e *core.RequestEvent) error {
 	if err != nil {
 		return e.NotFoundError("Recovery module not found", err)
 	}
-	module := map[string]any{
-		"id":               rec.Id,
-		"name":             rec.GetString("name"),
-		"mac_address":      rec.GetString("mac_address"),
-		"ip_address":       rec.GetString("ip_address"),
-		"gateway_ip":       rec.GetString("gateway_ip"),
-		"gateway_name":     rec.GetString("gateway_name"),
-		"max_channels":     rec.GetInt("max_channels"),
-		"firmware_version": rec.GetString("firmware_version"),
-		"status":           rec.GetString("status"),
-		"config_revision":  rec.GetInt("config_revision"),
-		"config_hash":      rec.GetString("config_hash"),
-		"temperature":      rec.GetFloat("temperature"),
-		"temp_threshold_warning": rec.GetFloat("temp_threshold_warning"),
-		"temp_threshold_critical": rec.GetFloat("temp_threshold_critical"),
-		"created":          rec.GetDateTime("created").Time(),
-		"updated":          rec.GetDateTime("updated").Time(),
+	return e.JSON(http.StatusOK, h.buildRecoveryModuleResponse(e, rec))
+}
+
+// getRecoveryModuleConflict handles GET /api/beszel/recovery/module/conflict
+// requests, returning the pending ESP-reported change alongside the current
+// desired values so the frontend can render a side-by-side resolution.
+func (h *Hub) getRecoveryModuleConflict(e *core.RequestEvent) error {
+	id := e.Request.URL.Query().Get("id")
+	if id == "" {
+		return e.BadRequestError("Missing module ID", nil)
 	}
-	return e.JSON(http.StatusOK, module)
+	rec, err := e.App.FindRecordById("recovery_modules", id)
+	if err != nil {
+		return e.NotFoundError("Recovery module not found", err)
+	}
+	if !rec.GetBool("pending_esp_change") {
+		return e.JSON(http.StatusOK, map[string]any{"pending": false})
+	}
+	var espChange recoveryLocalChangePayload
+	_ = json.Unmarshal([]byte(rec.GetString("esp_change_payload")), &espChange)
+	return e.JSON(http.StatusOK, map[string]any{
+		"pending":    true,
+		"esp_change": espChange,
+		"desired": map[string]any{
+			"config_revision": rec.GetInt("config_revision"),
+			"config_hash":     rec.GetString("config_hash"),
+		},
+	})
+}
+
+// resolveRecoveryModuleConflict handles POST /api/beszel/recovery/module/conflict
+// requests. use_esp=true applies the ESP's pending change as the new desired
+// config; use_esp=false just keeps Beszel's current desired values and
+// discards the ESP's proposal (the ESP will overwrite its own local change
+// with the hub's desired config on its next ping).
+func (h *Hub) resolveRecoveryModuleConflict(e *core.RequestEvent) error {
+	var req struct {
+		ModuleID string `json:"module_id"`
+		UseEsp   bool   `json:"use_esp"`
+	}
+	if err := e.BindBody(&req); err != nil {
+		return e.BadRequestError("Invalid request body", err)
+	}
+	rec, err := e.App.FindRecordById("recovery_modules", req.ModuleID)
+	if err != nil {
+		return e.NotFoundError("Recovery module not found", err)
+	}
+	if req.UseEsp {
+		var espChange recoveryLocalChangePayload
+		if err := json.Unmarshal([]byte(rec.GetString("esp_change_payload")), &espChange); err == nil {
+			applyLocalModuleChange(rec, espChange.Module)
+			if len(espChange.Channels) > 0 {
+				applyLocalChannelChanges(e.App, rec.Id, espChange.Channels)
+			}
+			rec.Set("config_revision", rec.GetInt("reported_config_revision"))
+			rec.Set("config_hash", rec.GetString("reported_config_hash"))
+			rec.Set("last_config_source", "ESP_WEB")
+		}
+	}
+	rec.Set("pending_esp_change", false)
+	rec.Set("esp_change_payload", nil)
+	if err := e.App.Save(rec); err != nil {
+		return e.InternalServerError("Failed to resolve conflict", err)
+	}
+	return e.JSON(http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// getRecoveryStats handles GET /api/beszel/recovery/stats requests, returning
+// the recovery count and most recent recovery timestamp for a system.
+func (h *Hub) getRecoveryStats(e *core.RequestEvent) error {
+	systemID := e.Request.URL.Query().Get("system")
+	if systemID == "" {
+		return e.BadRequestError("Missing system ID", nil)
+	}
+	system, err := h.sm.GetSystem(systemID)
+	if err != nil || !system.HasUser(e.App, e.Auth) {
+		return e.NotFoundError("System not found or access denied", nil)
+	}
+	var result struct {
+		Count int    `db:"cnt"`
+		Last  string `db:"last"`
+	}
+	err = e.App.DB().NewQuery(`
+		SELECT COUNT(*) as cnt, COALESCE(MAX(timestamp), '') as last
+		FROM recovery_events
+		WHERE system = {:system} AND event IN ('WOL_SUCCESS', 'RELAY_SUCCESS', 'FAST_VERIFY_RECOVERED')
+	`).Bind(dbx.Params{"system": systemID}).One(&result)
+	if err != nil {
+		return e.InternalServerError("Failed to query recovery stats", err)
+	}
+	resp := map[string]any{"recovery_count": result.Count, "last_recovery": nil}
+	if result.Last != "" {
+		if parsed, parseErr := time.Parse("2006-01-02 15:04:05.000Z", result.Last); parseErr == nil {
+			resp["last_recovery"] = parsed
+		} else if parsed, parseErr := time.Parse(time.RFC3339, result.Last); parseErr == nil {
+			resp["last_recovery"] = parsed
+		} else {
+			resp["last_recovery"] = result.Last
+		}
+	}
+	return e.JSON(http.StatusOK, resp)
 }
 
 // getRecoveryEvents handles GET /api/beszel/recovery/events requests
@@ -605,9 +843,92 @@ type recoveryPingPayload struct {
 	IPAddress       string   `json:"ip_address"`
 	FirmwareVersion string   `json:"firmware_version"`
 	MaxChannels     int      `json:"max_channels"`
-	ConfigRevision  int      `json:"config_revision"`
-	ConfigHash      string   `json:"config_hash"`
+	ConfigRevision  int      `json:"config_revision"` // what the ESP is currently running (reported state)
+	ConfigHash      string   `json:"config_hash"`     // ditto
 	Temperature     *float64 `json:"temperature,omitempty"`
+	// LocalChange is present only when the ESP's local web portal just
+	// applied a settings edit - it carries the changed fields plus the
+	// desired-config revision the ESP based its edit on, so the hub can
+	// tell whether to accept it or flag a conflict.
+	LocalChange *recoveryLocalChangePayload `json:"local_change,omitempty"`
+}
+
+type recoveryLocalChangePayload struct {
+	BaseRevision int              `json:"base_revision"`
+	Module       map[string]any   `json:"module,omitempty"`
+	Channels     []map[string]any `json:"channels,omitempty"`
+}
+
+// recoveryModuleFieldWhitelist lists the recovery_modules fields an ESP's
+// local web portal is allowed to change. Anything not in this set is
+// silently ignored, so a malformed/malicious local_change can't write
+// arbitrary fields (e.g. status, mac_address).
+var recoveryModuleFieldWhitelist = map[string]bool{
+	"name":                            true,
+	"gateway_ip":                      true,
+	"gateway_name":                    true,
+	"ping_interval_seconds":           true,
+	"temperature_monitoring_disabled": true,
+	"temp_threshold_warning":          true,
+	"temp_threshold_critical":         true,
+	"buzzer_disabled":                 true,
+	"buzzer_muted":                    true,
+}
+
+// recoveryChannelFieldWhitelist lists the recovery_channels fields an ESP's
+// local web portal is allowed to change (identified by "channel" number,
+// not by record ID, since the ESP doesn't know PocketBase record IDs).
+var recoveryChannelFieldWhitelist = map[string]bool{
+	"host_ip":                    true,
+	"probe_ports":                true,
+	"failure_threshold":          true,
+	"boot_grace_seconds":         true,
+	"maintenance":                true,
+	"hardware_recovery_disabled": true,
+}
+
+// applyLocalModuleChange writes only whitelisted fields from an ESP-reported
+// local change onto a recovery_modules record.
+func applyLocalModuleChange(rec *core.Record, fields map[string]any) {
+	for k, v := range fields {
+		if recoveryModuleFieldWhitelist[k] {
+			rec.Set(k, v)
+		}
+	}
+}
+
+// toInt converts a JSON-decoded number (float64) or plain int to an int.
+func toInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case int:
+		return n, true
+	default:
+		return 0, false
+	}
+}
+
+// applyLocalChannelChanges writes whitelisted fields from ESP-reported local
+// channel edits onto the matching recovery_channels records, identified by
+// channel number within the given module.
+func applyLocalChannelChanges(app core.App, moduleID string, changes []map[string]any) {
+	for _, change := range changes {
+		chanNum, ok := toInt(change["channel"])
+		if !ok {
+			continue
+		}
+		chRec, err := app.FindFirstRecordByFilter("recovery_channels", "module = {:module} && channel_number = {:num}", dbx.Params{"module": moduleID, "num": chanNum})
+		if err != nil {
+			continue
+		}
+		for k, v := range change {
+			if k != "channel" && recoveryChannelFieldWhitelist[k] {
+				chRec.Set(k, v)
+			}
+		}
+		_ = app.Save(chRec)
+	}
 }
 
 // handleRecoveryPing handles POST /api/beszel/recovery/ping requests from ESP32 modules.
@@ -650,7 +971,11 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 			critThreshold = 60
 			rec.Set("temp_threshold_critical", 60)
 		}
-		if temp > critThreshold {
+		// Temperature is still recorded for display when monitoring is
+		// disabled, but disabling it must stop alert decisions entirely.
+		if rec.GetBool("temperature_monitoring_disabled") {
+			// skip alerting
+		} else if temp > critThreshold {
 			admins, errAd := e.App.FindRecordsByFilter("users", "role = 'admin'", "", -1, 0)
 			if errAd == nil {
 				for _, admin := range admins {
@@ -680,6 +1005,35 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 			}
 		}
 	}
+
+	// Always record what the ESP says it's currently running (reported
+	// state), independent of whether it's also proposing a new local change.
+	rec.Set("reported_config_revision", payload.ConfigRevision)
+	rec.Set("reported_config_hash", payload.ConfigHash)
+
+	if payload.LocalChange != nil && !isNew {
+		if payload.LocalChange.BaseRevision == rec.GetInt("config_revision") {
+			// No concurrent hub-side change since the ESP made this edit -
+			// accept it as the new desired state.
+			applyLocalModuleChange(rec, payload.LocalChange.Module)
+			if len(payload.LocalChange.Channels) > 0 {
+				applyLocalChannelChanges(e.App, rec.Id, payload.LocalChange.Channels)
+			}
+			rec.Set("config_revision", payload.ConfigRevision)
+			rec.Set("config_hash", payload.ConfigHash)
+			rec.Set("last_config_source", "ESP_WEB")
+			rec.Set("pending_esp_change", false)
+			rec.Set("esp_change_payload", nil)
+		} else {
+			// The hub's desired config already moved past what the ESP
+			// based its edit on - don't blindly apply either side. Surface
+			// both for an admin to resolve instead of last-write-wins.
+			rec.Set("pending_esp_change", true)
+			payloadJSON, _ := json.Marshal(payload.LocalChange)
+			rec.Set("esp_change_payload", string(payloadJSON))
+		}
+	}
+
 	if errSave := e.App.Save(rec); errSave != nil {
 		return e.InternalServerError("Failed to save module record", errSave)
 	}
@@ -724,10 +1078,20 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 		}
 	}
 	return e.JSON(http.StatusOK, map[string]any{
-		"status":          rec.GetString("status"),
-		"config_revision": rec.GetInt("config_revision"),
-		"config_hash":     rec.GetString("config_hash"),
-		"channels":        channels,
+		"status":                           rec.GetString("status"),
+		"config_revision":                  rec.GetInt("config_revision"),
+		"config_hash":                      rec.GetString("config_hash"),
+		"pending_esp_change":               rec.GetBool("pending_esp_change"),
+		"name":                             rec.GetString("name"),
+		"gateway_ip":                       rec.GetString("gateway_ip"),
+		"gateway_name":                     rec.GetString("gateway_name"),
+		"ping_interval_seconds":            rec.GetInt("ping_interval_seconds"),
+		"temperature_monitoring_disabled":  rec.GetBool("temperature_monitoring_disabled"),
+		"temp_threshold_warning":           rec.GetFloat("temp_threshold_warning"),
+		"temp_threshold_critical":          rec.GetFloat("temp_threshold_critical"),
+		"buzzer_disabled":                  rec.GetBool("buzzer_disabled"),
+		"buzzer_muted":                     rec.GetBool("buzzer_muted"),
+		"channels":                         channels,
 	})
 }
 

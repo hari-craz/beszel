@@ -117,6 +117,15 @@ func (sm *SystemManager) RemoveAllSystems() {
 	sm.smartFetchMap.StopCleaner()
 }
 
+// TESTING ONLY: Stop cancels all background work owned by the SystemManager's
+// recovery prober (offline-module scanner, per-channel watchdogs). Without
+// this, RecoveryProber's runOfflineScanner goroutine outlives the test's
+// synctest bubble and triggers a "deadlock: main bubble goroutine has
+// exited but blocked goroutines remain" panic.
+func (sm *SystemManager) Stop() {
+	sm.rp.Stop()
+}
+
 func (s *System) StopUpdater() {
 	s.cancel()
 }
