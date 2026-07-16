@@ -297,6 +297,14 @@ export const chartMargin = { top: 12, right: 5 }
  */
 export const getHostDisplayValue = (system: SystemRecord): string => system.host.slice(system.host.lastIndexOf("/") + 1)
 
+/**
+ * Returns an http:// URL to the system's own web page (assumes it serves one
+ * on the default port), or null when the host is a Unix socket path rather
+ * than a network address.
+ */
+export const getServerWebUrl = (host: string): string | null =>
+	host && !host.startsWith("/") ? `http://${host}` : null
+
 // export function formatUptimeString(uptimeSeconds: number): string {
 // 	if (!uptimeSeconds || isNaN(uptimeSeconds)) return ""
 // 	if (uptimeSeconds < 3600) {

@@ -33,6 +33,7 @@ import {
 	decimalString,
 	formatBytes,
 	formatTemperature,
+	getServerWebUrl,
 	parseSemVer,
 	secondsToUptimeString,
 } from "@/lib/utils"
@@ -134,31 +135,50 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			invertSorting: false,
 			Icon: ServerIcon,
 			cell: (info) => {
-				const { name, id } = info.row.original
+				const { name, id, host } = info.row.original
 				const longestName = useStore($longestSystemNameLen)
 				const linkUrl = getPagePath($router, "system", { id })
+				const webUrl = getServerWebUrl(host)
+
+				const nameLinkClass = "truncate z-10 relative"
+				const nameLinkStyle = { width: `${longestName / 1.05}ch` }
+				// set title on hover if text is truncated to show full name
+				const showTitleIfTruncated = (e: React.MouseEvent<HTMLAnchorElement>) => {
+					const a = e.currentTarget
+					if (a.scrollWidth > a.clientWidth) {
+						a.title = name
+					} else {
+						a.removeAttribute("title")
+					}
+				}
 
 				return (
 					<>
 						<span className="flex gap-2 items-center font-medium text-sm text-nowrap md:ps-1">
 							<IndicatorDot system={info.row.original} />
-							<Link
-								href={linkUrl}
-								tabIndex={-1}
-								className="truncate z-10 relative"
-								style={{ width: `${longestName / 1.05}ch` }}
-								onMouseEnter={(e) => {
-									// set title on hover if text is truncated to show full name
-									const a = e.currentTarget
-									if (a.scrollWidth > a.clientWidth) {
-										a.title = name
-									} else {
-										a.removeAttribute("title")
-									}
-								}}
-							>
-								{name}
-							</Link>
+							{webUrl ? (
+								<a
+									href={webUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									tabIndex={-1}
+									className={nameLinkClass}
+									style={nameLinkStyle}
+									onMouseEnter={showTitleIfTruncated}
+								>
+									{name}
+								</a>
+							) : (
+								<Link
+									href={linkUrl}
+									tabIndex={-1}
+									className={nameLinkClass}
+									style={nameLinkStyle}
+									onMouseEnter={showTitleIfTruncated}
+								>
+									{name}
+								</Link>
+							)}
 						</span>
 						<Link href={linkUrl} className="inset-0 absolute size-full" aria-label={name}></Link>
 					</>

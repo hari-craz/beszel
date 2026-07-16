@@ -43,7 +43,7 @@ import { Input } from "@/components/ui/input"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SystemStatus } from "@/lib/enums"
 import { $downSystems, $pausedSystems, $systems, $upSystems } from "@/lib/stores"
-import { cn, runOnce, useBrowserStorage } from "@/lib/utils"
+import { cn, getServerWebUrl, runOnce, useBrowserStorage } from "@/lib/utils"
 import type { SystemRecord } from "@/types"
 import AlertButton from "../alerts/alert-button"
 import { $router, Link } from "../router"
@@ -447,6 +447,7 @@ const SystemCard = memo(
 	({ row, table, colLength }: { row: Row<SystemRecord>; table: TableType<SystemRecord>; colLength: number }) => {
 		const system = row.original
 		const { t } = useLingui()
+		const webUrl = getServerWebUrl(system.host)
 
 		return useMemo(() => {
 			return (
@@ -465,7 +466,18 @@ const SystemCard = memo(
 							<h3 className="text-primary/90 min-w-0 flex-1 gap-2.5 font-semibold">
 								<div className="flex items-center gap-2.5 min-w-0 flex-1">
 									<IndicatorDot system={system} />
-									<span className="text-[.95em]/normal tracking-normal text-primary/90 truncate">{system.name}</span>
+									{webUrl ? (
+										<a
+											href={webUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-[.95em]/normal tracking-normal text-primary/90 truncate relative z-10 hover:underline"
+										>
+											{system.name}
+										</a>
+									) : (
+										<span className="text-[.95em]/normal tracking-normal text-primary/90 truncate">{system.name}</span>
+									)}
 								</div>
 							</h3>
 							{table.getColumn("actions")?.getIsVisible() && (
