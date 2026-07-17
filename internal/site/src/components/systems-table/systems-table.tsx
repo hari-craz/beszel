@@ -19,6 +19,7 @@ import {
 	ArrowDownIcon,
 	ArrowUpDownIcon,
 	ArrowUpIcon,
+	ExternalLinkIcon,
 	EyeIcon,
 	FilterIcon,
 	LayoutGridIcon,
@@ -464,19 +465,25 @@ const SystemCard = memo(
 					<CardHeader className="py-1 ps-4 pe-2 bg-muted/30 border-b border-border/60">
 						<div className="flex items-center gap-1 w-full overflow-hidden">
 							<h3 className="text-primary/90 min-w-0 flex-1 gap-2.5 font-semibold">
-								<div className="flex items-center gap-2.5 min-w-0 flex-1">
+								<div className="flex items-center gap-2 min-w-0 flex-1">
 									<IndicatorDot system={system} />
-									{webUrl ? (
+									{/* Name is plain text; the full-card overlay link below opens the
+									    usage/detail page. The web-page link is a separate icon. */}
+									<span className="text-[.95em]/normal tracking-normal text-primary/90 truncate">{system.name}</span>
+									{webUrl && (
 										<a
 											href={webUrl}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="text-[.95em]/normal tracking-normal text-primary/90 truncate relative z-10 hover:underline"
+											// z-10 sits above the full-card detail-page overlay so only
+											// this icon opens the server's own web page.
+											className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground duration-75"
+											title={t`Open ${system.name} web page`}
+											aria-label={t`Open ${system.name} web page`}
+											onClick={(e) => e.stopPropagation()}
 										>
-											{system.name}
+											<ExternalLinkIcon className="size-3.5" />
 										</a>
-									) : (
-										<span className="text-[.95em]/normal tracking-normal text-primary/90 truncate">{system.name}</span>
 									)}
 								</div>
 							</h3>

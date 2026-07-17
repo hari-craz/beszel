@@ -1533,6 +1533,17 @@ msgstr "One-time password"
 msgid "ONLINE"
 msgstr "ONLINE"
 
+#. placeholder {0}: system.name
+#: src/components/systems-table/systems-table.tsx
+#: src/components/systems-table/systems-table.tsx
+msgid "Open {0} web page"
+msgstr "Open {0} web page"
+
+#: src/components/systems-table/systems-table-columns.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Open {name} web page"
+msgstr "Open {name} web page"
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Open Local ESP Portal"
 msgstr "Open Local ESP Portal"

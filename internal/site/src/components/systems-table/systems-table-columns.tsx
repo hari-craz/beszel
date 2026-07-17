@@ -11,6 +11,7 @@ import {
 	ClockArrowUp,
 	CopyIcon,
 	CpuIcon,
+	ExternalLinkIcon,
 	HardDriveIcon,
 	MemoryStickIcon,
 	MoreHorizontalIcon,
@@ -157,28 +158,31 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 					<>
 						<span className="flex gap-2 items-center font-medium text-sm text-nowrap md:ps-1">
 							<IndicatorDot system={info.row.original} />
-							{webUrl ? (
+							{/* Name links to the system's usage/detail page (the primary action).
+							    The server's own web page, if any, is a separate icon below. */}
+							<Link
+								href={linkUrl}
+								tabIndex={-1}
+								className={nameLinkClass}
+								style={nameLinkStyle}
+								onMouseEnter={showTitleIfTruncated}
+							>
+								{name}
+							</Link>
+							{webUrl && (
 								<a
 									href={webUrl}
 									target="_blank"
 									rel="noopener noreferrer"
-									tabIndex={-1}
-									className={nameLinkClass}
-									style={nameLinkStyle}
-									onMouseEnter={showTitleIfTruncated}
+									// z-10 sits above the full-row detail-page overlay so this
+									// icon (and only this icon) opens the server's web page.
+									className="relative z-10 shrink-0 text-muted-foreground hover:text-foreground duration-75"
+									title={t`Open ${name} web page`}
+									aria-label={t`Open ${name} web page`}
+									onClick={(e) => e.stopPropagation()}
 								>
-									{name}
+									<ExternalLinkIcon className="size-3.5" />
 								</a>
-							) : (
-								<Link
-									href={linkUrl}
-									tabIndex={-1}
-									className={nameLinkClass}
-									style={nameLinkStyle}
-									onMouseEnter={showTitleIfTruncated}
-								>
-									{name}
-								</Link>
 							)}
 						</span>
 						<Link href={linkUrl} className="inset-0 absolute size-full" aria-label={name}></Link>

@@ -1538,6 +1538,17 @@ msgstr "Еднократна парола"
 msgid "ONLINE"
 msgstr "ОНЛАЙН"
 
+#. placeholder {0}: system.name
+#: src/components/systems-table/systems-table.tsx
+#: src/components/systems-table/systems-table.tsx
+msgid "Open {0} web page"
+msgstr ""
+
+#: src/components/systems-table/systems-table-columns.tsx
+#: src/components/systems-table/systems-table-columns.tsx
+msgid "Open {name} web page"
+msgstr ""
+
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Open Local ESP Portal"
 msgstr "Отвори локален ESP портал"
