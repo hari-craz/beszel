@@ -73,9 +73,9 @@ export function RecoveryNodes() {
 										<Trans>Channels</Trans>
 									</span>
 									<span className="text-foreground text-right">
-										{protectedCount} / {mod.max_channels}
+										{protectedCount} / {mod.max_channels ?? "?"}
 									</span>
-									{mod.temperature !== undefined && mod.temperature > 0 && (
+									{typeof mod.temperature === "number" && mod.temperature > 0 && (
 										<>
 											<span>
 												<Trans>Temp</Trans>
@@ -86,7 +86,7 @@ export function RecoveryNodes() {
 									<span>
 										<Trans>Last Heartbeat</Trans>
 									</span>
-									<span className="text-foreground text-right">{timeAgo(mod.last_ping)}</span>
+									<span className="text-foreground text-right">{mod.last_ping ? timeAgo(mod.last_ping) : "—"}</span>
 								</div>
 								<Link
 									href={getPagePath($router, "settings", { name: "recovery-modules" })}

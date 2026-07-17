@@ -69,6 +69,15 @@ export function useSystemData(id: string) {
 	// find matching system and update when it changes
 	useEffect(() => {
 		if (!systems.length) {
+			// Systems store hasn't loaded yet — try fetching this system
+			// directly so the detail page doesn't stay blank during the
+			// initial load race.
+			pb.collection("systems")
+				.getOne(id, { fields: "id,name,host,port,info,status,web_url" })
+				.then((sys) => {
+					if (sys) setSystem(sys)
+				})
+				.catch(() => {})
 			return
 		}
 		// allow old system-name slug to work

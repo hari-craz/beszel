@@ -63,9 +63,11 @@ const App = memo(() => {
 			.then(alertManager.refresh)
 			// subscribe to new alert updates
 			.then(alertManager.subscribe)
-		// recovery modules/channels don't depend on system data being loaded
-		// first, so this runs independently of the chain above
-		recoveryManager.refresh().then(recoveryManager.subscribe)
+			// Recovery runs after all core subscriptions are established so
+			// concurrent pb.realtime.subscribe() calls can't race each other.
+			// Wrapped in .catch() so a failure here can never block or
+			// disrupt the systems/alerts stores.
+			.then(() => recoveryManager.refresh().then(recoveryManager.subscribe).catch(console.error))
 		return () => {
 			unsubscribeAuth()
 			alertManager.unsubscribe()

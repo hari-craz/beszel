@@ -83,6 +83,49 @@ const STATUS_COLORS = {
 	[SystemStatus.Pending]: "bg-yellow-500",
 } as const
 
+/** Standalone component so useStore hooks are called at a stable, predictable
+ *  level regardless of whether the recovery column is visible. */
+const RecoveryCell = memo(function RecoveryCell({ systemId }: { systemId: string }) {
+	const channels = useStore($recoveryChannels)
+	const modules = useStore($recoveryModules)
+	const channel = Object.values(channels).find((ch) => ch?.system === systemId)
+
+	if (channel?.maintenance) {
+		return (
+			<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+				<Trans>MAINTENANCE</Trans>
+			</span>
+		)
+	}
+	const espModule = channel?.module ? modules[channel.module] : undefined
+	if (espModule) {
+		if (isModuleOnline(espModule)) {
+			return (
+				<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+					<Trans>PROTECTED</Trans>
+				</span>
+			)
+		}
+		return (
+			<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+				<Trans>DEGRADED</Trans>
+			</span>
+		)
+	}
+	if (channel?.wol_enabled) {
+		return (
+			<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+				<Trans>WOL READY</Trans>
+			</span>
+		)
+	}
+	return (
+		<span className="text-muted-foreground text-xs">
+			<Trans>NOT INSTALLED</Trans>
+		</span>
+	)
+})
+
 function getMeterStateByThresholds(value: number, warn = 65, crit = 90): MeterState {
 	return value >= crit ? MeterState.Crit : value >= warn ? MeterState.Warn : MeterState.Good
 }
@@ -456,46 +499,7 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			size: 70,
 			Icon: ServerIcon,
 			hideSort: true,
-			cell: ({ row }) => {
-				const channels = useStore($recoveryChannels)
-				const modules = useStore($recoveryModules)
-				const channel = Object.values(channels).find((ch) => ch.system === row.original.id)
-
-				if (channel?.maintenance) {
-					return (
-						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-							<Trans>MAINTENANCE</Trans>
-						</span>
-					)
-				}
-				const espModule = channel?.module ? modules[channel.module] : undefined
-				if (espModule) {
-					if (isModuleOnline(espModule)) {
-						return (
-							<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-								<Trans>PROTECTED</Trans>
-							</span>
-						)
-					}
-					return (
-						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-							<Trans>DEGRADED</Trans>
-						</span>
-					)
-				}
-				if (channel?.wol_enabled) {
-					return (
-						<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-							<Trans>WOL READY</Trans>
-						</span>
-					)
-				}
-				return (
-					<span className="text-muted-foreground text-xs">
-						<Trans>NOT INSTALLED</Trans>
-					</span>
-				)
-			},
+			cell: ({ row }) => <RecoveryCell systemId={row.original.id} />,
 		},
 		{
 			id: "actions",
