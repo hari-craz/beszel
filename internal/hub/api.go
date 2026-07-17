@@ -22,6 +22,7 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/types"
 )
 
 // UpdateInfo holds information about the latest update check
@@ -460,6 +461,30 @@ func (h *Hub) refreshSmartData(e *core.RequestEvent) error {
 	return e.JSON(http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// isRecoveryModuleOnline reports real module liveness from the dedicated
+// last_ping heartbeat timestamp: online when the module pinged within
+// max(90s, 3x its configured ping interval). The `status` string field only
+// tracks approval state (unapproved/online/disabled/...) and the `updated`
+// autodate is bumped by any UI edit, so neither is a trustworthy liveness
+// signal. Records created before the last_ping migration fall back to
+// `updated` until their first post-upgrade ping.
+func isRecoveryModuleOnline(rec *core.Record) bool {
+	lastPing := rec.GetDateTime("last_ping")
+	if lastPing.IsZero() {
+		lastPing = rec.GetDateTime("updated")
+		if lastPing.IsZero() {
+			return false
+		}
+	}
+	staleAfter := 90 * time.Second
+	if interval := rec.GetInt("ping_interval_seconds"); interval > 0 {
+		if threshold := 3 * time.Duration(interval) * time.Second; threshold > staleAfter {
+			staleAfter = threshold
+		}
+	}
+	return time.Since(lastPing.Time()) < staleAfter
+}
+
 // computeRecoverySyncStatus derives the module's config-sync state from
 // desired (config_revision/config_hash) vs. reported
 // (reported_config_revision/reported_config_hash) values, plus whether an
@@ -473,7 +498,7 @@ func computeRecoverySyncStatus(rec *core.Record) string {
 	desiredRev := rec.GetInt("config_revision")
 	reportedRev := rec.GetInt("reported_config_revision")
 
-	if rec.GetString("status") == "offline" {
+	if !isRecoveryModuleOnline(rec) {
 		if reportedRev < desiredRev {
 			return "OFFLINE_PENDING"
 		}
@@ -511,12 +536,11 @@ func computeRecoveryHealthScore(rec *core.Record, syncStatus string, channels []
 	score := 0
 	var reasons []string
 
-	switch rec.GetString("status") {
-	case "online":
-		score += 30
-	case "unapproved":
+	if rec.GetString("status") == "unapproved" {
 		reasons = append(reasons, "Module is awaiting approval")
-	default:
+	} else if isRecoveryModuleOnline(rec) {
+		score += 30
+	} else {
 		reasons = append(reasons, "Module is offline")
 	}
 
@@ -603,6 +627,8 @@ func (h *Hub) buildRecoveryModuleResponse(e *core.RequestEvent, rec *core.Record
 		"name":                             rec.GetString("name"),
 		"mac_address":                      rec.GetString("mac_address"),
 		"ip_address":                       rec.GetString("ip_address"),
+		"online":                           isRecoveryModuleOnline(rec),
+		"last_ping":                        rec.GetDateTime("last_ping"),
 		"gateway_ip":                       rec.GetString("gateway_ip"),
 		"gateway_name":                     rec.GetString("gateway_name"),
 		"gateway_online":                   rec.GetBool("gateway_online"),
@@ -953,6 +979,11 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 		rec.Set("name", fmt.Sprintf("Discovered ESP (%s)", payload.MACAddress))
 		rec.Set("max_channels", payload.MaxChannels)
 		rec.Set("status", "unapproved")
+		// config_revision is a required field with no useful zero-value - a
+		// first-time auto-discovered module needs a starting revision the
+		// same way a manually-added one does (see handleAddModule/the "Add
+		// Device" dialog, which also starts new modules at revision 1).
+		rec.Set("config_revision", 1)
 	}
 	rec.Set("ip_address", payload.IPAddress)
 	if payload.FirmwareVersion != "" {
@@ -1032,6 +1063,15 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 			payloadJSON, _ := json.Marshal(payload.LocalChange)
 			rec.Set("esp_change_payload", string(payloadJSON))
 		}
+	}
+
+	// Dedicated heartbeat timestamp - the only writer of last_ping. The
+	// autodate `updated` also bumps on UI edits, so liveness checks use this.
+	rec.Set("last_ping", types.NowDateTime())
+	// A previously stale module that pings again is immediately live; don't
+	// wait for the offline scanner's next sweep to flip the status back.
+	if rec.GetString("status") == "offline" {
+		rec.Set("status", "online")
 	}
 
 	if errSave := e.App.Save(rec); errSave != nil {

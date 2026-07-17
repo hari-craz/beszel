@@ -7,8 +7,8 @@ export function Logo({ className }: { className?: string }) {
 	const id = useId()
 
 	return (
-		// Righteous font from Google Fonts
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 285 75" className={className}>
+		// Righteous font from Google Fonts, "X Harix" suffix in the page's own font
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 510 75" className={className}>
 			<defs>
 				<linearGradient id={id} x1="0%" y1="20%" x2="100%" y2="120%">
 					<stop offset="10%" style={{ stopColor: "#747bff" }} />
@@ -17,6 +17,25 @@ export function Logo({ className }: { className?: string }) {
 			</defs>
 			<path className="duration-250 group-hover:opacity-0 group-hover:ease-in ease-out" d={d} />
 			<path className="opacity-0 duration-250 group-hover:opacity-100 ease-in-out" fill={`url(#${id})`} d={d} />
+			<text
+				x="298"
+				y="58"
+				fontSize="42"
+				fontWeight="700"
+				className="duration-250 group-hover:opacity-0 group-hover:ease-in ease-out"
+			>
+				X Harix
+			</text>
+			<text
+				x="298"
+				y="58"
+				fontSize="42"
+				fontWeight="700"
+				className="opacity-0 duration-250 group-hover:opacity-100 ease-in-out"
+				fill={`url(#${id})`}
+			>
+				X Harix
+			</text>
 		</svg>
 	)
 }

@@ -415,6 +415,10 @@ msgstr ""
 msgid "Channel mapping updated."
 msgstr ""
 
+#: src/components/recovery-nodes.tsx
+msgid "Channels"
+msgstr ""
+
 #: src/components/routes/system/charts/sensor-charts.tsx
 msgid "Charge"
 msgstr "Заряд"
@@ -691,6 +695,7 @@ msgstr "Устройство"
 msgid "Disable"
 msgstr ""
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "DISABLED"
 msgstr ""
@@ -1211,6 +1216,7 @@ msgstr ""
 msgid "Language"
 msgstr "Язык"
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Last Heartbeat"
 msgstr ""
@@ -1493,12 +1499,21 @@ msgid "OAuth 2 / OIDC support"
 msgstr "Поддержка OAuth 2 / OIDC"
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Off"
+msgstr ""
+
+#: src/components/recovery-nodes.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "OFFLINE"
 msgstr ""
 
 #: src/components/routes/settings/recovery-modules.tsx
 #~ msgid "OFFLINE PENDING"
 #~ msgstr ""
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "On"
+msgstr ""
 
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
@@ -1517,6 +1532,7 @@ msgstr "Одноразово"
 msgid "One-time password"
 msgstr "Одноразовый пароль"
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "ONLINE"
@@ -1706,8 +1722,8 @@ msgid "Preferred Language"
 msgstr "Предпочтительный язык"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Probe Ports"
-msgstr ""
+#~ msgid "Probe Ports"
+#~ msgstr ""
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Process started"
@@ -1801,6 +1817,10 @@ msgstr ""
 #: src/components/navbar.tsx
 #: src/components/routes/settings/layout.tsx
 msgid "Recovery Modules"
+msgstr ""
+
+#: src/components/recovery-nodes.tsx
+msgid "Recovery Nodes"
 msgstr ""
 
 #: src/components/routes/system/recovery-info.tsx
@@ -2167,6 +2187,7 @@ msgid "Tasks"
 msgstr "Задачи"
 
 #. Temperature label in systems table
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx

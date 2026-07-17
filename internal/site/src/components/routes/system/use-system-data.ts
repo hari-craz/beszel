@@ -77,7 +77,7 @@ export function useSystemData(id: string) {
 			const sys = newSystems[id]
 			if (sys) {
 				setSystem(sys)
-				document.title = `${sys?.name} / Beszel`
+				document.title = `${sys?.name} / Beszel X Harix`
 			}
 		})
 	}, [id, systems.length])

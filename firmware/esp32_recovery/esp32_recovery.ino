@@ -6,6 +6,11 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Preferences.h>
+// Raw ICMP socket support for icmpPing() - host reachability is checked by
+// pinging the IP directly instead of probing TCP ports.
+#include <lwip/sockets.h>
+#include <lwip/inet_chksum.h>
+#include <lwip/prot/icmp.h>
 
 // --- Configuration & Constants ---
 #define FIRMWARE_VERSION "1.0.0"
@@ -133,6 +138,7 @@ void updateLCDDisplay();
 void processProberStateMachines();
 void syncWithHub();
 void checkConfigButton();
+void markLocalChange();
 
 // Setup HTML onboarding page
 const char SETUP_HTML[] PROGMEM = R"rawliteral(
@@ -285,11 +291,8 @@ function loadState() {
       var cls = ch.state_label === 'OK' ? 'ok' : (ch.state_label === 'CRIT' ? 'crit' : 'warn');
       chHtml += "<div class='chan'>";
       chHtml += "<div class='chan-head'><b>Channel " + ch.channel + "</b>" + badge(ch.state_label, cls) + "</div>";
-      chHtml += "<div class='field'><label>Host IP</label><input type='text' id='ch_host_" + ch.channel + "' value='" + esc(ch.host_ip) + "'></div>";
-      chHtml += "<div class='grid2'>";
-      chHtml += "<div class='field'><label>Probe Ports</label><input type='text' id='ch_ports_" + ch.channel + "' value='" + esc((ch.ports||[]).join(',')) + "'></div>";
+      chHtml += "<div class='field'><label>Host IP (pinged directly)</label><input type='text' id='ch_host_" + ch.channel + "' value='" + esc(ch.host_ip) + "'></div>";
       chHtml += "<div class='field'><label>Failure Threshold</label><input type='number' id='ch_thresh_" + ch.channel + "' value='" + ch.failure_threshold + "'></div>";
-      chHtml += "</div>";
       chHtml += "<div class='field'><label>Boot Grace (seconds)</label><input type='number' id='ch_grace_" + ch.channel + "' value='" + ch.boot_grace_seconds + "'></div>";
       chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_maint_" + ch.channel + "' " + (ch.maintenance ? 'checked' : '') + "> Maintenance Mode</label></div>";
       chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_hwdis_" + ch.channel + "' " + (ch.hardware_recovery_disabled ? 'checked' : '') + "> Disable Autonomous Recovery</label></div>";
@@ -315,16 +318,9 @@ function saveSettings() {
     .then(function(){ loadState(); });
 }
 function saveChannel(chan) {
-  var portsRaw = document.getElementById('ch_ports_' + chan).value.split(',');
-  var ports = [];
-  for (var i = 0; i < portsRaw.length; i++) {
-    var p = parseInt(portsRaw[i].trim(), 10);
-    if (!isNaN(p)) ports.push(p);
-  }
   var body = {
     channel: chan,
     host_ip: document.getElementById('ch_host_' + chan).value,
-    probe_ports: ports,
     failure_threshold: parseInt(document.getElementById('ch_thresh_' + chan).value, 10) || 3,
     boot_grace_seconds: parseInt(document.getElementById('ch_grace_' + chan).value, 10) || 60,
     maintenance: document.getElementById('ch_maint_' + chan).checked,
@@ -760,12 +756,79 @@ bool probeTCPPort(const char* ip, int port) {
   return false;
 }
 
-// probeGateway checks whether the local network gateway is reachable, using
-// the same TCP-connect approach (ports 53/80) as the hub's own gateway
-// check. If no gateway IP is known yet, treat it as reachable rather than
-// blocking escalation on missing configuration.
+// icmpPing sends a single ICMP echo request to ipStr over a raw socket and
+// reports whether a matching reply arrived within timeoutMs. This is the
+// primary reachability check (replacing TCP port probing) so a monitored
+// host no longer needs any port open to be recognized as up - only the IP
+// needs to answer a ping, matching how the hub itself checks reachability.
+// Returns false both when the socket can't be opened and when no reply
+// arrives in time; callers that want a fallback path treat either the same.
+bool icmpPing(const char* ipStr, int timeoutMs) {
+  uint32_t destAddr = inet_addr(ipStr);
+  if (destAddr == INADDR_NONE) return false;
+
+  int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+  if (sock < 0) return false;
+
+  struct timeval tv;
+  tv.tv_sec = timeoutMs / 1000;
+  tv.tv_usec = (timeoutMs % 1000) * 1000;
+  setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+  uint16_t id = (uint16_t)random(1, 65535);
+  static uint16_t pingSeq = 0;
+  uint16_t seq = ++pingSeq;
+
+  struct icmp_echo_hdr icmpHdr;
+  memset(&icmpHdr, 0, sizeof(icmpHdr));
+  icmpHdr.type = ICMP_ECHO;
+  icmpHdr.code = 0;
+  icmpHdr.chksum = 0;
+  icmpHdr.id = htons(id);
+  icmpHdr.seqno = htons(seq);
+  icmpHdr.chksum = inet_chksum(&icmpHdr, sizeof(icmpHdr));
+
+  struct sockaddr_in dest;
+  memset(&dest, 0, sizeof(dest));
+  dest.sin_family = AF_INET;
+  dest.sin_addr.s_addr = destAddr;
+
+  if (sendto(sock, &icmpHdr, sizeof(icmpHdr), 0, (struct sockaddr*)&dest, sizeof(dest)) < 0) {
+    close(sock);
+    return false;
+  }
+
+  bool replied = false;
+  unsigned long deadline = millis() + (unsigned long)timeoutMs;
+  uint8_t buf[128];
+  while (!replied && (long)(deadline - millis()) > 0) {
+    struct sockaddr_in from;
+    socklen_t fromLen = sizeof(from);
+    int n = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromLen);
+    if (n <= 0) break; // SO_RCVTIMEO expired or read error - no reply
+    if (from.sin_addr.s_addr != destAddr) continue;
+
+    // Raw ICMP sockets deliver the IP header too; skip it using its IHL
+    // (low nibble of the first byte, in 32-bit words) to reach the ICMP body.
+    int ipHeaderLen = (buf[0] & 0x0F) * 4;
+    if (n < ipHeaderLen + (int)sizeof(struct icmp_echo_hdr)) continue;
+    struct icmp_echo_hdr* reply = (struct icmp_echo_hdr*)(buf + ipHeaderLen);
+    if (reply->type == ICMP_ER && ntohs(reply->id) == id && ntohs(reply->seqno) == seq) {
+      replied = true;
+    }
+  }
+  close(sock);
+  return replied;
+}
+
+// probeGateway checks whether the local network gateway is reachable via
+// ICMP ping first, falling back to the previous TCP-connect approach
+// (ports 53/80) only if the raw ICMP socket itself couldn't be opened. If no
+// gateway IP is known yet, treat it as reachable rather than blocking
+// escalation on missing configuration.
 bool probeGateway() {
   if (strlen(gatewayIP) == 0) return true;
+  if (icmpPing(gatewayIP, 1200)) return true;
   if (probeTCPPort(gatewayIP, 53)) return true;
   if (probeTCPPort(gatewayIP, 80)) return true;
   return false;
@@ -859,13 +922,7 @@ void processProberStateMachines() {
     unsigned long interval = (ch.state == STATE_VERIFYING_FAILURE) ? 2000 : 5000;
     if (now - ch.lastProbeTime >= interval) {
       ch.lastProbeTime = now;
-      bool hostResponded = false;
-      for (int p = 0; p < ch.portCount; p++) {
-        if (probeTCPPort(ch.hostIP, ch.ports[p])) {
-          hostResponded = true;
-          break;
-        }
-      }
+      bool hostResponded = icmpPing(ch.hostIP, 1200);
 
       switch (ch.state) {
         case STATE_ONLINE:
@@ -1111,7 +1168,12 @@ void syncWithHub() {
         }
       }
 
-      if (applyHubPush && remoteRevision > localConfigRevision && remoteHash != localConfigHash) {
+      // Revision number is the sole authoritative sync signal (see
+      // computeLocalConfigHash's comment - the two sides don't share a hash
+      // algorithm). Requiring a hash mismatch too could permanently block a
+      // legitimate rebuild whenever both sides' hashes happen to already be
+      // equal or empty, so only the revision is checked here.
+      if (applyHubPush && remoteRevision != localConfigRevision) {
         JsonArray channelsArray = respDoc["channels"];
         activeChannelCount = 0;
 

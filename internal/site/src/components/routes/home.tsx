@@ -3,12 +3,13 @@ import { memo, Suspense, useEffect, useMemo } from "react"
 import SystemsTable from "@/components/systems-table/systems-table"
 import { ActiveAlerts } from "@/components/active-alerts"
 import { FooterRepoLink } from "@/components/footer-repo-link"
+import { RecoveryNodes } from "@/components/recovery-nodes"
 
 export default memo(() => {
 	const { t } = useLingui()
 
 	useEffect(() => {
-		document.title = `${t`All Systems`} / Beszel`
+		document.title = `${t`All Systems`} / Beszel X Harix`
 	}, [t])
 
 	return useMemo(
@@ -16,6 +17,7 @@ export default memo(() => {
 			<>
 				<div className="flex flex-col gap-4">
 					<ActiveAlerts />
+					<RecoveryNodes />
 					<Suspense>
 						<SystemsTable />
 					</Suspense>

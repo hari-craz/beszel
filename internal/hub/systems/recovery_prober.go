@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,8 @@ import (
 	"github.com/henrygd/beszel/internal/hub/expirymap"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
 
 // RecoveryProber manages fast, low-downtime watchdogs for systems mapped to watchdog modules.
@@ -33,6 +36,13 @@ type RecoveryProber struct {
 	// is surfaced to the ESP via /recovery/ping as a best-effort hint.
 	locks     *expirymap.ExpiryMap[lockInfo]
 	nextLease uint64
+
+	// icmpOnce/icmpNetwork cache which ICMP transport (if any) actually
+	// works in this environment, detected on first use. Probes run every
+	// few seconds per watchdog, so re-attempting a broken transport on every
+	// call would add needless latency - see pingHost.
+	icmpOnce    sync.Once
+	icmpNetwork string
 }
 
 // lockInfo describes the current holder of a channel's recovery lock.
@@ -47,7 +57,6 @@ type systemWatchdog struct {
 	systemID    string
 	channelID   string
 	hostIP      string
-	probePorts  []int
 	threshold   int
 	graceSecs   int
 	maintenance bool
@@ -200,15 +209,6 @@ func (rp *RecoveryProber) registerWatchdog(rec *core.Record) {
 		bcastIP = "255.255.255.255"
 	}
 
-	var probePorts []int
-	portsData := rec.GetString("probe_ports")
-	if portsData != "" {
-		_ = json.Unmarshal([]byte(portsData), &probePorts)
-	}
-	if len(probePorts) == 0 {
-		probePorts = []int{22} // Fallback to SSH
-	}
-
 	if old, exists := rp.watchdogs[channelID]; exists {
 		old.cancel()
 		delete(rp.watchdogs, channelID)
@@ -219,7 +219,6 @@ func (rp *RecoveryProber) registerWatchdog(rec *core.Record) {
 		systemID:    systemID,
 		channelID:   channelID,
 		hostIP:      hostIP,
-		probePorts:  probePorts,
 		threshold:   threshold,
 		graceSecs:   graceSecs,
 		maintenance: maintenance,
@@ -282,7 +281,7 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 			}
 
 			// Perform normal 5s check
-			online := rp.probePorts(w.hostIP, w.probePorts)
+			online := rp.pingHost(w.hostIP, 2*time.Second)
 			if !online {
 				// Transition to FAST_VERIFY state
 				rp.logEvent(w.systemID, w.channelID, "FAST_VERIFY_STARTED", map[string]any{
@@ -296,7 +295,7 @@ func (rp *RecoveryProber) runWatchdog(ctx context.Context, w *systemWatchdog) {
 					case <-ctx.Done():
 						return
 					case <-time.After(2 * time.Second):
-						if rp.probePorts(w.hostIP, w.probePorts) {
+						if rp.pingHost(w.hostIP, 2*time.Second) {
 							success = true
 							break
 						}
@@ -417,7 +416,7 @@ func (rp *RecoveryProber) attemptAutomaticWOL(ctx context.Context, w *systemWatc
 			})
 			return false
 		case <-graceTicker.C:
-			if rp.probePorts(w.hostIP, w.probePorts) {
+			if rp.pingHost(w.hostIP, 2*time.Second) {
 				rp.logEvent(w.systemID, w.channelID, "WOL_SUCCESS", map[string]any{
 					"status": "online",
 				})
@@ -427,7 +426,10 @@ func (rp *RecoveryProber) attemptAutomaticWOL(ctx context.Context, w *systemWatc
 	}
 }
 
-// probePorts dials TCP ports to check if host is responsive.
+// probePorts dials TCP ports to check if host is responsive. Retained only
+// as pingHost's last-resort fallback for environments where neither a
+// privileged nor unprivileged ICMP socket can be opened (e.g. a container
+// runtime without NET_RAW and a locked-down ping_group_range).
 func (rp *RecoveryProber) probePorts(host string, ports []int) bool {
 	for _, port := range ports {
 		address := net.JoinHostPort(host, fmt.Sprintf("%d", port))
@@ -440,8 +442,150 @@ func (rp *RecoveryProber) probePorts(host string, ports []int) bool {
 	return false
 }
 
-// probeGateway dials DNS port 53 or HTTP port 80 to verify gateway connectivity.
+// pingHost checks host reachability with an ICMP echo request rather than
+// probing any particular port. If no ICMP transport is available in this
+// environment, falls back to a TCP dial on port 22 so recovery still
+// functions, just less precisely.
+func (rp *RecoveryProber) pingHost(host string, timeout time.Duration) bool {
+	if ok, isTransportErr := rp.icmpPing(host, timeout); !isTransportErr {
+		return ok
+	}
+	return rp.probePorts(host, []int{22})
+}
+
+// icmpPing sends an ICMP echo request to host using this process's detected
+// transport. The working transport - a privileged raw socket ("ip4:icmp",
+// needs NET_RAW/root) or an unprivileged datagram socket ("udp4", needs a
+// permissive ping_group_range) - is detected once and cached, since
+// retrying a broken mode on every 5s probe would add needless latency.
+// Returns (reachable, transportUnavailable): callers use the second value to
+// decide whether to fall back to a different check.
+func (rp *RecoveryProber) icmpPing(host string, timeout time.Duration) (ok bool, transportUnavailable bool) {
+	rp.icmpOnce.Do(func() {
+		rp.icmpNetwork = detectICMPNetwork()
+	})
+	if rp.icmpNetwork == "" {
+		return false, true
+	}
+	reached, err := icmpEcho(rp.icmpNetwork, host, timeout)
+	if err != nil {
+		// Transport broke after previously working (e.g. a capability
+		// change mid-run) - let the caller fall back instead of treating
+		// this host as unreachable outright.
+		return false, true
+	}
+	return reached, false
+}
+
+// detectICMPNetwork returns the first ICMP transport this process can open
+// a socket for, or "" if neither is available.
+func detectICMPNetwork() string {
+	for _, network := range []string{"ip4:icmp", "udp4"} {
+		conn, err := icmp.ListenPacket(network, "0.0.0.0")
+		if err == nil {
+			conn.Close()
+			return network
+		}
+	}
+	return ""
+}
+
+// icmpEcho sends a single ICMP echo request to host over network ("ip4:icmp"
+// or "udp4") and reports whether a matching reply arrived within timeout.
+// The returned error indicates the ICMP transport itself failed (socket
+// open/write/parse), not a plain timeout - a non-responding host is a normal
+// (false, nil) result, not an error.
+func icmpEcho(network, host string, timeout time.Duration) (bool, error) {
+	conn, err := icmp.ListenPacket(network, "0.0.0.0")
+	if err != nil {
+		return false, err
+	}
+	defer conn.Close()
+
+	dst, err := net.ResolveIPAddr("ip4", host)
+	if err != nil {
+		return false, err
+	}
+
+	id := os.Getpid() & 0xffff
+	msg := icmp.Message{
+		Type: ipv4.ICMPTypeEcho,
+		Code: 0,
+		Body: &icmp.Echo{
+			ID:   id,
+			Seq:  int(time.Now().UnixNano() & 0xffff),
+			Data: []byte("beszel-recovery-ping"),
+		},
+	}
+	wb, err := msg.Marshal(nil)
+	if err != nil {
+		return false, err
+	}
+
+	// The "udp4" ping-socket transport addresses by UDPAddr; the kernel
+	// demultiplexes replies to it by the ephemeral port it assigned, so no
+	// separate ID check is needed for that mode (see the read loop below).
+	var writeAddr net.Addr = dst
+	if network == "udp4" {
+		writeAddr = &net.UDPAddr{IP: dst.IP}
+	}
+	if _, err := conn.WriteTo(wb, writeAddr); err != nil {
+		return false, err
+	}
+	if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		return false, err
+	}
+
+	rb := make([]byte, 1500)
+	for {
+		n, peer, err := conn.ReadFrom(rb)
+		if err != nil {
+			// Read timeout (or a transient read error) - treat as "no
+			// reply" rather than a transport failure.
+			return false, nil
+		}
+		rm, err := icmp.ParseMessage(1, rb[:n]) // 1 = ICMPv4 protocol number
+		if err != nil {
+			continue
+		}
+		if rm.Type != ipv4.ICMPTypeEchoReply {
+			continue
+		}
+		body, ok := rm.Body.(*icmp.Echo)
+		if !ok {
+			continue
+		}
+		if network == "ip4:icmp" && body.ID != id {
+			continue
+		}
+		peerIP, ok := addrIP(peer)
+		if ok && !peerIP.Equal(dst.IP) {
+			continue
+		}
+		return true, nil
+	}
+}
+
+// addrIP extracts the IP from the net.Addr types icmp.PacketConn.ReadFrom
+// can return, depending on transport ("ip4:icmp" -> *net.IPAddr, "udp4" ->
+// *net.UDPAddr).
+func addrIP(addr net.Addr) (net.IP, bool) {
+	switch a := addr.(type) {
+	case *net.IPAddr:
+		return a.IP, true
+	case *net.UDPAddr:
+		return a.IP, true
+	default:
+		return nil, false
+	}
+}
+
+// probeGateway checks gateway reachability with an ICMP ping first, falling
+// back to dialing DNS port 53 or HTTP port 80 if ICMP is unavailable.
 func (rp *RecoveryProber) probeGateway(gatewayIP string) bool {
+	if ok, transportUnavailable := rp.icmpPing(gatewayIP, 1500*time.Millisecond); !transportUnavailable {
+		return ok
+	}
 	address := net.JoinHostPort(gatewayIP, "53")
 	conn, err := net.DialTimeout("tcp", address, 1500*time.Millisecond)
 	if err == nil {
@@ -530,6 +674,30 @@ func (rp *RecoveryProber) logEvent(systemID, channelID, event string, metadata m
 	_ = rp.app.Save(record)
 }
 
+// moduleIsLive reports whether a recovery_modules record has pinged
+// recently enough to be considered online: within max(90s, 3x its
+// configured ping interval) of its dedicated last_ping heartbeat. Falls
+// back to the `updated` autodate for records saved before that field
+// existed. Mirrors isRecoveryModuleOnline in internal/hub/api.go - kept as
+// a separate copy here since this package can't import internal/hub
+// (internal/hub already imports internal/hub/systems).
+func moduleIsLive(rec *core.Record) bool {
+	lastPing := rec.GetDateTime("last_ping")
+	if lastPing.IsZero() {
+		lastPing = rec.GetDateTime("updated")
+		if lastPing.IsZero() {
+			return false
+		}
+	}
+	staleAfter := 90 * time.Second
+	if interval := rec.GetInt("ping_interval_seconds"); interval > 0 {
+		if threshold := 3 * time.Duration(interval) * time.Second; threshold > staleAfter {
+			staleAfter = threshold
+		}
+	}
+	return time.Since(lastPing.Time()) < staleAfter
+}
+
 // runOfflineScanner runs a periodic check to transition recovery modules to offline if pings stop.
 func (rp *RecoveryProber) runOfflineScanner(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second)
@@ -543,11 +711,9 @@ func (rp *RecoveryProber) runOfflineScanner(ctx context.Context) {
 			if err != nil {
 				continue
 			}
-			now := time.Now().UTC()
 			for _, rec := range records {
-				lastHeartbeat := rec.GetDateTime("updated").Time()
 				status := rec.GetString("status")
-				if now.Sub(lastHeartbeat) > 90*time.Second {
+				if !moduleIsLive(rec) {
 					if status != "offline" {
 						rec.Set("status", "offline")
 						_ = rp.app.Save(rec)

@@ -23,6 +23,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog"
 import { isAdmin, pb } from "@/lib/api"
+import { timeAgo } from "@/lib/utils"
 
 interface RecoveryModule {
 	id: string
@@ -33,6 +34,8 @@ interface RecoveryModule {
 	ping_interval_seconds?: number
 	firmware_version: string
 	status: string
+	online?: boolean
+	last_ping?: string
 	config_revision: number
 	config_hash?: string
 	reported_config_revision?: number
@@ -60,7 +63,6 @@ interface RecoveryChannel {
 	channel_number: number
 	system: string
 	host_ip: string
-	probe_ports: number[]
 	failure_threshold: number
 	boot_grace_seconds: number
 	maintenance: boolean
@@ -100,18 +102,6 @@ function healthScoreColor(score: number): string {
 	return "text-red-500"
 }
 
-// timeAgo renders a short relative-time string ("4s ago", "3m ago", ...) for
-// the "Last Heartbeat" display, avoiding a new date-formatting dependency.
-function timeAgo(dateStr?: string): string {
-	if (!dateStr) return "N/A"
-	const diffMs = Date.now() - new Date(dateStr).getTime()
-	const diffSec = Math.max(0, Math.floor(diffMs / 1000))
-	if (diffSec < 60) return `${diffSec}s ago`
-	if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
-	if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
-	return `${Math.floor(diffSec / 86400)}d ago`
-}
-
 export default function RecoveryModulesSettings() {
 	const [modules, setModules] = useState<RecoveryModule[]>([])
 	const [channels, setChannels] = useState<RecoveryChannel[]>([])
@@ -144,7 +134,6 @@ export default function RecoveryModulesSettings() {
 	// Form fields for channel configuration
 	const [mapSystemId, setMapSystemId] = useState("")
 	const [mapHostIp, setMapHostIp] = useState("")
-	const [mapProbePorts, setMapProbePorts] = useState("22")
 	const [mapFailureThreshold, setMapFailureThreshold] = useState("3")
 	const [mapBootGraceSeconds, setMapBootGraceSeconds] = useState("60")
 	const [mapMaintenance, setMapMaintenance] = useState(false)
@@ -242,13 +231,38 @@ export default function RecoveryModulesSettings() {
 
 	// updateModuleField is the shared confirmed-update path for the simple
 	// module-level settings below (gateway, temperature, buzzer) - same
-	// pattern as updatePingInterval, generalized to any field.
+	// pattern as updatePingInterval, generalized to any field. Every edit
+	// also bumps config_revision so the ESP picks up the change on its next
+	// ping instead of the sync status sitting at SYNC PENDING indefinitely.
 	async function updateModuleField(id: string, fields: Record<string, unknown>) {
 		try {
-			await pb.collection("recovery_modules").update(id, fields)
-			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...fields } : m)))
+			const current = modules.find((m) => m.id === id)
+			const update = {
+				...fields,
+				config_revision: (current?.config_revision ?? 0) + 1,
+				last_config_source: "BESZEL_UI",
+			}
+			await pb.collection("recovery_modules").update(id, update)
+			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...update } : m)))
 		} catch (error) {
 			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
+		}
+	}
+
+	// bumpModuleRevision marks a module's config as changed after a channel
+	// mapping write, so the ESP re-syncs the channel table on its next ping.
+	// Non-fatal on failure - the caller's own toast already reported
+	// success/failure of the primary channel action.
+	async function bumpModuleRevision(moduleId: string) {
+		const current = modules.find((m) => m.id === moduleId)
+		if (!current) return
+		try {
+			await pb.collection("recovery_modules").update(moduleId, {
+				config_revision: (current.config_revision ?? 0) + 1,
+				last_config_source: "BESZEL_UI",
+			})
+		} catch {
+			// non-fatal
 		}
 	}
 
@@ -332,7 +346,6 @@ export default function RecoveryModulesSettings() {
 			setExistingMappingId(existing.id)
 			setMapSystemId(existing.system)
 			setMapHostIp(existing.host_ip || "")
-			setMapProbePorts(existing.probe_ports?.join(", ") || "22")
 			setMapFailureThreshold(String(existing.failure_threshold || 3))
 			setMapBootGraceSeconds(String(existing.boot_grace_seconds || 60))
 			setMapMaintenance(existing.maintenance || false)
@@ -346,7 +359,6 @@ export default function RecoveryModulesSettings() {
 			setExistingMappingId(null)
 			setMapSystemId("")
 			setMapHostIp("")
-			setMapProbePorts("22")
 			setMapFailureThreshold("3")
 			setMapBootGraceSeconds("60")
 			setMapMaintenance(false)
@@ -371,14 +383,6 @@ export default function RecoveryModulesSettings() {
 			return
 		}
 
-		const ports = mapProbePorts
-			.split(",")
-			.map((p) => parseInt(p.trim(), 10))
-			.filter((p) => !Number.isNaN(p))
-		if (ports.length === 0) {
-			ports.push(22)
-		}
-
 		let hostIp = mapHostIp.trim()
 		if (!hostIp) {
 			const sys = systemsList.find((s) => s.id === mapSystemId)
@@ -392,7 +396,6 @@ export default function RecoveryModulesSettings() {
 			channel_number: selectedChannelNum,
 			system: mapSystemId,
 			host_ip: hostIp,
-			probe_ports: ports,
 			failure_threshold: Number(mapFailureThreshold),
 			boot_grace_seconds: Number(mapBootGraceSeconds),
 			maintenance: mapMaintenance,
@@ -418,6 +421,7 @@ export default function RecoveryModulesSettings() {
 					description: t`Channel mapped successfully.`,
 				})
 			}
+			await bumpModuleRevision(selectedModuleId)
 			setMappingDialogOpen(false)
 			fetchData()
 		} catch (error) {
@@ -434,6 +438,7 @@ export default function RecoveryModulesSettings() {
 		if (!confirm(t`Are you sure you want to unmap this channel?`)) return
 		try {
 			await pb.collection("recovery_channels").delete(existingMappingId)
+			await bumpModuleRevision(selectedModuleId)
 			toast({
 				title: t`Success`,
 				description: t`Channel mapping removed.`,
@@ -451,9 +456,15 @@ export default function RecoveryModulesSettings() {
 
 	async function updatePingInterval(id: string, value: number) {
 		try {
-			await pb.collection("recovery_modules").update(id, { ping_interval_seconds: value })
+			const current = modules.find((m) => m.id === id)
+			const update = {
+				ping_interval_seconds: value,
+				config_revision: (current?.config_revision ?? 0) + 1,
+				last_config_source: "BESZEL_UI",
+			}
+			await pb.collection("recovery_modules").update(id, update)
 			toast({ title: t`Success`, description: t`Ping interval updated.` })
-			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ping_interval_seconds: value } : m)))
+			setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...update } : m)))
 		} catch (error) {
 			toast({ title: t`Error`, description: (error as Error).message, variant: "destructive" })
 		}
@@ -618,7 +629,7 @@ export default function RecoveryModulesSettings() {
 						const moduleChannels = channels.filter((ch) => ch.module === mod.id)
 						const isUnapproved = mod.status === "unapproved"
 						const isDisabled = mod.status === "disabled"
-						const isOnline = mod.status === "online" || mod.status === "ONLINE"
+						const isOnline = mod.online ?? false
 						const temp = mod.temperature ?? 0
 						const tempWarn = mod.temp_threshold_warning || 50
 						const tempCrit = mod.temp_threshold_critical || 60
@@ -658,7 +669,7 @@ export default function RecoveryModulesSettings() {
 										</CardDescription>
 									</div>
 									{isUnapproved ? (
-										<div className="flex items-center gap-2">
+										<div className="flex flex-wrap items-center gap-2 justify-end">
 											<Button size="sm" variant="ghost" onClick={() => rejectModule(mod.id)}>
 												<Trans>Reject</Trans>
 											</Button>
@@ -671,16 +682,16 @@ export default function RecoveryModulesSettings() {
 											</Button>
 										</div>
 									) : (
-										<div className="flex flex-col items-end gap-1.5">
-											{mod.ip_address && (
-												<Button variant="outline" size="sm" asChild>
-													<a href={`http://${mod.ip_address}`} target="_blank" rel="noopener noreferrer">
-														<Trans>Open Local ESP Portal</Trans>
-														<ExternalLinkIcon className="h-3 w-3 ml-1.5" />
-													</a>
-												</Button>
-											)}
-											<div className="flex items-center gap-2">
+										<div className="flex flex-col items-end gap-1.5 max-w-full">
+											<div className="flex flex-wrap items-center gap-2 justify-end">
+												{mod.ip_address && (
+													<Button variant="outline" size="sm" asChild>
+														<a href={`http://${mod.ip_address}`} target="_blank" rel="noopener noreferrer">
+															<Trans>Open Local ESP Portal</Trans>
+															<ExternalLinkIcon className="h-3 w-3 ml-1.5" />
+														</a>
+													</Button>
+												)}
 												{isDisabled ? (
 													<Button size="sm" variant="outline" onClick={() => reenableModule(mod.id)}>
 														<Trans>Re-enable</Trans>
@@ -695,7 +706,7 @@ export default function RecoveryModulesSettings() {
 												</Button>
 											</div>
 											{mod.ip_address && (
-												<span className="text-[10px] text-muted-foreground text-right max-w-[200px] leading-tight">
+												<span className="text-[10px] text-muted-foreground text-right max-w-[240px] leading-tight">
 													<Trans>Address is LAN-local and may be stale if the module is offline.</Trans>
 												</span>
 											)}
@@ -703,7 +714,7 @@ export default function RecoveryModulesSettings() {
 									)}
 								</CardHeader>
 								<CardContent className="space-y-4">
-									<div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm border-t pt-4">
+									<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-x-8 gap-y-5 text-sm border-t pt-4 items-start">
 										<div>
 											<span className="text-muted-foreground">
 												<Trans>Config Synchronization</Trans>
@@ -774,7 +785,7 @@ export default function RecoveryModulesSettings() {
 											<span className="text-muted-foreground">
 												<Trans>Last Heartbeat</Trans>
 											</span>
-											<div className="font-semibold mt-0.5">{timeAgo(mod.updated)}</div>
+											<div className="font-semibold mt-0.5">{timeAgo(mod.last_ping)}</div>
 										</div>
 										<div>
 											<span className="text-muted-foreground">
@@ -807,19 +818,22 @@ export default function RecoveryModulesSettings() {
 											</div>
 										</div>
 										<div>
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-muted-foreground">
-													<Trans>Temperature Monitoring</Trans>
-												</span>
+											<span className="text-muted-foreground">
+												<Trans>Temperature Monitoring</Trans>
+											</span>
+											<div className="mt-1 flex items-center gap-2">
 												<Switch
 													checked={!mod.temperature_monitoring_disabled}
 													onCheckedChange={(checked) =>
 														updateModuleField(mod.id, { temperature_monitoring_disabled: !checked })
 													}
 												/>
+												<span className="text-xs text-muted-foreground">
+													{mod.temperature_monitoring_disabled ? <Trans>Off</Trans> : <Trans>On</Trans>}
+												</span>
 											</div>
 											{!mod.temperature_monitoring_disabled && (
-												<div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+												<div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground flex-wrap">
 													<Trans>Warn</Trans>
 													<Input
 														type="number"
@@ -849,13 +863,13 @@ export default function RecoveryModulesSettings() {
 											<span className="text-muted-foreground">
 												<Trans>Buzzer</Trans>
 											</span>
-											<div className="mt-1 flex items-center gap-3">
+											<div className="mt-1 flex flex-wrap items-center gap-3">
 												<div className="flex items-center gap-1.5">
 													<Switch
 														checked={!mod.buzzer_disabled}
 														onCheckedChange={(checked) => updateModuleField(mod.id, { buzzer_disabled: !checked })}
 													/>
-													<span className="text-xs text-muted-foreground">
+													<span className="text-xs text-muted-foreground whitespace-nowrap">
 														<Trans>Enabled</Trans>
 													</span>
 												</div>
@@ -865,7 +879,7 @@ export default function RecoveryModulesSettings() {
 														disabled={mod.buzzer_disabled}
 														onCheckedChange={(checked) => updateModuleField(mod.id, { buzzer_muted: checked })}
 													/>
-													<span className="text-xs text-muted-foreground">
+													<span className="text-xs text-muted-foreground whitespace-nowrap">
 														<Trans>Mute</Trans>
 													</span>
 												</div>
@@ -895,8 +909,7 @@ export default function RecoveryModulesSettings() {
 																	Target:{" "}
 																	<span className="font-medium text-foreground">
 																		{mapping.expand?.system?.name || mapping.system}
-																	</span>{" "}
-																	| Ports: {mapping.probe_ports?.join(", ")}
+																	</span>
 																</div>
 															) : (
 																<div className="text-xs text-muted-foreground">
@@ -961,11 +974,13 @@ export default function RecoveryModulesSettings() {
 									<SelectValue placeholder={t`Select a system...`} />
 								</SelectTrigger>
 								<SelectContent>
-									{systemsList.map((sys) => (
-										<SelectItem key={sys.id} value={sys.id}>
-											{sys.name} ({sys.host})
-										</SelectItem>
-									))}
+									{systemsList
+										.filter((sys) => !channels.some((ch) => ch.system === sys.id && ch.id !== existingMappingId))
+										.map((sys) => (
+											<SelectItem key={sys.id} value={sys.id}>
+												{sys.name} ({sys.host})
+											</SelectItem>
+										))}
 								</SelectContent>
 							</Select>
 						</div>
@@ -982,19 +997,7 @@ export default function RecoveryModulesSettings() {
 							/>
 						</div>
 
-						<div className="grid sm:grid-cols-3 gap-2">
-							<div className="grid gap-1">
-								<Label htmlFor="map_ports">
-									<Trans>Probe Ports</Trans>
-								</Label>
-								<Input
-									id="map_ports"
-									value={mapProbePorts}
-									onChange={(e) => setMapProbePorts(e.target.value)}
-									placeholder="22"
-									required
-								/>
-							</div>
+						<div className="grid sm:grid-cols-2 gap-2">
 							<div className="grid gap-1">
 								<Label htmlFor="map_threshold">
 									<Trans>Threshold</Trans>

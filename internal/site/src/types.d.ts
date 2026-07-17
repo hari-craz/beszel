@@ -80,14 +80,28 @@ export interface SystemInfo {
 	efs?: Record<string, number>
 	/** services [totalServices, numFailedServices] */
 	sv?: [number, number]
-	/** Wake-on-LAN enabled */
-	wol_enabled?: boolean
-	/** ESP module mapped */
-	esp_mapped?: boolean
-	/** Maintenance mode active */
-	maintenance?: boolean
-	/** ESP module offline */
-	esp_offline?: boolean
+}
+
+export interface RecoveryModuleRecord extends RecordModel {
+	name: string
+	mac_address: string
+	ip_address?: string
+	status: string
+	max_channels: number
+	ping_interval_seconds?: number
+	temperature?: number
+	/** dedicated heartbeat timestamp - see isModuleOnline in lib/recoveryManager */
+	last_ping?: string
+	updated: string
+}
+
+export interface RecoveryChannelRecord extends RecordModel {
+	module: string
+	channel_number: number
+	system: string
+	maintenance: boolean
+	wol_enabled: boolean
+	hardware_recovery_disabled: boolean
 }
 
 export interface SystemStats {

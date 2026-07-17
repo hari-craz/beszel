@@ -410,6 +410,10 @@ msgstr "Channel mapping removed."
 msgid "Channel mapping updated."
 msgstr "Channel mapping updated."
 
+#: src/components/recovery-nodes.tsx
+msgid "Channels"
+msgstr "Channels"
+
 #: src/components/routes/system/charts/sensor-charts.tsx
 msgid "Charge"
 msgstr "Charge"
@@ -686,6 +690,7 @@ msgstr "Device"
 msgid "Disable"
 msgstr "Disable"
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "DISABLED"
 msgstr "DISABLED"
@@ -1206,6 +1211,7 @@ msgstr "Kept Beszel's configuration."
 msgid "Language"
 msgstr "Language"
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 msgid "Last Heartbeat"
 msgstr "Last Heartbeat"
@@ -1488,12 +1494,21 @@ msgid "OAuth 2 / OIDC support"
 msgstr "OAuth 2 / OIDC support"
 
 #: src/components/routes/settings/recovery-modules.tsx
+msgid "Off"
+msgstr "Off"
+
+#: src/components/recovery-nodes.tsx
+#: src/components/routes/settings/recovery-modules.tsx
 msgid "OFFLINE"
 msgstr "OFFLINE"
 
 #: src/components/routes/settings/recovery-modules.tsx
 #~ msgid "OFFLINE PENDING"
 #~ msgstr "OFFLINE PENDING"
+
+#: src/components/routes/settings/recovery-modules.tsx
+msgid "On"
+msgstr "On"
 
 #: src/components/routes/settings/config-yaml.tsx
 msgid "On each restart, systems in the database will be updated to match the systems defined in the file."
@@ -1512,6 +1527,7 @@ msgstr "One-time"
 msgid "One-time password"
 msgstr "One-time password"
 
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "ONLINE"
@@ -1701,8 +1717,8 @@ msgid "Preferred Language"
 msgstr "Preferred Language"
 
 #: src/components/routes/settings/recovery-modules.tsx
-msgid "Probe Ports"
-msgstr "Probe Ports"
+#~ msgid "Probe Ports"
+#~ msgstr "Probe Ports"
 
 #: src/components/systemd-table/systemd-table.tsx
 msgid "Process started"
@@ -1797,6 +1813,10 @@ msgstr "Recovery module removed."
 #: src/components/routes/settings/layout.tsx
 msgid "Recovery Modules"
 msgstr "Recovery Modules"
+
+#: src/components/recovery-nodes.tsx
+msgid "Recovery Nodes"
+msgstr "Recovery Nodes"
 
 #: src/components/routes/system/recovery-info.tsx
 msgid "Recovery Protection"
@@ -2162,6 +2182,7 @@ msgid "Tasks"
 msgstr "Tasks"
 
 #. Temperature label in systems table
+#: src/components/recovery-nodes.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/routes/system/smart-table.tsx
 #: src/components/systems-table/systems-table-columns.tsx
