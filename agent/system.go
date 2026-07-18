@@ -218,8 +218,7 @@ func (a *Agent) getSystemStats(cacheTimeMs uint16) system.Stats {
 
 	// GPU data
 	if a.gpuManager != nil {
-		// reset high gpu percent
-		a.systemInfo.GpuPct = 0
+		gpuPct := 0.0
 		// get current GPU data
 		if gpuData := a.gpuManager.GetCurrentData(cacheTimeMs); len(gpuData) > 0 {
 			systemStats.GPUData = gpuData
@@ -240,13 +239,16 @@ func (a *Agent) getSystemStats(cacheTimeMs uint16) system.Stats {
 					}
 				}
 				// update high gpu percent for dashboard
-				a.systemInfo.GpuPct = max(a.systemInfo.GpuPct, gpu.Usage)
+				gpuPct = max(gpuPct, gpu.Usage)
 			}
 			// use highest temp for dashboard temp if dashboard temp is unset
 			if a.systemInfo.DashboardTemp == 0 {
 				a.systemInfo.DashboardTemp = highestTemp
 			}
 		}
+		a.systemInfo.GpuPct = &gpuPct
+	} else {
+		a.systemInfo.GpuPct = nil
 	}
 
 	// update system info

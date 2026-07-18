@@ -261,7 +261,7 @@ export function SystemsTableColumns(viewMode: "table" | "grid"): ColumnDef<Syste
 			header: sortableHeader,
 		},
 		{
-			accessorFn: ({ info }) => info.g || undefined,
+			accessorFn: ({ info }) => info.g !== undefined ? info.g : undefined,
 			id: "gpu",
 			name: () => "GPU",
 			cell: TableCellWithMeter,
@@ -535,8 +535,12 @@ function sortableHeader(context: HeaderContext<SystemRecord, unknown>) {
 }
 
 function TableCellWithMeter(info: CellContext<SystemRecord, unknown>) {
+	const rawVal = info.getValue()
+	if (rawVal === undefined || rawVal === null) {
+		return null
+	}
+	const val = Number(rawVal) || 0
 	const { colorWarn = 65, colorCrit = 90 } = useStore($userSettings, { keys: ["colorWarn", "colorCrit"] })
-	const val = Number(info.getValue()) || 0
 	const threshold = getMeterStateByThresholds(val, colorWarn, colorCrit)
 	const meterClass = cn(
 		"h-full",

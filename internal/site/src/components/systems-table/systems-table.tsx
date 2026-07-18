@@ -42,8 +42,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { pb } from "@/lib/api"
 import { SystemStatus } from "@/lib/enums"
-import { $downSystems, $pausedSystems, $systems, $upSystems } from "@/lib/stores"
+import { $allSystemsById, $downSystems, $pausedSystems, $systems, $upSystems } from "@/lib/stores"
 import { cn, getServerWebUrl, runOnce, useBrowserStorage } from "@/lib/utils"
 import type { SystemRecord } from "@/types"
 import AlertButton from "../alerts/alert-button"
@@ -73,6 +74,73 @@ export default function SystemsTable() {
 	const [columnVisibility, setColumnVisibility] = useBrowserStorage<VisibilityState>("cols", {})
 
 	const locale = i18n.locale
+
+	// Subscribe to realtime updates for all systems when on the dashboard
+	useEffect(() => {
+		const unsubs: Record<string, () => void> = {}
+
+		const subscribeToSystem = async (systemId: string) => {
+			if (unsubs[systemId]) {
+				return
+			}
+			try {
+				const unsubFn = await pb.realtime.subscribe(
+					`rt_metrics`,
+					(data: { container: any[]; info: any; stats: any }) => {
+						const sys = $allSystemsById.get()[systemId]
+						if (sys && data.info) {
+							$allSystemsById.setKey(systemId, {
+								...sys,
+								info: data.info,
+							})
+						}
+					},
+					{ query: { system: systemId } }
+				)
+				unsubs[systemId] = unsubFn
+			} catch (err) {
+				console.error(`Failed to subscribe to realtime metrics for system ${systemId}:`, err)
+			}
+		}
+
+		const handleSystemsList = () => {
+			const currentSystems = $allSystemsById.get()
+
+			// Subscribe to any UP system that isn't subscribed yet
+			for (const sys of Object.values(currentSystems)) {
+				if (sys.status === SystemStatus.Up) {
+					subscribeToSystem(sys.id)
+				} else if (unsubs[sys.id]) {
+					// If a system status changed to not Up, unsubscribe
+					unsubs[sys.id]()
+					delete unsubs[sys.id]
+				}
+			}
+
+			// Clean up subscriptions for systems that are no longer in the list
+			for (const id of Object.keys(unsubs)) {
+				if (!currentSystems[id]) {
+					unsubs[id]()
+					delete unsubs[id]
+				}
+			}
+		}
+
+		// Initial subscription setup
+		handleSystemsList()
+
+		// Listen for systems store changes
+		const unsubscribeStore = $allSystemsById.listen(() => {
+			handleSystemsList()
+		})
+
+		return () => {
+			unsubscribeStore()
+			for (const id of Object.keys(unsubs)) {
+				unsubs[id]()
+			}
+		}
+	}, [])
 
 	// Filter data based on status filter
 	const filteredData = useMemo(() => {

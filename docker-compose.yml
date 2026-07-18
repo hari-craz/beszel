@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
     environment:
       APP_URL: ${APP_URL:-http://localhost:8090}
+      POLL_INTERVAL: ${POLL_INTERVAL:-15}
     ports:
       - "${HUB_PORT:-8090}:8090"
     volumes:

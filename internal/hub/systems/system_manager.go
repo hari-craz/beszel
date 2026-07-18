@@ -19,6 +19,8 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/store"
 	"golang.org/x/crypto/ssh"
+	"os"
+	"strconv"
 )
 
 // System status constants
@@ -28,13 +30,23 @@ const (
 	paused  string = "paused"  // System monitoring is paused
 	pending string = "pending" // System is waiting on initial connection result
 
-	// interval is the default update interval in milliseconds (60 seconds)
-	interval int = 60_000
-	// interval int = 10_000 // Debug interval for faster updates
-
 	// sessionTimeout is the maximum time to wait for SSH connections
 	sessionTimeout = 4 * time.Second
 )
+
+// interval is the update interval in milliseconds (defaults to 60 seconds)
+var interval int = 60_000
+
+func init() {
+	if envVal := os.Getenv("POLL_INTERVAL"); envVal != "" {
+		if sec, err := strconv.Atoi(envVal); err == nil {
+			if sec < 5 {
+				sec = 5 // enforce a safe minimum of 5 seconds
+			}
+			interval = sec * 1000
+		}
+	}
+}
 
 // errSystemExists is returned when attempting to add a system that already exists
 var errSystemExists = errors.New("system exists")

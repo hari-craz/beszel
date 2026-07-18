@@ -61,7 +61,10 @@ func (am *AlertManager) HandleSystemAlerts(systemRecord *core.Record, data *syst
 			val = data.Info.LoadAvg[2]
 			unit = ""
 		case "GPU":
-			val = data.Info.GpuPct
+			if data.Info.GpuPct == nil {
+				continue
+			}
+			val = *data.Info.GpuPct
 		case "Battery":
 			if data.Stats.Battery[0] == 0 {
 				continue
