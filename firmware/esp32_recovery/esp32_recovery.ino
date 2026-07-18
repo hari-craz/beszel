@@ -170,6 +170,7 @@ void markLocalChange();
 void saveChannelsToNVS();
 void loadChannelsFromNVS();
 void sendTelegram(const String& text);
+bool icmpPing(const char* ipStr, int timeoutMs);
 
 // Setup HTML onboarding page
 const char SETUP_HTML[] PROGMEM = R"rawliteral(
