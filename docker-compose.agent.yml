@@ -16,10 +16,7 @@
 
 services:
   beszel-agent:
-    build:
-      context: .
-      dockerfile: internal/dockerfile_agent
-    image: beszel-agent:local
+    image: ghcr.io/hari-craz/beszel/beszel-agent:latest
     container_name: beszel-agent
     restart: unless-stopped
     network_mode: host

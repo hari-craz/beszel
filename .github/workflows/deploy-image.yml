@@ -1,4 +1,4 @@
-name: Build and Push Hub Image to GHCR
+name: Build and Push Images to GHCR
 
 on:
   push:
@@ -13,6 +13,15 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ghcr.io/${{ github.repository }}/beszel
+            dockerfile: ./internal/dockerfile_hub
+          - image: ghcr.io/${{ github.repository }}/beszel-agent
+            dockerfile: ./internal/dockerfile_agent
+
     permissions:
       contents: read
       packages: write
@@ -43,13 +52,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Hub Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./
-          file: ./internal/dockerfile_hub
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/beszel:latest
-            ghcr.io/${{ github.repository }}/beszel:${{ github.sha }}
+            ${{ matrix.image }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
