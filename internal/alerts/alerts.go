@@ -2,7 +2,10 @@
 package alerts
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/mail"
 	"net/url"
 	"sync"
@@ -222,6 +225,15 @@ func (am *AlertManager) SendAlert(data AlertMessageData) error {
 			am.hub.Logger().Error("Failed to send shoutrrr alert", "err", err)
 		}
 	}
+	// send native push notifications via Expo push service
+	if devices, err := am.hub.FindAllRecords("mobile_devices", dbx.NewExp("user={:user}", dbx.Params{"user": data.UserID})); err == nil && len(devices) > 0 {
+		for _, device := range devices {
+			token := device.GetString("token")
+			if token != "" {
+				go am.SendExpoPushNotification(token, data.Title, data.Message, data.SystemID)
+			}
+		}
+	}
 	// send alerts via email
 	if len(userAlertSettings.Emails) == 0 {
 		return nil
@@ -245,6 +257,51 @@ func (am *AlertManager) SendAlert(data AlertMessageData) error {
 	}
 	am.hub.Logger().Info("Sent email alert", "to", message.To, "subj", message.Subject)
 	return nil
+}
+
+// SendExpoPushNotification sends a push notification to Expo's push gateway
+func (am *AlertManager) SendExpoPushNotification(token, title, message, systemID string) {
+	payload := map[string]any{
+		"to":    token,
+		"title": title,
+		"body":  message,
+		"data": map[string]any{
+			"systemId": systemID,
+		},
+		"sound": "default",
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		am.hub.Logger().Error("Failed to marshal Expo push notification payload", "err", err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", "https://exp.host/--/api/v2/push/send", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		am.hub.Logger().Error("Failed to create Expo push notification request", "err", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		am.hub.Logger().Error("Failed to send Expo push notification", "err", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		am.hub.Logger().Error("Expo push notification returned non-OK status", "status", resp.Status)
+	} else {
+		am.hub.Logger().Info("Sent Expo push notification successfully", "to", token)
+	}
 }
 
 // SendShoutrrrAlert sends an alert via a Shoutrrr URL

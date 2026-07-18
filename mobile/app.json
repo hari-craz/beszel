@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "BeszelXHarix",
+    "slug": "beszel-x-harix-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121316"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.unitaryx.beszelxharix"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#121316"
+      },
+      "package": "org.unitaryx.beszelxharix"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
