@@ -16,7 +16,8 @@ RUN apk add --no-cache \
 RUN update-ca-certificates
 
 # Build
-ARG TARGETOS TARGETARCH
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 RUN CGO_ENABLED=0 GOGC=75 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags "-w -s" -o /beszel ./internal/cmd/hub
 
 # ? -------------------------
