@@ -17,10 +17,7 @@
 
 services:
   beszel:
-    build:
-      context: .
-      dockerfile: internal/dockerfile_hub
-    image: beszel-hub:local
+    image: ghcr.io/hari-craz/beszel/beszel:latest
     container_name: beszel
     restart: unless-stopped
     environment:
