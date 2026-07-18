@@ -17,13 +17,13 @@ func SendMagicPacket(macStr, bcastIPStr string, port int) error {
 		return errors.New("MAC address must be 6 bytes")
 	}
 
-	// Construct magic packet payload: 6 bytes of 0xFF followed by 16 repetitions of the MAC
-	payload := make([]byte, 102)
+	// Magic packet: 6×0xFF header followed by the target MAC repeated 16 times (102 bytes total)
+	payload := make([]byte, 6+16*6)
 	for i := 0; i < 6; i++ {
 		payload[i] = 0xFF
 	}
-	for i := 1; i <= 16; i++ {
-		copy(payload[i*6:], mac)
+	for i := 0; i < 16; i++ {
+		copy(payload[6+i*6:], mac)
 	}
 
 	if bcastIPStr == "" {

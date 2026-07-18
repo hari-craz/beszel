@@ -7,6 +7,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Preferences.h>
+#include <esp_task_wdt.h>
+#include <time.h>
 // Raw ICMP socket support for icmpPing() - host reachability is checked by
 // pinging the IP directly instead of probing TCP ports.
 #include <lwip/sockets.h>
@@ -17,6 +19,7 @@
 #define FIRMWARE_VERSION "1.0.0"
 #define MAX_CHANNELS_LIMIT 6
 #define CONFIG_BUTTON_PIN 0 // standard boot button
+#define WDT_TIMEOUT_S 30
 
 // Pin settings
 #define ONE_WIRE_BUS 4
@@ -45,6 +48,7 @@ enum ChannelState {
 struct MonitoredChannel {
   int channelNumber;
   char hostIP[64];
+  char name[64];
   int ports[3];
   int portCount;
   bool maintenance;
@@ -69,6 +73,7 @@ struct MonitoredChannel {
   unsigned long lastProbeTime;
   unsigned long stateStartTime;
   int recoveryAttempts;
+  int hardHoldPhase; // non-blocking hard-hold: 0=hold OFF, 1=pause, 2=press ON
   // offlineAlerted edge-triggers Telegram alerts: set when we first confirm
   // this channel's host is down (so the "offline" alert fires once, not every
   // probe tick), cleared when it recovers (so the "recovered" alert fires
@@ -96,7 +101,7 @@ int currentDisplayPage = 0;
 // this deadline, so a fresh boot (or watchdog reset) never fires a relay
 // within seconds of coming up.
 #define STARTUP_GRACE_MS 60000UL
-unsigned long startupGraceUntilMs = 0;
+unsigned long startupTimeMs = 0;
 
 // Gateway / NETWORK_VERIFY: distinguishes "one server is down" from "the
 // network itself is down" so a router outage doesn't cause every channel to
@@ -128,6 +133,8 @@ int localChangeBaseRevision = 0;
 
 // Connectivity state surfaced on the local dashboard.
 bool lastPingSuccess = false;
+bool wasWiFiConnected = true;
+bool wifiDisconnectNotificationPending = false;
 
 // Telegram alerting: the ESP notifies the user directly (not via the hub) on
 // incidents, so alerts still arrive when Beszel is unreachable - which is
@@ -139,6 +146,14 @@ char telegramChatId[32] = "";
 // Button timers
 unsigned long buttonPressStartTime = 0;
 bool buttonWasPressed = false;
+
+// Non-blocking API relay action state
+struct {
+  bool active;
+  int pin;
+  unsigned long startTime;
+  unsigned long durationMs;
+} apiRelay = {false, 0, 0, 0};
 
 // Buzzer timing parameters
 unsigned long buzzerPatternStartTime = 0;
@@ -323,13 +338,18 @@ function loadState() {
     (data.channels || []).forEach(function(ch) {
       var cls = ch.state_label === 'OK' ? 'ok' : (ch.state_label === 'CRIT' ? 'crit' : 'warn');
       chHtml += "<div class='chan'>";
-      chHtml += "<div class='chan-head'><span class='title'><b>Channel " + ch.channel + "</b><span class='gpio'>GPIO " + ch.gpio + "</span></span>" + badge(ch.state_label, cls) + "</div>";
+      chHtml += "<div class='chan-head'><span class='title'><b>" + esc(ch.name || ("Channel " + ch.channel)) + "</b><span class='gpio'>GPIO " + ch.gpio + "</span></span>" + badge(ch.state_label, cls) + "</div>";
+      chHtml += "<div class='field'><label>Device Name</label><input type='text' id='ch_name_" + ch.channel + "' value='" + esc(ch.name) + "'></div>";
       chHtml += "<div class='field'><label>Host IP (pinged directly)</label><input type='text' id='ch_host_" + ch.channel + "' value='" + esc(ch.host_ip) + "'></div>";
       chHtml += "<div class='field'><label>Failure Threshold</label><input type='number' id='ch_thresh_" + ch.channel + "' value='" + ch.failure_threshold + "'></div>";
       chHtml += "<div class='field'><label>Boot Grace (seconds)</label><input type='number' id='ch_grace_" + ch.channel + "' value='" + ch.boot_grace_seconds + "'></div>";
       chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_maint_" + ch.channel + "' " + (ch.maintenance ? 'checked' : '') + "> Maintenance Mode</label></div>";
       chHtml += "<div class='field'><label class='inline'><input type='checkbox' id='ch_hwdis_" + ch.channel + "' " + (ch.hardware_recovery_disabled ? 'checked' : '') + "> Disable Autonomous Recovery</label></div>";
       chHtml += "<button onclick='saveChannel(" + ch.channel + ")'>Save Channel " + ch.channel + "</button>";
+      chHtml += "<div style='margin-top:10px;display:flex;gap:8px;'>";
+      chHtml += "<button onclick='relayAction(" + ch.channel + ",1)' style='background:#14532d;color:#4ade80;flex:1;'>&#9654; Power ON</button>";
+      chHtml += "<button onclick='relayAction(" + ch.channel + ",0)' style='background:#7f1d1d;color:#f87171;flex:1;'>&#9724; Force OFF</button>";
+      chHtml += "</div>";
       chHtml += "</div>";
     });
     document.getElementById('channelsList').innerHTML = chHtml || "<p style='color:#a1a1aa;font-size:13px;'>No channels configured yet.</p>";
@@ -360,6 +380,7 @@ function sendTest() {
 function saveChannel(chan) {
   var body = {
     channel: chan,
+    name: document.getElementById('ch_name_' + chan).value,
     host_ip: document.getElementById('ch_host_' + chan).value,
     failure_threshold: parseInt(document.getElementById('ch_thresh_' + chan).value, 10) || 3,
     boot_grace_seconds: parseInt(document.getElementById('ch_grace_' + chan).value, 10) || 60,
@@ -368,6 +389,13 @@ function saveChannel(chan) {
   };
   fetch('/api/channel/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
     .then(function(){ loadState(); });
+}
+function relayAction(chan, isOn) {
+  var dur = isOn ? 1000 : 5000;
+  if (!isOn && !confirm('Force power off Channel ' + chan + '? This holds the power button for 5 seconds.')) return;
+  fetch('/api/relay/trigger', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({channel: chan, pulse_duration_ms: dur}) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ alert(d.status === 'ok' ? (isOn ? 'Power ON' : 'Force OFF') + ' triggered.' : 'Error: ' + (d.error || 'unknown')); });
 }
 loadState();
 setInterval(loadState, 10000);
@@ -431,10 +459,17 @@ void handleRelayTrigger() {
     server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
     return;
   }
+  if (apiRelay.active) {
+    server.send(409, "application/json", "{\"error\":\"Relay action already in progress\"}");
+    return;
+  }
   StaticJsonDocument<256> doc;
   deserializeJson(doc, server.arg("plain"));
   int targetChannel = doc["channel"];
   int durationMs = doc["pulse_duration_ms"];
+  // Clamp pulse duration to prevent extended event-loop blocking
+  if (durationMs < 50) durationMs = 50;
+  if (durationMs > 10000) durationMs = 10000;
 
   if (targetChannel < 1 || targetChannel > MAX_CHANNELS_LIMIT) {
     server.send(400, "application/json", "{\"error\":\"Invalid channel\"}");
@@ -442,10 +477,19 @@ void handleRelayTrigger() {
   }
 
   int pin = RELAY_PINS[targetChannel - 1];
+  apiRelay.active = true;
+  apiRelay.pin = pin;
+  apiRelay.startTime = millis();
+  apiRelay.durationMs = (unsigned long)durationMs;
   digitalWrite(pin, LOW);
-  delay(durationMs);
-  digitalWrite(pin, HIGH);
   triggerBuzzer(1, 200);
+
+  if (durationMs > 2000) {
+    sendTelegram("⏳ <b>Manual LONG PRESS</b>\n\nRelay held for " + String(durationMs / 1000) + " seconds.");
+  } else {
+    sendTelegram("⚡ <b>Manual SHORT PRESS</b>\n\nRelay activated from dashboard.");
+  }
+
   server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
@@ -528,6 +572,7 @@ void handleGetState() {
     MonitoredChannel& ch = activeChannels[i];
     JsonObject chObj = channels.createNestedObject();
     chObj["channel"] = ch.channelNumber;
+    chObj["name"] = ch.name;
     // Which relay GPIO this channel drives, so the wiring is visible in the UI.
     if (ch.channelNumber >= 1 && ch.channelNumber <= MAX_CHANNELS_LIMIT) {
       chObj["gpio"] = RELAY_PINS[ch.channelNumber - 1];
@@ -601,7 +646,8 @@ void handleTelegramTest() {
     server.send(200, "application/json", "{\"ok\":false,\"error\":\"not configured\"}");
     return;
   }
-  sendTelegram("Test message - Telegram alerts are working.");
+  triggerBuzzer(2, 100);
+  sendTelegram("🔔 <b>Buzzer Test</b>\n\nGuardian buzzer activated.");
   server.send(200, "application/json", "{\"ok\":true}");
 }
 
@@ -633,12 +679,40 @@ void handleSaveChannel() {
     return;
   }
 
-  const char* host = doc["host_ip"] | "";
-  if (host[0] != '\0') strncpy(target->hostIP, host, sizeof(target->hostIP) - 1);
-  target->failureThreshold = doc["failure_threshold"] | target->failureThreshold;
-  target->bootGraceSeconds = doc["boot_grace_seconds"] | target->bootGraceSeconds;
-  target->maintenance = doc["maintenance"] | target->maintenance;
-  target->hwRecoveryDisabled = doc["hardware_recovery_disabled"] | target->hwRecoveryDisabled;
+  bool prevHwDis = target->hwRecoveryDisabled;
+  bool prevMaint = target->maintenance;
+
+  if (doc.containsKey("name")) {
+    const char* chName = doc["name"] | "";
+    strncpy(target->name, chName, sizeof(target->name) - 1);
+    target->name[sizeof(target->name) - 1] = '\0';
+  }
+  if (doc.containsKey("host_ip")) {
+    const char* host = doc["host_ip"] | "";
+    if (host[0] != '\0') strncpy(target->hostIP, host, sizeof(target->hostIP) - 1);
+  }
+  if (doc.containsKey("failure_threshold")) {
+    target->failureThreshold = doc["failure_threshold"].as<int>();
+  }
+  if (doc.containsKey("boot_grace_seconds")) {
+    target->bootGraceSeconds = doc["boot_grace_seconds"].as<int>();
+  }
+  if (doc.containsKey("maintenance")) {
+    target->maintenance = doc["maintenance"].as<bool>();
+  }
+  if (doc.containsKey("hardware_recovery_disabled")) {
+    target->hwRecoveryDisabled = doc["hardware_recovery_disabled"].as<bool>();
+  }
+
+  // Telegram alerts on dashboard manual settings transitions
+  if (target->hwRecoveryDisabled && !prevHwDis) {
+    String devName = strlen(target->name) > 0 ? target->name : ("Channel " + String(target->channelNumber));
+    sendTelegram("🛑 <b>Software Shutdown</b>\n\n🖥 " + devName + "\n\nRequested from ESP32 Dashboard.\n\nAuto Recovery Disabled.");
+  }
+  if (target->maintenance && !prevMaint) {
+    String devName = strlen(target->name) > 0 ? target->name : ("Channel " + String(target->channelNumber));
+    sendTelegram("🔄 <b>Software Reboot</b>\n\n🖥 " + devName + "\n\nWaiting " + String(target->bootGraceSeconds) + " seconds before recovery checks.");
+  }
 
   if (doc.containsKey("probe_ports")) {
     JsonArray ports = doc["probe_ports"];
@@ -656,6 +730,22 @@ void handleSaveChannel() {
 
 void setup() {
   Serial.begin(115200);
+
+  // Hardware watchdog: auto-resets on hang (e.g. network stack deadlock)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+  esp_task_wdt_config_t wdt_config = {
+    .timeout_ms = WDT_TIMEOUT_S * 1000,
+    .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+    .trigger_panic = true
+  };
+  if (esp_task_wdt_init(&wdt_config) != ESP_OK) {
+    esp_task_wdt_reconfigure(&wdt_config);
+  }
+#else
+  esp_task_wdt_init(WDT_TIMEOUT_S, true);
+#endif
+  esp_task_wdt_add(NULL);
+
   pinMode(CONFIG_BUTTON_PIN, INPUT_PULLUP);
 
   for (int i = 0; i < MAX_CHANNELS_LIMIT; i++) {
@@ -754,7 +844,7 @@ void setup() {
     // Hold off any autonomous recovery action until fresh verification has
     // had a chance to run, so a boot/reset never presses a relay within
     // seconds of coming up.
-    startupGraceUntilMs = millis() + STARTUP_GRACE_MS;
+    startupTimeMs = millis();
 
     server.on("/", HTTP_GET, handleDashboard);
     server.on("/api/state", HTTP_GET, handleGetState);
@@ -765,17 +855,83 @@ void setup() {
     server.begin();
     delay(1000);
 
-    // Boot notification: tells the user the module is up and where to reach it.
+    // Boot notification & check offline devices on startup
     if (WiFi.status() == WL_CONNECTED) {
-      sendTelegram(String("[ONLINE] Recovery module powered on\nIP: ") + WiFi.localIP().toString() +
-                   "\nFirmware " + FIRMWARE_VERSION);
+      String bootMsg = "<b>Guardian Online</b>\n\n";
+      bootMsg += "📡 IP: " + WiFi.localIP().toString() + "\n";
+      bootMsg += "📶 WiFi: " + WiFi.SSID() + "\n";
+      for (int i = 0; i < activeChannelCount; i++) {
+        String displayName = strlen(activeChannels[i].name) > 0 ? activeChannels[i].name : ("Channel " + String(activeChannels[i].channelNumber));
+        bootMsg += "🖥 " + displayName + ": " + String(activeChannels[i].hostIP) + "\n";
+      }
+      bootMsg += "\n✅ System Ready";
+      sendTelegram(bootMsg);
+
+      // Instant recovery for offline devices on boot
+      for (int i = 0; i < activeChannelCount; i++) {
+        if (activeChannels[i].maintenance) continue;
+
+        bool hostResponded = icmpPing(activeChannels[i].hostIP, 1200);
+        if (!hostResponded) {
+          activeChannels[i].state = STATE_SHORT_PRESS;
+          activeChannels[i].stateStartTime = millis();
+          activeChannels[i].recoveryAttempts = 1;
+          activeChannels[i].consecutiveFailures = 1;
+
+          int pin = RELAY_PINS[activeChannels[i].channelNumber - 1];
+          digitalWrite(pin, LOW);
+
+          // Configure non-blocking relay duration (1s)
+          apiRelay.active = true;
+          apiRelay.pin = pin;
+          apiRelay.startTime = millis();
+          apiRelay.durationMs = 1000;
+
+          triggerBuzzer(3, 150);
+
+          String devName = strlen(activeChannels[i].name) > 0 ? activeChannels[i].name : ("Channel " + String(activeChannels[i].channelNumber));
+          String offlineMsg = "🚨 <b>" + devName + " Offline</b>\n\n";
+          offlineMsg += "🖥 Device: " + devName + "\n";
+          offlineMsg += "📍 IP: " + String(activeChannels[i].hostIP) + "\n\n";
+          offlineMsg += "⚙ Recovery Attempt: 1/3\n";
+          offlineMsg += "🔧 Action: SHORT PRESS\n\n";
+          offlineMsg += "⏱ Waiting " + String(activeChannels[i].bootGraceSeconds) + " seconds...";
+          sendTelegram(offlineMsg);
+
+          activeChannels[i].offlineAlerted = true;
+        }
+      }
     }
   }
 }
 
 void loop() {
+  esp_task_wdt_reset();
   server.handleClient();
   checkConfigButton();
+
+  // WiFi connection status tracking
+  if (WiFi.status() != WL_CONNECTED) {
+    if (wasWiFiConnected) {
+      wasWiFiConnected = false;
+      wifiDisconnectNotificationPending = true;
+    }
+  } else {
+    if (!wasWiFiConnected) {
+      wasWiFiConnected = true;
+      if (wifiDisconnectNotificationPending) {
+        sendTelegram("📡 <b>Wi-Fi Disconnected</b>\n\nGuardian cannot reach the network.\n\nReconnecting...");
+        wifiDisconnectNotificationPending = false;
+      }
+      sendTelegram("📶 <b>Wi-Fi Connected</b>\n\nIP: " + WiFi.localIP().toString());
+    }
+  }
+
+  // Non-blocking API relay action completion
+  if (apiRelay.active && millis() - apiRelay.startTime >= apiRelay.durationMs) {
+    digitalWrite(apiRelay.pin, HIGH);
+    apiRelay.active = false;
+  }
 
   if (isProvisioned) {
     processProberStateMachines();
@@ -881,15 +1037,19 @@ bool icmpPing(const char* ipStr, int timeoutMs) {
   dest.sin_family = AF_INET;
   dest.sin_addr.s_addr = destAddr;
 
+  // Single exit point via 'cleanup' ensures close(sock) is always called.
+  // ESP32 lwIP has a limited socket pool (~10); a leak here would silently
+  // disable all ICMP probing after ~10 calls.
+  bool replied = false;
+
   if (sendto(sock, &icmpHdr, sizeof(icmpHdr), 0, (struct sockaddr*)&dest, sizeof(dest)) < 0) {
-    close(sock);
-    return false;
+    goto cleanup;
   }
 
-  bool replied = false;
-  unsigned long deadline = millis() + (unsigned long)timeoutMs;
-  uint8_t buf[128];
-  while (!replied && (long)(deadline - millis()) > 0) {
+  {
+    unsigned long deadline = millis() + (unsigned long)timeoutMs;
+    uint8_t buf[128];
+    while (!replied && (long)(deadline - millis()) > 0) {
     struct sockaddr_in from;
     socklen_t fromLen = sizeof(from);
     int n = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromLen);
@@ -905,6 +1065,9 @@ bool icmpPing(const char* ipStr, int timeoutMs) {
       replied = true;
     }
   }
+  }
+
+cleanup:
   close(sock);
   return replied;
 }
@@ -956,7 +1119,7 @@ String computeLocalConfigHash() {
     String(buzzerDisabled) + "|" + String(buzzerMuted);
   for (int i = 0; i < activeChannelCount; i++) {
     MonitoredChannel& ch = activeChannels[i];
-    canonical += "|ch" + String(ch.channelNumber) + ":" + String(ch.hostIP) + ":" +
+    canonical += "|ch" + String(ch.channelNumber) + ":" + String(ch.hostIP) + ":" + String(ch.name) + ":" +
       String(ch.maintenance) + ":" + String(ch.hwRecoveryDisabled) + ":" +
       String(ch.failureThreshold) + ":" + String(ch.bootGraceSeconds);
     for (int p = 0; p < ch.portCount; p++) {
@@ -1010,13 +1173,14 @@ void markLocalChange() {
 // needing) a hub sync. Only the persistent config fields are stored; volatile
 // runtime state (probe state, counters, timers) is reset on load.
 void saveChannelsToNVS() {
-  StaticJsonDocument<1536> doc;
+  StaticJsonDocument<2048> doc; // Increased from 1536 to accommodate names
   JsonArray arr = doc.to<JsonArray>();
   for (int i = 0; i < activeChannelCount; i++) {
     MonitoredChannel& ch = activeChannels[i];
     JsonObject chObj = arr.createNestedObject();
     chObj["channel"] = ch.channelNumber;
     chObj["host_ip"] = ch.hostIP;
+    chObj["name"] = ch.name;
     chObj["failure_threshold"] = ch.failureThreshold;
     chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
     chObj["maintenance"] = ch.maintenance;
@@ -1042,7 +1206,7 @@ void loadChannelsFromNVS() {
   if (json.length() == 0) {
     return;
   }
-  StaticJsonDocument<1536> doc;
+  StaticJsonDocument<2048> doc; // Increased to 2048
   if (deserializeJson(doc, json) != DeserializationError::Ok) {
     return;
   }
@@ -1055,6 +1219,9 @@ void loadChannelsFromNVS() {
     const char* host = item["host_ip"] | "";
     strncpy(newCh.hostIP, host, sizeof(newCh.hostIP) - 1);
     newCh.hostIP[sizeof(newCh.hostIP) - 1] = '\0';
+    const char* chName = item["name"] | "";
+    strncpy(newCh.name, chName, sizeof(newCh.name) - 1);
+    newCh.name[sizeof(newCh.name) - 1] = '\0';
     newCh.maintenance = item["maintenance"] | false;
     newCh.hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
     newCh.failureThreshold = item["failure_threshold"] | 3;
@@ -1065,6 +1232,7 @@ void loadChannelsFromNVS() {
     newCh.lastProbeTime = 0;
     newCh.stateStartTime = 0;
     newCh.recoveryAttempts = 0;
+    newCh.hardHoldPhase = 0;
     newCh.offlineAlerted = false;
     JsonArray ports = item["ports"];
     newCh.portCount = 0;
@@ -1077,11 +1245,25 @@ void loadChannelsFromNVS() {
   }
 }
 
-// sendTelegram posts a message to the configured Telegram chat via the Bot
-// API. No-op when unconfigured. Blocking (bounded by setTimeout) and
-// best-effort: a failed send never affects recovery logic. TLS uses
-// setInsecure() - acceptable for a LAN homelab device, and avoids bundling
-// and rotating Telegram's root CA in firmware.
+String getFormattedTime() {
+  time_t now;
+  time(&now);
+  struct tm timeinfo;
+  if (now < 1600000000) {
+    if (WiFi.status() == WL_CONNECTED) {
+      configTime(19800, 0, "pool.ntp.org", "time.nist.gov"); // +05:30 (19800 seconds)
+    }
+    unsigned long secs = millis() / 1000;
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Uptime: %lds", secs);
+    return String(buf);
+  }
+  localtime_r(&now, &timeinfo);
+  char timeStringBuff[30];
+  strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return String(timeStringBuff);
+}
+
 void sendTelegram(const String& text) {
   if (strlen(telegramToken) == 0 || strlen(telegramChatId) == 0) {
     return;
@@ -1098,9 +1280,13 @@ void sendTelegram(const String& text) {
     return;
   }
   http.addHeader("Content-Type", "application/json");
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<2048> doc;
   doc["chat_id"] = telegramChatId;
-  doc["text"] = String("[") + moduleName + "] " + text;
+  doc["parse_mode"] = "HTML";
+  
+  String fullText = "🛡 <b>" + String(moduleName) + "</b>\n\n" + text + "\n\n🕒 " + getFormattedTime();
+  doc["text"] = fullText;
+  
   String body;
   serializeJson(doc, body);
   int code = http.POST(body);
@@ -1117,6 +1303,36 @@ void processProberStateMachines() {
     MonitoredChannel& ch = activeChannels[i];
     if (ch.maintenance) {
       ch.state = STATE_ONLINE;
+      continue;
+    }
+
+    // Non-blocking HARD_HOLD relay processing runs every loop iteration
+    // for precise relay timing, independent of the normal probe interval.
+    if (ch.state == STATE_HARD_HOLD) {
+      int pin = RELAY_PINS[ch.channelNumber - 1];
+      switch (ch.hardHoldPhase) {
+        case 0: // Holding power off (8s)
+          if (now - ch.stateStartTime >= 8000) {
+            digitalWrite(pin, HIGH);  // Release power button
+            ch.hardHoldPhase = 1;
+            ch.stateStartTime = now;
+          }
+          break;
+        case 1: // Pause before restart press (1.5s)
+          if (now - ch.stateStartTime >= 1500) {
+            digitalWrite(pin, LOW);  // Press power on
+            ch.hardHoldPhase = 2;
+            ch.stateStartTime = now;
+          }
+          break;
+        case 2: // Restart press (300ms)
+          if (now - ch.stateStartTime >= 300) {
+            digitalWrite(pin, HIGH);  // Release
+            ch.state = STATE_BOOT_GRACE;
+            ch.stateStartTime = now;
+          }
+          break;
+      }
       continue;
     }
 
@@ -1140,7 +1356,8 @@ void processProberStateMachines() {
             ch.state = STATE_ONLINE;
             ch.consecutiveFailures = 0;
             if (ch.offlineAlerted) {
-              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber + ") is back online.");
+              String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+              sendTelegram("✅ <b>" + devName + " Online</b>\n\nConnection restored.");
               ch.offlineAlerted = false;
             }
           } else {
@@ -1149,14 +1366,17 @@ void processProberStateMachines() {
             if (ch.consecutiveFailures >= threshold) {
               // Startup grace: keep verifying/logging, but never act within
               // STARTUP_GRACE_MS of boot.
-              if (now < startupGraceUntilMs) {
+              if (now - startupTimeMs < STARTUP_GRACE_MS) {
                 break;
               }
               // Per-channel policy: this channel is monitoring-only.
               if (ch.hwRecoveryDisabled) {
                 if (!ch.offlineAlerted) {
-                  sendTelegram(String("[OFFLINE] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                               ") is offline - autonomous recovery disabled (monitoring only).");
+                  String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+                  String msg = "⚠ <b>" + devName + " Offline</b>\n\n";
+                  msg += "🖥 Device: " + devName + "\n";
+                  msg += "📍 IP: " + String(ch.hostIP);
+                  sendTelegram(msg);
                   ch.offlineAlerted = true;
                 }
                 break;
@@ -1172,20 +1392,31 @@ void processProberStateMachines() {
                 networkVerifyActive = true;
                 gatewayConsecutiveOk = 0;
                 lastGatewayProbeTime = now;
-                sendTelegram("[NETWORK] Gateway unreachable - autonomous recovery paused network-wide.");
+                sendTelegram("📡 <b>Wi-Fi Disconnected</b>\n\nGuardian cannot reach the network.\n\nReconnecting...");
                 break;
               }
               ch.state = STATE_SHORT_PRESS;
               ch.stateStartTime = now;
-              ch.recoveryAttempts++;
+              ch.recoveryAttempts = 1;
               int pin = RELAY_PINS[ch.channelNumber - 1];
               digitalWrite(pin, LOW);
-              delay(300);
-              digitalWrite(pin, HIGH);
+              
+              // Non-blocking 1s pulse trigger
+              apiRelay.active = true;
+              apiRelay.pin = pin;
+              apiRelay.startTime = now;
+              apiRelay.durationMs = 1000;
+              
               triggerBuzzer(3, 150);
               if (!ch.offlineAlerted) {
-                sendTelegram(String("[OFFLINE] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                             ") offline - pressing power relay to reboot.");
+                String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+                String msg = "🚨 <b>" + devName + " Offline</b>\n\n";
+                msg += "🖥 Device: " + devName + "\n";
+                msg += "📍 IP: " + String(ch.hostIP) + "\n\n";
+                msg += "⚙ Recovery Attempt: 1/3\n";
+                msg += "🔧 Action: SHORT PRESS\n\n";
+                msg += "⏱ Waiting " + String(ch.bootGraceSeconds) + " seconds...";
+                sendTelegram(msg);
                 ch.offlineAlerted = true;
               }
             }
@@ -1201,54 +1432,89 @@ void processProberStateMachines() {
           if (hostResponded) {
             ch.state = STATE_ONLINE;
             ch.consecutiveFailures = 0;
-            ch.recoveryAttempts = 0;
-            triggerBuzzer(2, 200);
             if (ch.offlineAlerted) {
-              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                           ") recovered after relay reboot.");
+              String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+              String msg;
+              if (ch.recoveryAttempts > 0) {
+                msg = "✅ <b>" + devName + " Online</b>\n\n🟢 Server is reachable again.\n\nRecovery successful.";
+              } else {
+                msg = "✅ <b>" + devName + " Online</b>\n\nConnection restored.";
+              }
+              sendTelegram(msg);
               ch.offlineAlerted = false;
             }
+            ch.recoveryAttempts = 0;
+            triggerBuzzer(2, 200);
           } else {
             unsigned long bootGraceMs = (ch.bootGraceSeconds > 0) ? (unsigned long)ch.bootGraceSeconds * 1000UL : 60000UL;
             if (now - ch.stateStartTime >= bootGraceMs) {
               // Hard-hold is destructive (it can power OFF a machine that a
               // hub-initiated WOL just booted), so it gets an extra, more
               // conservative gate than the short-press escalation above.
-              bool hubLockFresh = (ch.hubLockUntilMs != 0 && now < ch.hubLockUntilMs);
+              bool hubLockFresh = (ch.hubLockUntilMs != 0 && (long)(ch.hubLockUntilMs - now) > 0);
               if (ch.hwRecoveryDisabled || hubLockFresh || networkVerifyActive) {
                 // Defer, don't cancel: stay in BOOT_GRACE and re-check next
                 // cycle instead of escalating to a destructive hard-hold.
                 ch.stateStartTime = now;
                 break;
               }
-              if (ch.recoveryAttempts < 2) {
-                ch.state = STATE_HARD_HOLD;
+              if (ch.recoveryAttempts == 1) {
+                // Attempt 2/3 (SHORT PRESS)
+                ch.state = STATE_SHORT_PRESS;
                 ch.stateStartTime = now;
-                ch.recoveryAttempts++;
+                ch.recoveryAttempts = 2;
+                
                 int pin = RELAY_PINS[ch.channelNumber - 1];
                 digitalWrite(pin, LOW);
-                delay(8000);
-                digitalWrite(pin, HIGH);
-                delay(1500);
-                digitalWrite(pin, LOW);
-                delay(300);
-                digitalWrite(pin, HIGH);
+                apiRelay.active = true;
+                apiRelay.pin = pin;
+                apiRelay.startTime = now;
+                apiRelay.durationMs = 1000;
+                
+                triggerBuzzer(3, 150);
+                
+                String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+                String msg = "⚠ <b>" + devName + " Still Offline</b>\n\n";
+                msg += "⚙ Recovery Attempt: 2/3\n";
+                msg += "🔧 Action: SHORT PRESS\n\n";
+                msg += "⏱ Waiting " + String(ch.bootGraceSeconds) + " seconds...";
+                sendTelegram(msg);
+              } else if (ch.recoveryAttempts == 2) {
+                // Attempt 3/3 (HARD PRESS)
+                ch.state = STATE_HARD_HOLD;
+                ch.stateStartTime = now;
+                ch.hardHoldPhase = 0;
+                ch.recoveryAttempts = 3;
+                
+                int pin = RELAY_PINS[ch.channelNumber - 1];
+                digitalWrite(pin, LOW);  // Start non-blocking hold
                 triggerBuzzer(4, 150);
-                sendTelegram(String("[FORCE-RESTART] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                             ") still down - forced an 8s power hold.");
+                
+                String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+                String msg = "🔥 <b>Final Recovery Attempt</b>\n\n";
+                msg += "🖥 " + devName + "\n\n";
+                msg += "⚙ Attempt: 3/3\n";
+                msg += "🔧 Action: HARD PRESS\n\n";
+                msg += "⏱ Waiting " + String(ch.bootGraceSeconds) + " seconds...";
+                sendTelegram(msg);
               } else {
+                // Critical failure
                 ch.state = STATE_CRITICAL;
                 ch.stateStartTime = now;
-                sendTelegram(String("[CRITICAL] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                             ") recovery failed after repeated attempts - still down.");
+                
+                String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+                String msg = "❌ <b>Recovery Failed</b>\n\n";
+                msg += "🖥 " + devName + "\n\n";
+                msg += "Hardware recovery unsuccessful.\n\n";
+                msg += "Manual intervention required.";
+                sendTelegram(msg);
               }
             }
           }
           break;
 
         case STATE_HARD_HOLD:
-          ch.state = STATE_BOOT_GRACE;
-          ch.stateStartTime = now;
+          // Handled non-blockingly before the probe interval check
           break;
 
         case STATE_CRITICAL:
@@ -1257,8 +1523,8 @@ void processProberStateMachines() {
             ch.consecutiveFailures = 0;
             ch.recoveryAttempts = 0;
             if (ch.offlineAlerted) {
-              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber +
-                           ") recovered from CRITICAL - back online.");
+              String devName = strlen(ch.name) > 0 ? ch.name : ("Channel " + String(ch.channelNumber));
+              sendTelegram("✅ <b>" + devName + " Online</b>\n\n🟢 Server is reachable again.\n\nRecovery successful.");
               ch.offlineAlerted = false;
             }
           } else {
@@ -1336,6 +1602,7 @@ void syncWithHub() {
       MonitoredChannel& ch = activeChannels[i];
       JsonObject chObj = channelsArr.createNestedObject();
       chObj["channel"] = ch.channelNumber;
+      chObj["name"] = ch.name;
       chObj["host_ip"] = ch.hostIP;
       chObj["failure_threshold"] = ch.failureThreshold;
       chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
@@ -1409,6 +1676,11 @@ void syncWithHub() {
       // table (nothing persisted yet) but the hub already has config for us -
       // otherwise a matching revision would leave the module unprotected.
       if (applyHubPush && (remoteRevision != localConfigRevision || activeChannelCount == 0)) {
+        // Save old channels to verify additions
+        int oldChannelCount = activeChannelCount;
+        MonitoredChannel oldChannels[MAX_CHANNELS_LIMIT];
+        memcpy(oldChannels, activeChannels, sizeof(oldChannels));
+
         JsonArray channelsArray = respDoc["channels"];
         activeChannelCount = 0;
 
@@ -1419,6 +1691,9 @@ void syncWithHub() {
           newCh.channelNumber = item["channel"];
           const char* host = item["host_ip"];
           strncpy(newCh.hostIP, host, sizeof(newCh.hostIP) - 1);
+          const char* chName = item["name"] | "";
+          strncpy(newCh.name, chName, sizeof(newCh.name) - 1);
+          newCh.name[sizeof(newCh.name) - 1] = '\0';
           newCh.maintenance = item["maintenance"];
           newCh.hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
           newCh.failureThreshold = item["failure_threshold"] | 3;
@@ -1431,6 +1706,7 @@ void syncWithHub() {
           newCh.consecutiveFailures = 0;
           newCh.lastProbeTime = 0;
           newCh.recoveryAttempts = 0;
+          newCh.hardHoldPhase = 0;
           newCh.offlineAlerted = false;
 
           JsonArray ports = item["ports"];
@@ -1440,6 +1716,20 @@ void syncWithHub() {
               newCh.ports[newCh.portCount++] = p;
             }
           }
+
+          // Trigger alert if channel is newly added
+          bool isNew = true;
+          for (int j = 0; j < oldChannelCount; j++) {
+            if (oldChannels[j].channelNumber == newCh.channelNumber) {
+              isNew = false;
+              break;
+            }
+          }
+          if (isNew) {
+            String displayName = strlen(newCh.name) > 0 ? newCh.name : ("Channel " + String(newCh.channelNumber));
+            sendTelegram("➕ <b>New Device Added</b>\n\n📦 Device: " + displayName + "\n📍 IP: " + String(newCh.hostIP));
+          }
+
           activeChannelCount++;
         }
 
@@ -1467,6 +1757,11 @@ void syncWithHub() {
             activeChannels[i].hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
             activeChannels[i].failureThreshold = item["failure_threshold"] | 3;
             activeChannels[i].bootGraceSeconds = item["boot_grace_seconds"] | 60;
+            const char* chName = item["name"] | "";
+            if (strlen(chName) > 0) {
+              strncpy(activeChannels[i].name, chName, sizeof(activeChannels[i].name) - 1);
+              activeChannels[i].name[sizeof(activeChannels[i].name) - 1] = '\0';
+            }
             long lockSecondsRemaining = item["hub_lock_seconds_remaining"] | 0;
             activeChannels[i].hubLockUntilMs = (lockSecondsRemaining > 0)
               ? (millis() + (unsigned long)lockSecondsRemaining * 1000UL)

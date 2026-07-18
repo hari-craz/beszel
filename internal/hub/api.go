@@ -1102,9 +1102,16 @@ func (h *Hub) handleRecoveryPing(e *core.RequestEvent) error {
 			if portsData != "" {
 				_ = json.Unmarshal([]byte(portsData), &ports)
 			}
+			systemName := ""
+			if systemID := chRec.GetString("system"); systemID != "" {
+				if sysRec, errSys := e.App.FindRecordById("systems", systemID); errSys == nil {
+					systemName = sysRec.GetString("name")
+				}
+			}
 			channel := map[string]any{
 				"channel":                    chRec.GetInt("channel_number"),
 				"system":                     chRec.GetString("system"),
+				"name":                       systemName,
 				"host_ip":                    chRec.GetString("host_ip"),
 				"ports":                      ports,
 				"maintenance":                chRec.GetBool("maintenance"),
