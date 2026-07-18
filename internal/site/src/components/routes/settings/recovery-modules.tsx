@@ -85,6 +85,12 @@ interface SystemItem {
 	host: string
 }
 
+// RELAY_GPIO_PINS mirrors RELAY_PINS[] in
+// firmware/esp32_recovery/esp32_recovery.ino (relay channel N drives
+// RELAY_PINS[N-1]). Shown per channel so the wiring is visible in the UI.
+// Keep this in sync with the firmware if the pin assignment ever changes.
+const RELAY_GPIO_PINS = [18, 19, 25, 26, 27, 32]
+
 // syncStatusMeta maps each config-sync state to a Badge variant and label,
 // keeping the mapping in one place instead of repeating it inline.
 const syncStatusMeta: Record<string, { variant: "success" | "warning" | "destructive" | "secondary"; label: string }> = {
@@ -903,7 +909,12 @@ export default function RecoveryModulesSettings() {
 														className="flex justify-between items-center p-3 rounded-lg border text-sm bg-muted/40"
 													>
 														<div className="space-y-1">
-															<div className="font-semibold text-primary">Channel {chanNum}</div>
+															<div className="font-semibold text-primary flex items-center gap-2">
+																Channel {chanNum}
+																<span className="text-[10px] font-normal text-muted-foreground">
+																	GPIO {RELAY_GPIO_PINS[chanNum - 1] ?? "?"}
+																</span>
+															</div>
 															{mapping ? (
 																<div className="text-xs text-muted-foreground">
 																	Target:{" "}

@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
 #include <LiquidCrystal_I2C.h>
@@ -68,6 +69,11 @@ struct MonitoredChannel {
   unsigned long lastProbeTime;
   unsigned long stateStartTime;
   int recoveryAttempts;
+  // offlineAlerted edge-triggers Telegram alerts: set when we first confirm
+  // this channel's host is down (so the "offline" alert fires once, not every
+  // probe tick), cleared when it recovers (so the "recovered" alert fires
+  // once). Volatile runtime state - reset when the channel table is (re)built.
+  bool offlineAlerted;
 };
 
 // Global memory cache
@@ -123,6 +129,13 @@ int localChangeBaseRevision = 0;
 // Connectivity state surfaced on the local dashboard.
 bool lastPingSuccess = false;
 
+// Telegram alerting: the ESP notifies the user directly (not via the hub) on
+// incidents, so alerts still arrive when Beszel is unreachable - which is
+// exactly when the module is most likely acting. Configured locally
+// (onboarding page / local settings portal) and persisted in NVS.
+char telegramToken[64] = "";
+char telegramChatId[32] = "";
+
 // Button timers
 unsigned long buttonPressStartTime = 0;
 bool buttonWasPressed = false;
@@ -139,6 +152,9 @@ void processProberStateMachines();
 void syncWithHub();
 void checkConfigButton();
 void markLocalChange();
+void saveChannelsToNVS();
+void loadChannelsFromNVS();
+void sendTelegram(const String& text);
 
 // Setup HTML onboarding page
 const char SETUP_HTML[] PROGMEM = R"rawliteral(
@@ -172,6 +188,8 @@ button:hover { background:#2563eb; }
 <div class='field'><label>Module Name</label><input type='text' name='name' value='Rack A Recovery' required></div>
 <div class='field'><label>Beszel Hub URL</label><input type='text' name='hub_url' placeholder='http://192.168.1.10:8090/api/beszel/recovery/ping' required></div>
 <div class='field'><label>Heartbeat Interval (sec)</label><input type='number' name='heartbeat' value='30' min='5' max='300' required></div>
+<div class='field'><label>Telegram Bot Token (optional)</label><input type='text' name='tg_token' placeholder='123456:ABC-DEF...'></div>
+<div class='field'><label>Telegram Chat ID (optional)</label><input type='text' name='tg_chat' placeholder='e.g. 987654321'></div>
 <button type='submit'>SAVE & CONNECT</button>
 </form>
 </div>
@@ -230,6 +248,9 @@ button { background:#3b82f6; color:#fff; padding:8px 16px; border:none; border-r
 button:hover { background:#2563eb; }
 .chan { border:1px solid #27272a; border-radius:6px; padding:12px; margin-bottom:10px; }
 .chan-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.chan-head .title { display:flex; align-items:center; gap:8px; }
+.gpio { color:#6b7280; font-size:11px; font-weight:500; }
+.hint { color:#6b7280; font-size:11px; margin:-6px 0 12px; }
 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 </style>
 </head>
@@ -254,6 +275,14 @@ button:hover { background:#2563eb; }
   <div class='field'><label class='inline'><input type='checkbox' id='f_buzzdis'> Disable Buzzer</label></div>
   <div class='field'><label class='inline'><input type='checkbox' id='f_buzzmute'> Mute Buzzer Temporarily</label></div>
   <button onclick='saveSettings()'>Save Module Settings</button>
+</div>
+<div class='card'>
+  <h3>Telegram Alerts</h3>
+  <div class='field'><label>Bot Token</label><input type='text' id='f_tgtoken' placeholder='leave blank to keep current'></div>
+  <p class='hint' id='tg_status'></p>
+  <div class='field'><label>Chat ID</label><input type='text' id='f_tgchat' placeholder='e.g. 987654321'></div>
+  <button onclick='saveSettings()'>Save Telegram Settings</button>
+  <button onclick='sendTest()' style='background:#27272a;margin-left:8px;'>Send Test</button>
 </div>
 <div class='card'>
   <h3>Channels</h3>
@@ -285,12 +314,16 @@ function loadState() {
     document.getElementById('f_tempcrit').value = data.temp_threshold_critical || 60;
     document.getElementById('f_buzzdis').checked = !!data.buzzer_disabled;
     document.getElementById('f_buzzmute').checked = !!data.buzzer_muted;
+    document.getElementById('f_tgchat').value = data.telegram_chat_id || '';
+    document.getElementById('tg_status').textContent = data.telegram_configured
+      ? 'A bot token is saved. Leave the field blank to keep it.'
+      : 'No bot token saved yet.';
 
     var chHtml = '';
     (data.channels || []).forEach(function(ch) {
       var cls = ch.state_label === 'OK' ? 'ok' : (ch.state_label === 'CRIT' ? 'crit' : 'warn');
       chHtml += "<div class='chan'>";
-      chHtml += "<div class='chan-head'><b>Channel " + ch.channel + "</b>" + badge(ch.state_label, cls) + "</div>";
+      chHtml += "<div class='chan-head'><span class='title'><b>Channel " + ch.channel + "</b><span class='gpio'>GPIO " + ch.gpio + "</span></span>" + badge(ch.state_label, cls) + "</div>";
       chHtml += "<div class='field'><label>Host IP (pinged directly)</label><input type='text' id='ch_host_" + ch.channel + "' value='" + esc(ch.host_ip) + "'></div>";
       chHtml += "<div class='field'><label>Failure Threshold</label><input type='number' id='ch_thresh_" + ch.channel + "' value='" + ch.failure_threshold + "'></div>";
       chHtml += "<div class='field'><label>Boot Grace (seconds)</label><input type='number' id='ch_grace_" + ch.channel + "' value='" + ch.boot_grace_seconds + "'></div>";
@@ -312,10 +345,17 @@ function saveSettings() {
     temp_threshold_warning: parseFloat(document.getElementById('f_tempwarn').value) || 50,
     temp_threshold_critical: parseFloat(document.getElementById('f_tempcrit').value) || 60,
     buzzer_disabled: document.getElementById('f_buzzdis').checked,
-    buzzer_muted: document.getElementById('f_buzzmute').checked
+    buzzer_muted: document.getElementById('f_buzzmute').checked,
+    telegram_token: document.getElementById('f_tgtoken').value,
+    telegram_chat_id: document.getElementById('f_tgchat').value
   };
   fetch('/api/settings/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
-    .then(function(){ loadState(); });
+    .then(function(){ document.getElementById('f_tgtoken').value = ''; loadState(); });
+}
+function sendTest() {
+  fetch('/api/telegram/test', { method: 'POST' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ alert(d.ok ? 'Test message sent.' : 'Failed: ' + (d.error || 'not configured')); });
 }
 function saveChannel(chan) {
   var body = {
@@ -360,6 +400,8 @@ void handleSaveSetup() {
   String pass = server.arg("password");
   String name = server.arg("name");
   String hub = server.arg("hub_url");
+  String tgToken = server.arg("tg_token");
+  String tgChat = server.arg("tg_chat");
   int heartbeat = server.arg("heartbeat").toInt();
   if (heartbeat < 5) heartbeat = 5;
 
@@ -372,6 +414,11 @@ void handleSaveSetup() {
   preferences.putString("hub_url", hub);
   preferences.putInt("revision", 0);
   preferences.putString("hash", "");
+  preferences.putString("tgtoken", tgToken);
+  preferences.putString("tgchat", tgChat);
+  // Fresh onboarding - drop any channel table persisted by a previous
+  // deployment so this module starts clean until the hub configures it.
+  preferences.putString("channels", "");
   preferences.end();
 
   server.send(200, "text/html", "<html><body><h3>Onboarding parameters saved! Restarting...</h3></body></html>");
@@ -471,12 +518,20 @@ void handleGetState() {
   doc["ping_interval_seconds"] = heartbeatIntervalMs / 1000;
   doc["config_revision"] = localConfigRevision;
   doc["sync_pending"] = pendingLocalChange;
+  // Report whether a Telegram token is saved, and the chat id, but never echo
+  // the token itself back over the wire.
+  doc["telegram_configured"] = strlen(telegramToken) > 0;
+  doc["telegram_chat_id"] = telegramChatId;
 
   JsonArray channels = doc.createNestedArray("channels");
   for (int i = 0; i < activeChannelCount; i++) {
     MonitoredChannel& ch = activeChannels[i];
     JsonObject chObj = channels.createNestedObject();
     chObj["channel"] = ch.channelNumber;
+    // Which relay GPIO this channel drives, so the wiring is visible in the UI.
+    if (ch.channelNumber >= 1 && ch.channelNumber <= MAX_CHANNELS_LIMIT) {
+      chObj["gpio"] = RELAY_PINS[ch.channelNumber - 1];
+    }
     chObj["host_ip"] = ch.hostIP;
     chObj["failure_threshold"] = ch.failureThreshold;
     chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
@@ -502,7 +557,7 @@ void handleSaveSettings() {
     server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
     return;
   }
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<768> doc;
   if (deserializeJson(doc, server.arg("plain"))) {
     server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
     return;
@@ -525,17 +580,35 @@ void handleSaveSettings() {
   buzzerDisabled = doc["buzzer_disabled"] | false;
   buzzerMuted = doc["buzzer_muted"] | false;
 
+  // Telegram: only overwrite the saved token when a non-empty value is
+  // submitted, so leaving the field blank keeps the existing token (the form
+  // never receives it back). The chat id is always applied.
+  const char* tgToken = doc["telegram_token"] | "";
+  if (tgToken[0] != '\0') strncpy(telegramToken, tgToken, sizeof(telegramToken) - 1);
+  if (doc.containsKey("telegram_chat_id")) {
+    const char* tgChat = doc["telegram_chat_id"] | "";
+    strncpy(telegramChatId, tgChat, sizeof(telegramChatId) - 1);
+  }
+
   markLocalChange();
   server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
+// handleTelegramTest sends a one-off test message so users can confirm their
+// bot token / chat id without waiting for a real incident.
+void handleTelegramTest() {
+  if (strlen(telegramToken) == 0 || strlen(telegramChatId) == 0) {
+    server.send(200, "application/json", "{\"ok\":false,\"error\":\"not configured\"}");
+    return;
+  }
+  sendTelegram("Test message - Telegram alerts are working.");
+  server.send(200, "application/json", "{\"ok\":true}");
+}
+
 // handleSaveChannel handles POST /api/channel/save - a single channel's
-// settings edited from this device's own dashboard. Note: unlike module
-// settings, per-channel edits are only kept in memory (not persisted to
-// NVS) - a reboot before the next successful hub sync reverts to whatever
-// channel config the hub last pushed. This is an accepted limitation of
-// this first version rather than building structured array persistence on
-// top of ESP32 Preferences' flat key-value store.
+// settings edited from this device's own dashboard. Applied immediately,
+// reported to the hub on the next ping, and persisted to NVS via
+// markLocalChange -> saveChannelsToNVS so the edit survives a reboot.
 void handleSaveChannel() {
   if (server.method() != HTTP_POST) {
     server.send(405, "application/json", "{\"error\":\"Method Not Allowed\"}");
@@ -626,8 +699,16 @@ void setup() {
     tempThresholdCriticalLocal = preferences.getFloat("tempcrit", 60.0);
     buzzerDisabled = preferences.getBool("buzzdis", false);
     buzzerMuted = preferences.getBool("buzzmute", false);
+    strncpy(telegramToken, preferences.getString("tgtoken", "").c_str(), sizeof(telegramToken) - 1);
+    strncpy(telegramChatId, preferences.getString("tgchat", "").c_str(), sizeof(telegramChatId) - 1);
   }
   preferences.end();
+
+  // Restore the persisted channel table so watchdogs resume immediately after
+  // a reboot, before (and without needing) the first successful hub sync.
+  if (isProvisioned) {
+    loadChannelsFromNVS();
+  }
 
   if (!isProvisioned) {
     startProvisioningAP();
@@ -680,8 +761,15 @@ void setup() {
     server.on("/api/settings/save", HTTP_POST, handleSaveSettings);
     server.on("/api/channel/save", HTTP_POST, handleSaveChannel);
     server.on("/api/relay/trigger", HTTP_POST, handleRelayTrigger);
+    server.on("/api/telegram/test", HTTP_POST, handleTelegramTest);
     server.begin();
     delay(1000);
+
+    // Boot notification: tells the user the module is up and where to reach it.
+    if (WiFi.status() == WL_CONNECTED) {
+      sendTelegram(String("[ONLINE] Recovery module powered on\nIP: ") + WiFi.localIP().toString() +
+                   "\nFirmware " + FIRMWARE_VERSION);
+    }
   }
 }
 
@@ -849,6 +937,7 @@ void checkNetworkVerifyRecovery() {
     if (gatewayConsecutiveOk >= 2) {
       networkVerifyActive = false;
       gatewayConsecutiveOk = 0;
+      sendTelegram("[NETWORK] Gateway reachable again - autonomous recovery resumed.");
     }
   } else {
     gatewayConsecutiveOk = 0;
@@ -906,7 +995,119 @@ void markLocalChange() {
   preferences.putBool("buzzdis", buzzerDisabled);
   preferences.putBool("buzzmute", buzzerMuted);
   preferences.putString("name", moduleName);
+  preferences.putString("tgtoken", telegramToken);
+  preferences.putString("tgchat", telegramChatId);
   preferences.end();
+
+  // Local portal channel edits (host IP, thresholds, maintenance, etc.) flow
+  // through markLocalChange, so persist the channel table here too - see
+  // saveChannelsToNVS.
+  saveChannelsToNVS();
+}
+
+// saveChannelsToNVS serializes the current channel table to flash so the
+// module restores its watchdogs on the next boot without waiting for (or
+// needing) a hub sync. Only the persistent config fields are stored; volatile
+// runtime state (probe state, counters, timers) is reset on load.
+void saveChannelsToNVS() {
+  StaticJsonDocument<1536> doc;
+  JsonArray arr = doc.to<JsonArray>();
+  for (int i = 0; i < activeChannelCount; i++) {
+    MonitoredChannel& ch = activeChannels[i];
+    JsonObject chObj = arr.createNestedObject();
+    chObj["channel"] = ch.channelNumber;
+    chObj["host_ip"] = ch.hostIP;
+    chObj["failure_threshold"] = ch.failureThreshold;
+    chObj["boot_grace_seconds"] = ch.bootGraceSeconds;
+    chObj["maintenance"] = ch.maintenance;
+    chObj["hardware_recovery_disabled"] = ch.hwRecoveryDisabled;
+    JsonArray ports = chObj.createNestedArray("ports");
+    for (int p = 0; p < ch.portCount; p++) {
+      ports.add(ch.ports[p]);
+    }
+  }
+  String json;
+  serializeJson(doc, json);
+  preferences.begin("watchdog", false);
+  preferences.putString("channels", json);
+  preferences.end();
+}
+
+// loadChannelsFromNVS rebuilds the channel table from flash on boot. Mirrors
+// the per-channel initialization of the hub-driven rebuild in syncWithHub().
+void loadChannelsFromNVS() {
+  preferences.begin("watchdog", true);
+  String json = preferences.getString("channels", "");
+  preferences.end();
+  if (json.length() == 0) {
+    return;
+  }
+  StaticJsonDocument<1536> doc;
+  if (deserializeJson(doc, json) != DeserializationError::Ok) {
+    return;
+  }
+  JsonArray arr = doc.as<JsonArray>();
+  activeChannelCount = 0;
+  for (JsonObject item : arr) {
+    if (activeChannelCount >= MAX_CHANNELS_LIMIT) break;
+    MonitoredChannel& newCh = activeChannels[activeChannelCount];
+    newCh.channelNumber = item["channel"];
+    const char* host = item["host_ip"] | "";
+    strncpy(newCh.hostIP, host, sizeof(newCh.hostIP) - 1);
+    newCh.hostIP[sizeof(newCh.hostIP) - 1] = '\0';
+    newCh.maintenance = item["maintenance"] | false;
+    newCh.hwRecoveryDisabled = item["hardware_recovery_disabled"] | false;
+    newCh.failureThreshold = item["failure_threshold"] | 3;
+    newCh.bootGraceSeconds = item["boot_grace_seconds"] | 60;
+    newCh.hubLockUntilMs = 0;
+    newCh.state = STATE_ONLINE;
+    newCh.consecutiveFailures = 0;
+    newCh.lastProbeTime = 0;
+    newCh.stateStartTime = 0;
+    newCh.recoveryAttempts = 0;
+    newCh.offlineAlerted = false;
+    JsonArray ports = item["ports"];
+    newCh.portCount = 0;
+    for (int p : ports) {
+      if (newCh.portCount < 3) {
+        newCh.ports[newCh.portCount++] = p;
+      }
+    }
+    activeChannelCount++;
+  }
+}
+
+// sendTelegram posts a message to the configured Telegram chat via the Bot
+// API. No-op when unconfigured. Blocking (bounded by setTimeout) and
+// best-effort: a failed send never affects recovery logic. TLS uses
+// setInsecure() - acceptable for a LAN homelab device, and avoids bundling
+// and rotating Telegram's root CA in firmware.
+void sendTelegram(const String& text) {
+  if (strlen(telegramToken) == 0 || strlen(telegramChatId) == 0) {
+    return;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.setTimeout(5000);
+  String url = "https://api.telegram.org/bot" + String(telegramToken) + "/sendMessage";
+  if (!http.begin(client, url)) {
+    return;
+  }
+  http.addHeader("Content-Type", "application/json");
+  StaticJsonDocument<512> doc;
+  doc["chat_id"] = telegramChatId;
+  doc["text"] = String("[") + moduleName + "] " + text;
+  String body;
+  serializeJson(doc, body);
+  int code = http.POST(body);
+  if (code <= 0) {
+    Serial.printf("Telegram send failed: %d\n", code);
+  }
+  http.end();
 }
 
 void processProberStateMachines() {
@@ -938,6 +1139,10 @@ void processProberStateMachines() {
           if (hostResponded) {
             ch.state = STATE_ONLINE;
             ch.consecutiveFailures = 0;
+            if (ch.offlineAlerted) {
+              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber + ") is back online.");
+              ch.offlineAlerted = false;
+            }
           } else {
             ch.consecutiveFailures++;
             int threshold = (ch.failureThreshold > 0) ? ch.failureThreshold : 3;
@@ -949,6 +1154,11 @@ void processProberStateMachines() {
               }
               // Per-channel policy: this channel is monitoring-only.
               if (ch.hwRecoveryDisabled) {
+                if (!ch.offlineAlerted) {
+                  sendTelegram(String("[OFFLINE] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                               ") is offline - autonomous recovery disabled (monitoring only).");
+                  ch.offlineAlerted = true;
+                }
                 break;
               }
               // Already known network-down - don't re-probe every tick.
@@ -962,6 +1172,7 @@ void processProberStateMachines() {
                 networkVerifyActive = true;
                 gatewayConsecutiveOk = 0;
                 lastGatewayProbeTime = now;
+                sendTelegram("[NETWORK] Gateway unreachable - autonomous recovery paused network-wide.");
                 break;
               }
               ch.state = STATE_SHORT_PRESS;
@@ -972,6 +1183,11 @@ void processProberStateMachines() {
               delay(300);
               digitalWrite(pin, HIGH);
               triggerBuzzer(3, 150);
+              if (!ch.offlineAlerted) {
+                sendTelegram(String("[OFFLINE] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                             ") offline - pressing power relay to reboot.");
+                ch.offlineAlerted = true;
+              }
             }
           }
           break;
@@ -987,6 +1203,11 @@ void processProberStateMachines() {
             ch.consecutiveFailures = 0;
             ch.recoveryAttempts = 0;
             triggerBuzzer(2, 200);
+            if (ch.offlineAlerted) {
+              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                           ") recovered after relay reboot.");
+              ch.offlineAlerted = false;
+            }
           } else {
             unsigned long bootGraceMs = (ch.bootGraceSeconds > 0) ? (unsigned long)ch.bootGraceSeconds * 1000UL : 60000UL;
             if (now - ch.stateStartTime >= bootGraceMs) {
@@ -1013,9 +1234,13 @@ void processProberStateMachines() {
                 delay(300);
                 digitalWrite(pin, HIGH);
                 triggerBuzzer(4, 150);
+                sendTelegram(String("[FORCE-RESTART] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                             ") still down - forced an 8s power hold.");
               } else {
                 ch.state = STATE_CRITICAL;
                 ch.stateStartTime = now;
+                sendTelegram(String("[CRITICAL] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                             ") recovery failed after repeated attempts - still down.");
               }
             }
           }
@@ -1031,8 +1256,15 @@ void processProberStateMachines() {
             ch.state = STATE_ONLINE;
             ch.consecutiveFailures = 0;
             ch.recoveryAttempts = 0;
+            if (ch.offlineAlerted) {
+              sendTelegram(String("[RECOVERED] ") + ch.hostIP + " (CH " + ch.channelNumber +
+                           ") recovered from CRITICAL - back online.");
+              ch.offlineAlerted = false;
+            }
           } else {
             if (now - ch.stateStartTime >= 300000) {
+              // Cooldown reset only - the host is still down (offlineAlerted
+              // stays set so we don't re-alert), we just re-enter the ladder.
               ch.state = STATE_ONLINE;
               ch.consecutiveFailures = 0;
               ch.recoveryAttempts = 0;
@@ -1173,7 +1405,10 @@ void syncWithHub() {
       // algorithm). Requiring a hash mismatch too could permanently block a
       // legitimate rebuild whenever both sides' hashes happen to already be
       // equal or empty, so only the revision is checked here.
-      if (applyHubPush && remoteRevision != localConfigRevision) {
+      // Rebuild on a revision change, or when we booted with an empty channel
+      // table (nothing persisted yet) but the hub already has config for us -
+      // otherwise a matching revision would leave the module unprotected.
+      if (applyHubPush && (remoteRevision != localConfigRevision || activeChannelCount == 0)) {
         JsonArray channelsArray = respDoc["channels"];
         activeChannelCount = 0;
 
@@ -1196,6 +1431,7 @@ void syncWithHub() {
           newCh.consecutiveFailures = 0;
           newCh.lastProbeTime = 0;
           newCh.recoveryAttempts = 0;
+          newCh.offlineAlerted = false;
 
           JsonArray ports = item["ports"];
           newCh.portCount = 0;
@@ -1211,6 +1447,8 @@ void syncWithHub() {
         preferences.putInt("revision", remoteRevision);
         preferences.putString("hash", remoteHash);
         preferences.end();
+        // Persist the freshly rebuilt channel table so it survives a reboot.
+        saveChannelsToNVS();
 
         localConfigRevision = remoteRevision;
         strncpy(localConfigHash, remoteHash.c_str(), sizeof(localConfigHash) - 1);
