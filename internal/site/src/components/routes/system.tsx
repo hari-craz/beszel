@@ -19,9 +19,22 @@ import SystemdTable from "../systemd-table/systemd-table"
 import ContainersTable from "../containers-table/containers-table"
 import RecoveryInfo from "./system/recovery-info"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { Card, CardContent } from "@/components/ui/card"
 
 const SEMVER_0_14_0 = parseSemVer("0.14.0")
 const SEMVER_0_15_0 = parseSemVer("0.15.0")
+
+// Shown if RecoveryInfo throws during render, so a bug in the recovery panel
+// can't blank the rest of the system detail page (core charts, containers, etc).
+const recoveryErrorFallback = (
+	<div className="mt-4">
+		<Card>
+			<CardContent className="flex items-center justify-center h-24 text-muted-foreground text-sm">
+				<Trans>Failed to load recovery configuration.</Trans>
+			</CardContent>
+		</Card>
+	</div>
+)
 
 export default memo(function SystemDetail({ id }: { id: string }) {
 	const systemData = useSystemData(id)
@@ -153,7 +166,7 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 				{hasSystemd && <LazySystemdTable systemId={system.id} />}
 
-				<ErrorBoundary>
+				<ErrorBoundary fallback={recoveryErrorFallback}>
 					<RecoveryInfo systemId={system.id} />
 				</ErrorBoundary>
 			</>
@@ -279,7 +292,7 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 				<TabsContent value="recovery" forceMount className={activeTab === "recovery" ? "contents" : "hidden"}>
 					{mountedTabs.has("recovery") && (
-						<ErrorBoundary>
+						<ErrorBoundary fallback={recoveryErrorFallback}>
 							<RecoveryInfo systemId={system.id} />
 						</ErrorBoundary>
 					)}

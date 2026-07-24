@@ -57,6 +57,12 @@ interface RecoveryInfoProps {
 
 type FetchState = "loading" | "configured" | "not_configured" | "error"
 
+// Guards against a non-array response (e.g. an SPA HTML fallback from a
+// route mismatch) so events.filter() below can't throw and blank the page.
+function toEventsArray(res: unknown): any[] {
+	return Array.isArray(res) ? res : []
+}
+
 // Fields on recovery_channels that can be toggled directly from this card via
 // a confirmed (not optimistic) update - the switch stays disabled while the
 // request is in flight and only reflects the new value once the backend
@@ -155,11 +161,8 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 				const res = await pb.send("/api/beszel/recovery/events", {
 					query: { system: systemId },
 				})
-				// Guard against a non-array response (e.g. an SPA HTML fallback
-				// from a route mismatch) so events.filter() below can't throw
-				// and blank the whole page.
 				if (isMounted) {
-					setEvents(Array.isArray(res) ? res : [])
+					setEvents(toEventsArray(res))
 				}
 			} catch (e) {
 				console.error(e)
@@ -197,7 +200,7 @@ export default function RecoveryInfo({ systemId }: RecoveryInfoProps) {
 			const res = await pb.send("/api/beszel/recovery/events", {
 				query: { system: systemId },
 			})
-			setEvents(Array.isArray(res) ? res : [])
+			setEvents(toEventsArray(res))
 		} catch {
 			// non-fatal - the action's own toast already reported success/failure
 		}

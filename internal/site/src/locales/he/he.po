@@ -941,6 +941,7 @@ msgstr "מאפיינים שנכשלו:"
 msgid "Failed to authenticate"
 msgstr "אימות נכשל"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""
