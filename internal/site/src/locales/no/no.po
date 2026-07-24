@@ -941,6 +941,7 @@ msgstr "Mislykkede attributter:"
 msgid "Failed to authenticate"
 msgstr "Autentisering mislyktes"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

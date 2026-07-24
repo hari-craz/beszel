@@ -144,7 +144,7 @@ func (h *Hub) registerApiRoutes(se *core.ServeEvent) error {
 	// recovery routes
 	apiAuth.GET("/recovery/modules", h.getRecoveryModules)
 	apiAuth.GET("/recovery/module", h.getRecoveryModule)
-	apiAuth.POST("/recovery/events", h.getRecoveryEvents)
+	apiAuth.GET("/recovery/events", h.getRecoveryEvents)
 	apiAuth.POST("/recovery/wake", h.triggerManualWOL)
 	apiAuth.POST("/recovery/relay", h.triggerManualRelay)
 	apiAuth.POST("/recovery/shutdown", h.triggerManualShutdown)

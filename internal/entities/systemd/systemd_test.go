@@ -3,12 +3,22 @@
 package systemd_test
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/henrygd/beszel/internal/entities/systemd"
 	"github.com/stretchr/testify/assert"
 )
+
+// halfCapacityCpuUsage returns a cpuUsage delta equal to half the CPU time
+// available across all cores in a 1-second window. UpdateCPUPercent
+// normalizes by runtime.NumCPU(), so a hardcoded delta (e.g. "8 seconds of
+// CPU time") only stays under 100% on machines with enough cores - this
+// keeps the expected ~50% result independent of the test runner's core count.
+func halfCapacityCpuUsage(prevCpuUsage uint64) uint64 {
+	return prevCpuUsage + uint64(time.Second.Nanoseconds()*int64(runtime.NumCPU())/2)
+}
 
 func TestParseServiceStatus(t *testing.T) {
 	tests := []struct {
@@ -69,12 +79,13 @@ func TestServiceUpdateCPUPercent(t *testing.T) {
 		service.PrevCpuUsage = 1000
 		service.PrevReadTime = time.Now().Add(-time.Second)
 
-		service.UpdateCPUPercent(8000000000) // 8 seconds of CPU time
+		usage := halfCapacityCpuUsage(service.PrevCpuUsage)
+		service.UpdateCPUPercent(usage)
 
 		// CPU usage should be positive and reasonable
 		assert.Greater(t, service.Cpu, 0.0, "CPU usage should be positive")
 		assert.LessOrEqual(t, service.Cpu, 100.0, "CPU usage should not exceed 100%")
-		assert.Equal(t, uint64(8000000000), service.PrevCpuUsage)
+		assert.Equal(t, usage, service.PrevCpuUsage)
 		assert.Greater(t, service.CpuPeak, 0.0, "CPU peak should be set")
 	})
 
@@ -82,7 +93,7 @@ func TestServiceUpdateCPUPercent(t *testing.T) {
 		service := &systemd.Service{}
 		service.PrevCpuUsage = 1000
 		service.PrevReadTime = time.Now().Add(-time.Second)
-		service.UpdateCPUPercent(8000000000) // Set initial peak to ~50%
+		service.UpdateCPUPercent(halfCapacityCpuUsage(service.PrevCpuUsage)) // Set initial peak to ~50%
 		initialPeak := service.CpuPeak
 
 		// Now try with much lower CPU usage - should not update peak

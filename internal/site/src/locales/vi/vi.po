@@ -941,6 +941,7 @@ msgstr "Thuộc tính thất bại:"
 msgid "Failed to authenticate"
 msgstr "Xác thực thất bại"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

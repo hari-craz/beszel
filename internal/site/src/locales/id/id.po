@@ -941,6 +941,7 @@ msgstr "Atribut yang Gagal:"
 msgid "Failed to authenticate"
 msgstr "Gagal mengautentikasi"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

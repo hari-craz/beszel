@@ -941,6 +941,7 @@ msgstr "Неуспешни атрибути:"
 msgid "Failed to authenticate"
 msgstr "Неуспешно удостоверяване"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr "Неуспешно зареждане на конфигурацията за възстановяване."

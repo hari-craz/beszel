@@ -941,6 +941,7 @@ msgstr "Neuspjeli atributi:"
 msgid "Failed to authenticate"
 msgstr "Neuspješna provjera autentičnosti"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

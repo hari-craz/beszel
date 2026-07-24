@@ -941,6 +941,7 @@ msgstr "실패한 속성:"
 msgid "Failed to authenticate"
 msgstr "인증 실패"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

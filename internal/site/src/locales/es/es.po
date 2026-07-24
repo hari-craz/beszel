@@ -941,6 +941,7 @@ msgstr "Atributos fallidos:"
 msgid "Failed to authenticate"
 msgstr "Error al autenticar"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

@@ -941,6 +941,7 @@ msgstr "السمات الفاشلة:"
 msgid "Failed to authenticate"
 msgstr "فشل في المصادقة"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""

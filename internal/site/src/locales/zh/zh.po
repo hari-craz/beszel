@@ -941,6 +941,7 @@ msgstr "失敗屬性："
 msgid "Failed to authenticate"
 msgstr "認證失敗"
 
+#: src/components/routes/system.tsx
 #: src/components/routes/system/recovery-info.tsx
 msgid "Failed to load recovery configuration."
 msgstr ""
