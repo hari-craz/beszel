@@ -18,6 +18,7 @@ import { GpuIcon } from "../ui/icons"
 import SystemdTable from "../systemd-table/systemd-table"
 import ContainersTable from "../containers-table/containers-table"
 import RecoveryInfo from "./system/recovery-info"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 const SEMVER_0_14_0 = parseSemVer("0.14.0")
 const SEMVER_0_15_0 = parseSemVer("0.15.0")
@@ -152,7 +153,9 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 
 				{hasSystemd && <LazySystemdTable systemId={system.id} />}
 
-				<RecoveryInfo systemId={system.id} />
+				<ErrorBoundary>
+					<RecoveryInfo systemId={system.id} />
+				</ErrorBoundary>
 			</>
 		)
 	}
@@ -275,7 +278,11 @@ export default memo(function SystemDetail({ id }: { id: string }) {
 				)}
 
 				<TabsContent value="recovery" forceMount className={activeTab === "recovery" ? "contents" : "hidden"}>
-					{mountedTabs.has("recovery") && <RecoveryInfo systemId={system.id} />}
+					{mountedTabs.has("recovery") && (
+						<ErrorBoundary>
+							<RecoveryInfo systemId={system.id} />
+						</ErrorBoundary>
+					)}
 				</TabsContent>
 			</Tabs>
 		)
