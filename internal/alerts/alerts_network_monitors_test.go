@@ -88,13 +88,16 @@ func TestNetworkMonitorAlertIndependentIncidents(t *testing.T) {
 
 func TestNetworkMonitorAlertTargetLabel(t *testing.T) {
 	for _, tc := range []struct {
-		protocol, target, label string
-		port                    int
+		protocol, target, label, name string
+		port                          int
 	}{
-		{"icmp", "gateway.example.com", "gateway.example.com", 0},
-		{"http", "https://example.com/health", "https://example.com/health", 0},
-		{"tcp", "example.com", "example.com:8443", 8443},
-		{"tcp", "2001:db8::1", "[2001:db8::1]:443", 443},
+		{"icmp", "gateway.example.com", "gateway.example.com", "", 0},
+		{"http", "https://example.com/health", "https://example.com/health", "", 0},
+		{"tcp", "example.com", "example.com:8443", "", 8443},
+		{"tcp", "2001:db8::1", "[2001:db8::1]:443", "", 443},
+		{"http", "http://192.168.13.5:8123", "Home Assistant (http://192.168.13.5:8123)", "Home Assistant", 0},
+		{"tcp", "example.com", "NAS (example.com:22)", "  NAS ", 22},
+		{"icmp", "gateway.example.com", "gateway.example.com", "   ", 0},
 	} {
 		t.Run(tc.label, func(t *testing.T) {
 			hub, system, alert, monitors := networkAlertSetup(t)
@@ -102,7 +105,11 @@ func TestNetworkMonitorAlertTargetLabel(t *testing.T) {
 			m.Set("protocol", tc.protocol)
 			m.Set("target", tc.target)
 			m.Set("port", tc.port)
+			m.Set("name", tc.name)
 			require.NoError(t, hub.Save(m))
+			saved, err := hub.FindRecordById("network_monitors", m.Id)
+			require.NoError(t, err)
+			assert.Equal(t, tc.name, saved.GetString("name"), "name field must persist")
 			am := alerts.NewTestAlertManagerWithoutWorker(hub)
 			require.NoError(t, am.HandleNetworkMonitorAlerts(system, map[string]monitor.Result{m.Id: monitorResult(10)}))
 			histories, err := hub.FindAllRecords("alerts_history", dbx.HashExp{"alert_id": alert.Id})

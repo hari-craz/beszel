@@ -290,7 +290,7 @@ export default function NetworkMonitorsTableNew({
 			const systemName = $allSystemsById.get()[monitor.system]?.name ?? ""
 			// Include the raw target so searches for the hidden URL scheme still match.
 			const searchString =
-				`${getMonitorTarget(monitor)}${monitor.target}${monitor.protocol}${systemName}`.toLocaleLowerCase()
+				`${monitor.name ?? ""}${getMonitorTarget(monitor)}${monitor.target}${monitor.protocol}${systemName}`.toLocaleLowerCase()
 			return matchesFilterGroups(searchString, parseFilterGroups(value))
 		},
 	})
@@ -722,7 +722,7 @@ function NetworkMonitorSheetContent({
 		? monitorStats.some((record) => record.stats != null)
 		: monitorStats.some((record) => record.stats?.[monitor.id] != null)
 	// The IP version is shown in the description row, so leave it out of the title.
-	const monitorLabel = getMonitorTarget({ ...monitor, ipVersion: 0 })
+	const monitorLabel = monitor.name?.trim() || getMonitorTarget({ ...monitor, ipVersion: 0 })
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>

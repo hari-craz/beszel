@@ -8,6 +8,7 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"ganigeorgiev.com/pocketbase/dbx"
@@ -230,10 +231,7 @@ func (am *AlertManager) evaluateNetworkMonitorAlerts(app core.App, systemID stri
 					if obs.triggered == active {
 						continue
 					}
-					label := m.GetString("target")
-					if m.GetString("protocol") == "tcp" {
-						label = net.JoinHostPort(label, strconv.Itoa(m.GetInt("port")))
-					}
+					label := monitorLabel(m)
 					if obs.triggered {
 						collection, err := tx.FindCachedCollectionByNameOrId("alerts_history")
 						if err != nil {
@@ -284,6 +282,20 @@ func (am *AlertManager) evaluateNetworkMonitorAlerts(app core.App, systemID stri
 		}
 	}
 	return nil
+}
+
+// monitorLabel is the monitor's display text for alerts and history: the target
+// (with the port for TCP), prefixed by the user-set name when there is one,
+// such as "Home Assistant (http://192.168.13.5:8123)".
+func monitorLabel(m *core.Record) string {
+	target := m.GetString("target")
+	if m.GetString("protocol") == "tcp" {
+		target = net.JoinHostPort(target, strconv.Itoa(m.GetInt("port")))
+	}
+	if name := strings.TrimSpace(m.GetString("name")); name != "" {
+		return fmt.Sprintf("%s (%s)", name, target)
+	}
+	return target
 }
 
 // observeMonitorLoss compares a fresh result's one hour loss with the threshold.
