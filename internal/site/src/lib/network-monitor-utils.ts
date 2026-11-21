@@ -6,6 +6,7 @@ import type {
 	RawMonitorStatsRecord,
 } from "@/types"
 import { toFixedFloat } from "./utils"
+import { getMonitorTarget } from "./monitor-compare"
 
 /** Derive chart metrics from the counts and response sum stored at every retention tier. */
 export function getMonitorStats(record: RawMonitorStatsRecord): MonitorStats {
@@ -96,6 +97,11 @@ export function mergeMonitorStats(rawRecords: RawMonitorStatsRecord[], bucketMs 
 	return Array.from(byTimestamp.entries())
 		.sort(([a], [b]) => a - b)
 		.map(([created, stats]) => ({ created, stats }))
+}
+
+/** The user-set monitor name, or the target when no name is set. */
+export function getMonitorDisplayName(monitor: Pick<NetworkMonitorRecord, "name" | "target" | "protocol" | "port" | "ipVersion">) {
+	return monitor.name?.trim() || getMonitorTarget({ ...monitor, ipVersion: 0 })
 }
 
 export { getMonitorProtocolLabel, getMonitorTarget, isHttpsTarget } from "./monitor-compare"

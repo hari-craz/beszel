@@ -18,6 +18,7 @@ import {
 	ShieldCheckIcon,
 	ShieldOffIcon,
 	Layers2Icon,
+	TagIcon,
 } from "lucide-react"
 import { t } from "@lingui/core/macro"
 import type { NetworkMonitorRecord, SystemRecord } from "@/types"
@@ -40,6 +41,7 @@ import {
 	getCertDaysLeft,
 	getCertExpiryLevel,
 	getMonitorProtocolLabel,
+	getMonitorDisplayName,
 	getMonitorTarget,
 } from "@/lib/network-monitor-utils"
 
@@ -106,6 +108,29 @@ export function getMonitorColumns({
 			enableSorting: false,
 			enableHiding: false,
 			size: 44,
+		},
+		{
+			id: "name",
+			meta: { label: t`Name` },
+			// Fall back to the target so monitors without a name still sort and display sensibly.
+			accessorFn: (record) => getMonitorDisplayName(record),
+			sortingFn: (a, b) =>
+				(a.getValue("name") as string).localeCompare(b.getValue("name") as string, undefined, { numeric: true }),
+			header: ({ column }) => <HeaderButton column={column} name={t`Name`} Icon={TagIcon} />,
+			cell: ({ row, getValue }) => {
+				const monitor = row.original
+				const hasName = !!monitor.name?.trim()
+				return (
+					<div className="ms-1.5 max-w-64 flex flex-col tabular-nums">
+						<span className="truncate">{getValue() as string}</span>
+						{hasName && (
+							<span className="truncate text-xs text-muted-foreground">
+								{getMonitorTarget({ ...monitor, ipVersion: 0 })}
+							</span>
+						)}
+					</div>
+				)
+			},
 		},
 		{
 			id: "system",

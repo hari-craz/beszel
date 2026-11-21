@@ -1799,6 +1799,9 @@ msgstr ""
 #: src/components/add-system.tsx
 #: src/components/alerts-history-columns.tsx
 #: src/components/containers-table/containers-table-columns.tsx
+#: src/components/network-monitors-table/monitor-dialog.tsx
+#: src/components/network-monitors-table/network-monitors-columns.tsx
+#: src/components/network-monitors-table/network-monitors-columns.tsx
 #: src/components/routes/settings/recovery-modules.tsx
 #: src/components/systemd-table/systemd-table-columns.tsx
 #: src/components/systemd-table/systemd-table.tsx
@@ -2015,6 +2018,10 @@ msgstr "Menüyü aç"
 #. placeholder {0}: hostValue || "host"
 #: src/components/add-system.tsx
 msgid "Optional - defaults to http://{0}"
+msgstr ""
+
+#: src/components/network-monitors-table/monitor-dialog.tsx
+msgid "Optional, e.g. Home Assistant"
 msgstr ""
 
 #: src/components/network-monitors-table/monitor-dialog.tsx
