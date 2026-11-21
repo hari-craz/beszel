@@ -147,3 +147,16 @@ export function getMonitorCompareState({
 		getLabel: (m: NetworkMonitorRecord) => labels.get(m.id) ?? getMonitorTarget(m),
 	}
 }
+
+/** The user-set monitor name, or the target when no name is set. */
+export function getMonitorDisplayName(monitor: MonitorTarget & { name?: string }) {
+	return monitor.name?.trim() || getMonitorTarget({ ...monitor, ipVersion: 0 })
+}
+
+
+/** Fields requested for the monitors table, realtime subscription and refetches. Must include `name`. */
+export const NETWORK_MONITOR_FIELDS =
+	"id,system,name,target,protocol,port,server,interval,skipTlsVerify,ipVersion,statusCodes,res,resMin1h,resMax1h,resAvg1h,loss1h,enabled,certInfo,updated"
+
+/** Only what comparison charts and labels need. */
+export const COMPARE_MONITOR_FIELDS = "id,system,name,target,protocol,port,server,interval,resAvg1h"

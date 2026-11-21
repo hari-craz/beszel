@@ -6,7 +6,6 @@ import type {
 	RawMonitorStatsRecord,
 } from "@/types"
 import { toFixedFloat } from "./utils"
-import { getMonitorTarget } from "./monitor-compare"
 
 /** Derive chart metrics from the counts and response sum stored at every retention tier. */
 export function getMonitorStats(record: RawMonitorStatsRecord): MonitorStats {
@@ -99,12 +98,14 @@ export function mergeMonitorStats(rawRecords: RawMonitorStatsRecord[], bucketMs 
 		.map(([created, stats]) => ({ created, stats }))
 }
 
-/** The user-set monitor name, or the target when no name is set. */
-export function getMonitorDisplayName(monitor: Pick<NetworkMonitorRecord, "name" | "target" | "protocol" | "port" | "ipVersion">) {
-	return monitor.name?.trim() || getMonitorTarget({ ...monitor, ipVersion: 0 })
-}
-
-export { getMonitorProtocolLabel, getMonitorTarget, isHttpsTarget } from "./monitor-compare"
+export {
+	COMPARE_MONITOR_FIELDS,
+	getMonitorDisplayName,
+	getMonitorProtocolLabel,
+	getMonitorTarget,
+	isHttpsTarget,
+	NETWORK_MONITOR_FIELDS,
+} from "./monitor-compare"
 
 /** Whole days until the certificate expires; negative once expired. */
 export function getCertDaysLeft(cert: Pick<MonitorCertInfo, "expires">, now = Date.now()) {
