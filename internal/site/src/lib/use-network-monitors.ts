@@ -1,5 +1,7 @@
 import { chartTimeData } from "@/lib/utils"
 import {
+	COMPARE_MONITOR_FIELDS,
+	NETWORK_MONITOR_FIELDS,
 	clearFailedResponse,
 	mergeMonitorStats,
 	mergeSameTimestamps,
@@ -80,9 +82,6 @@ async function fetchMonitorStats(
 	})
 	return mergeMonitorStats(rawRecords, bucketMs)
 }
-
-const NETWORK_MONITOR_FIELDS =
-	"id,system,target,protocol,port,server,interval,skipTlsVerify,ipVersion,statusCodes,res,resMin1h,resMax1h,resAvg1h,loss1h,enabled,certInfo,updated"
 
 interface UseNetworkMonitorsProps {
 	systemId?: string
@@ -322,9 +321,6 @@ export function useNetworkMonitorStats(props: UseNetworkMonitorStatsProps) {
 		return withMonitorGaps(monitorStats, { id: cacheKey, interval }, chartTimeData[chartTime].expectedInterval)
 	}, [monitorStats, cacheKey, interval, chartTime])
 }
-
-/** Only what comparison charts and labels need. */
-const COMPARE_MONITOR_FIELDS = "id,system,target,protocol,port,server,interval,resAvg1h"
 
 /**
  * Monitors of one protocol on all systems except the given one, to compare against (#2385).
