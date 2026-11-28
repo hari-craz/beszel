@@ -23,8 +23,10 @@ services:
     environment:
       APP_URL: ${APP_URL:-http://localhost:8090}
       POLL_INTERVAL: ${POLL_INTERVAL:-15}
-    ports:
-      - "${HUB_PORT:-8090}:8090"
+    # Host networking is required for the hub's Wake-on-LAN: UDP broadcasts sent
+    # from inside a Docker bridge network never reach the LAN, so wake packets
+    # were silently dropped. The hub therefore listens directly on host port 8090.
+    network_mode: host
     volumes:
       - beszel_data:/beszel_data
     healthcheck:
